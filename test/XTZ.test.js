@@ -2,34 +2,50 @@ const { MichelsonMap } = require('@taquito/michelson-encoder');
 
 const XTZ = artifacts.require('XTZ');
 
-contract('XTZ', () => {
+contract('XTZ', async (accounts) => {
 
-  console.log('test')
+  const DEFAULT = accounts[0];
+  const SENDER = accounts[1];
+
+  const defaultsBalance = '1500';
+  const defaultsAmt = '15';
+
+  const totalSupply = '50000';
 
   let XTZ_Instancce;
   let storage;
 
-  beforeEach(async () => {
-
+  before('setup', async () => {
     storage = {
       ledger: MichelsonMap.fromLiteral({
-        ['tz1WP3xUvTP6vUWLRnexxnjNTYDiZ7QzVdxo']: {
-          balance: '1000',
+        [DEFAULT]: {
+          balance: defaultsBalance,
           allowances: MichelsonMap.fromLiteral({
-            ['tz1WP3xUvTP6vUWLRnexxnjNTYDiZ7QzVdxo']: '0',
+            [DEFAULT]: defaultsAmt,
           }),
         },
       }),
-      totalSupply: '1000',
+      totalSupply: totalSupply,
     }
 
-    console.log(storage);
     XTZ_Instancce = await XTZ.new(storage);
   });
 
+  describe('deploy', async () => {
+    it('should check storage after deploy', async () => {
+      const xtzStorage = await XTZ_Instancce.storage();
+      const ledger = await (xtzStorage.ledger).get(DEFAULT);
+      const amt = await ledger.allowances.get(DEFAULT);
 
-
-  it('deploy', async() => {
-    console.log('done')
+      assert.equal(totalSupply, xtzStorage.totalSupply);
+      assert.equal(defaultsBalance, ledger.balance);
+      assert.equal(defaultsAmt, amt)
+    });
   });
+
+  describe('mint', async () => {
+    it('should send value and check storage', async() => {
+      assert.equal(1, 1);
+    });
+  })
 });

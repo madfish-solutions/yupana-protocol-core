@@ -6,7 +6,7 @@
     "@taquito/taquito": "^7.0.1-beta.0"
   },
   "devDependencies": {
-    "ganache-cli": "^6.12.1"
+    "mocha": "^8.1.1"
   },
   "scripts": {
     "start-sandbox": "ganache-cli --flavor tezos --seed alice"
