@@ -1,8 +1,8 @@
 const { MichelsonMap } = require('@taquito/michelson-encoder');
-
+const { accounts } = require('../scripts/sandbox/accounts');
 const XTZ = artifacts.require('XTZ');
 
-contract('XTZ', async (accounts) => {
+contract('XTZ', async () => {
 
   const DEFAULT = accounts[0];
   const SENDER = accounts[1];
@@ -45,6 +45,13 @@ contract('XTZ', async (accounts) => {
 
   describe('mint', async () => {
     it('should send value and check storage', async() => {
+      await XTZ_Instancce.mint();
+
+
+      const balance = await ((await XTZ_Instancce.storage()).ledger).get(SENDER);
+      console.log(balance);
+
+
       assert.equal(1, 1);
     });
   })
