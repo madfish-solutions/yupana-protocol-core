@@ -45,10 +45,20 @@ contract('XTZ', async () => {
 
   describe('mint', async () => {
     it('should send value and check storage', async() => {
-      await XTZ_Instancce.mint();
+      await XTZ_Instancce.mint(100);
+      //
+      // const op = tezos.contract.transfer(
+      //     {
+      //       to: XTZ_Instancce.address,
+      //       amount: 100,
+      //       parameter: {
+      //         entrypoint: 'mint'
+      //       }
+      //     }
+      // )
+      // await (await op).confirmation();
 
-
-      const balance = await ((await XTZ_Instancce.storage()).ledger).get(SENDER);
+      const balance = await ((await XTZ_Instancce.storage()).ledger).get(DEFAULT);
       console.log(balance);
 
 

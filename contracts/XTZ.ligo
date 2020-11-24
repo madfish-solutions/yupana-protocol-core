@@ -29,7 +29,6 @@ type approveParams is michelson_pair(trusted, "spender", amt, "value")
 type balanceParams is michelson_pair(address, "owner", contract(amt), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", trusted, "spender"), "", contract(amt), "")
 type totalSupplyParams is (unit * contract(amt))
-type mintParams is storage
 
 (* Valid entry points *)
 type entryAction is
@@ -38,7 +37,7 @@ type entryAction is
   | GetBalance of balanceParams
   | GetAllowance of allowanceParams
   | GetTotalSupply of totalSupplyParams
-  | Mint of mintParams
+  | Mint
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
