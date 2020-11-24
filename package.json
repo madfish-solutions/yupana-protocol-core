@@ -3,7 +3,9 @@
   "version": "2.0.0",
   "description": "Tezos Example Box =================",
   "dependencies": {
-    "@taquito/taquito": "^7.0.1-beta.0"
+    "@taquito/taquito": "^7.0.1-beta.0",
+    "@taquito/michelson-encoder": "latest",
+    "@taquito/signer": "latest"
   },
   "devDependencies": {
     "mocha": "^8.1.1"

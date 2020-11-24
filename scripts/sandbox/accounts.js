@@ -10,5 +10,12 @@ module.exports = {
         'tz1i3eqdPNs9zjpavVBFcF8JarJUgEErfsUK',
         'tz1PQP815EzZRktgLaEhtDCR22kiRrcQEurw',
         'tz1WP3xUvTP6vUWLRnexxnjNTYDiZ7QzVdxo',
+    ],
+    keys: [
+        {
+            pkh: 'tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb',
+            sk: 'edsk3QoqBuvdamxouPhin7swCvkQNgq4jP5KZPbwWNnwdZpSpJiEbq',
+            pk: 'edpkvGfYw3LyB1UcCahKQk4rF2tvbMUk8GFiTuMjL75uGXrpvKXhjn',
+        }
     ]
 };
