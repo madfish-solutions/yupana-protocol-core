@@ -1,21 +1,20 @@
-const { MichelsonMap } = require('@taquito/michelson-encoder');
-const { accounts } = require('../scripts/sandbox/accounts');
-const XTZ = artifacts.require('XTZ');
+const { MichelsonMap } = require("@taquito/michelson-encoder");
+const { accounts } = require("../scripts/sandbox/accounts");
+const XTZ = artifacts.require("XTZ");
 
-contract('XTZ', async () => {
-
+contract("XTZ", async () => {
   const DEFAULT = accounts[0];
   const SENDER = accounts[1];
 
-  const defaultsBalance = '1500';
-  const defaultsAmt = '15';
+  const defaultsBalance = "1500";
+  const defaultsAmt = "15";
 
-  const totalSupply = '50000';
+  const totalSupply = "50000";
 
   let XTZ_Instancce;
   let storage;
 
-  before('setup', async () => {
+  before("setup", async () => {
     storage = {
       ledger: MichelsonMap.fromLiteral({
         [DEFAULT]: {
@@ -26,26 +25,28 @@ contract('XTZ', async () => {
         },
       }),
       totalSupply: totalSupply,
-    }
+    };
 
     XTZ_Instancce = await XTZ.new(storage);
   });
 
-  describe('deploy', async () => {
-    it('should check storage after deploy', async () => {
+  describe("deploy", async () => {
+    it("should check storage after deploy", async () => {
       const xtzStorage = await XTZ_Instancce.storage();
-      const ledger = await (xtzStorage.ledger).get(DEFAULT);
+      const ledger = await xtzStorage.ledger.get(DEFAULT);
       const amt = await ledger.allowances.get(DEFAULT);
 
       assert.equal(totalSupply, xtzStorage.totalSupply);
       assert.equal(defaultsBalance, ledger.balance);
-      assert.equal(defaultsAmt, amt)
+      assert.equal(defaultsAmt, amt);
     });
   });
 
-  describe('mint', async () => {
-    it('should send value and check storage', async() => {
-      await XTZ_Instancce.mint(100);
+  describe("mint", async () => {
+    it("should send value and check storage", async () => {
+      // console.log(XTZ_Instancce);
+      await XTZ_Instancce.mint(null, { amount: 1 });
+      // 1000000
       //
       // const op = tezos.contract.transfer(
       //     {
@@ -58,11 +59,9 @@ contract('XTZ', async () => {
       // )
       // await (await op).confirmation();
 
-      const balance = await ((await XTZ_Instancce.storage()).ledger).get(DEFAULT);
+      const balance = await (await XTZ_Instancce.storage()).ledger.get(DEFAULT);
       console.log(balance);
-
-
       assert.equal(1, 1);
     });
-  })
+  });
 });

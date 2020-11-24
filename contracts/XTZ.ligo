@@ -37,7 +37,7 @@ type entryAction is
   | GetBalance of balanceParams
   | GetAllowance of allowanceParams
   | GetTotalSupply of totalSupplyParams
-  | Mint
+  | Mint of unit
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
@@ -147,6 +147,7 @@ function mint (var s : storage) : return is
   block {
     const senderAccount : account = getAccount(Tezos.sender, s);
     senderAccount.balance := senderAccount.balance + (Tezos.amount / 1mutez);
+    s.ledger[Tezos.sender] := senderAccount;
   } with (noOperations, s)
 
 (* Main entrypoint *)
@@ -159,5 +160,5 @@ function main (const action : entryAction; var s : storage) : return is
     | GetBalance(params) -> getBalance(params.0, params.1, s)
     | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
     | GetTotalSupply(params) -> getTotalSupply(params.1, s)
-    | Mint(params) -> mint(s)
+    | Mint -> mint(s)
   end;
