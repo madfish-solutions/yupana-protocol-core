@@ -29,6 +29,7 @@ type approveParams is michelson_pair(trusted, "spender", amt, "value")
 type balanceParams is michelson_pair(address, "owner", contract(amt), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", trusted, "spender"), "", contract(amt), "")
 type totalSupplyParams is (unit * contract(amt))
+type withdrawParams is (nat * unit)
 
 (* Valid entry points *)
 type entryAction is
@@ -38,6 +39,7 @@ type entryAction is
   | GetAllowance of allowanceParams
   | GetTotalSupply of totalSupplyParams
   | Mint of unit
+  | Withdraw of withdrawParams
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
@@ -146,20 +148,20 @@ function getTotalSupply (const contr : contract(amt); var s : storage) : return 
 function mint (var s : storage) : return is
   block {
     const senderAccount : account = getAccount(Tezos.sender, s);
-    senderAccount.balance := senderAccount.balance + (Tezos.amount / 1mutez);
+    senderAccount.balance := senderAccount.balance + Tezos.amount / 1mutez;
     s.ledger[Tezos.sender] := senderAccount;
   } with (noOperations, s)
 
-// function withdraw (const value : amt; var s : storage) : return is
-//   block {
-//     const senderAccount : account = getAccount(Tezos.sender, s);
-//     if senderAccount.balance < value then
-//       failwith("NotEnoughBalance")
-//     else skip;
+function withdraw (const value : amt; var s : storage) : return is
+  block {
+    const senderAccount : account = getAccount(Tezos.sender, s);
+    if senderAccount.balance < value then
+      failwith("NotEnoughBalance")
+    else skip;
 
-//     //senderAccount.balance := 1n//senderAccount.balance - value;
-//     const payoutOperation : operation = Tezos.transaction(unit, value, Tezos.sender);
-//   } with (list [payoutOperation], s)
+    senderAccount.balance := abs(senderAccount.balance - value);
+    s.ledger[Tezos.sender] := senderAccount;
+  } with (list [Tezos.transaction(unit, value * 1mutez, (get_contract(Tezos.sender) : contract(unit)))], s)
 
 (* Main entrypoint *)
 function main (const action : entryAction; var s : storage) : return is
@@ -172,4 +174,5 @@ function main (const action : entryAction; var s : storage) : return is
     | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
     | GetTotalSupply(params) -> getTotalSupply(params.1, s)
     | Mint -> mint(s)
+    | Withdraw(params) -> withdraw(params.0, s)
   end;

@@ -1,8 +1,9 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-const { InMemorySigner } = require("@taquito/signer");
+const truffleAssert = require('truffle-assertions');
 
 const { accounts } = require("../scripts/sandbox/accounts");
-const { accountsMap } = require("../scripts/sandbox/accounts");
+const { revertDefaultSigner } = require( "./helpers/signerSeter");
+const { setSigner } = require( "./helpers/signerSeter");
 
 const XTZ = artifacts.require("XTZ");
 
@@ -33,6 +34,7 @@ contract("XTZ", async () => {
     };
 
     XTZ_Instancce = await XTZ.new(storage);
+    await revertDefaultSigner();
   });
 
   describe("deploy", async () => {
@@ -53,7 +55,6 @@ contract("XTZ", async () => {
       const balanceBeforeMintS = (await (await XTZ_Instancce.storage()).ledger.get(DEFAULT)).balance;
 
       await XTZ_Instancce.mint(null, {amount: amount});
-
       const balanceAfterMintS = (await (await XTZ_Instancce.storage()).ledger.get(DEFAULT)).balance;
 
       assert.equal(balanceBeforeMintS.plus(amount * decimal).toString(),
@@ -62,13 +63,42 @@ contract("XTZ", async () => {
     it("should receive value from sender, who is not yet in storage", async () => {
       const amount = 5;
 
-      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(SENDER)));
+      await setSigner(SENDER);
 
       await XTZ_Instancce.mint(null, {amount: amount});
-
       const balanceAfterMintS = (await (await XTZ_Instancce.storage()).ledger.get(SENDER)).balance;
 
       assert.equal(amount * decimal, balanceAfterMintS);
+    });
+  });
+
+  describe("withdraw", async () => {
+    beforeEach("setup", async () => {
+      await setSigner(SENDER)
+    });
+    it("should mint and withdraw part of tez and compare balance after withdraw", async () => {
+      const amount = 10;
+      await XTZ_Instancce.mint(null, {amount: amount});
+      const balanceAfterMintS = (await (await XTZ_Instancce.storage()).ledger.get(SENDER)).balance;
+
+      assert.equal(amount * decimal, balanceAfterMintS);
+
+      const amountWithdraw = 1;
+      await XTZ_Instancce.withdraw(amountWithdraw * decimal, {s:null});
+      const balanceAfterWithdrawS = (await (await XTZ_Instancce.storage()).ledger.get(SENDER)).balance;
+
+      assert.equal((amount - amountWithdraw) * decimal, balanceAfterWithdrawS);
+    });
+    it("should get exception, not enough balance", async () => {
+      const amount = 10;
+      await XTZ_Instancce.mint(null, {amount: amount});
+      const balanceAfterMintS = (await (await XTZ_Instancce.storage()).ledger.get(SENDER)).balance;
+
+      assert.equal(amount * decimal, balanceAfterMintS);
+
+      const amountWithdraw = amount + 1;
+      await truffleAssert.fails(XTZ_Instancce.withdraw(amountWithdraw * decimal, {s:null}),
+                                truffleAssert.INVALID_OPCODE, "NotEnoughBalance")
     });
   });
 });
