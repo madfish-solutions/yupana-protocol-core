@@ -146,20 +146,19 @@ function getTotalSupply (const contr : contract(amt); var s : storage) : return 
 function mint (var s : storage) : return is
   block {
     const senderAccount : account = getAccount(Tezos.sender, s);
-    senderAccount.balance := senderAccount.balance + (Tezos.amount / 1mutez);
+    senderAccount.balance := senderAccount.balance + Tezos.amount / 1mutez;
     s.ledger[Tezos.sender] := senderAccount;
   } with (noOperations, s)
 
-// function withdraw (const value : amt; var s : storage) : return is
-//   block {
-//     const senderAccount : account = getAccount(Tezos.sender, s);
-//     if senderAccount.balance < value then
-//       failwith("NotEnoughBalance")
-//     else skip;
+function withdraw (const value : amt; var s : storage) : return is
+  block {
+    const senderAccount : account = getAccount(Tezos.sender, s);
+    if senderAccount.balance < value then
+      failwith("NotEnoughBalance")
+    else skip;
 
-//     //senderAccount.balance := 1n//senderAccount.balance - value;
-//     const payoutOperation : operation = Tezos.transaction(unit, value, Tezos.sender);
-//   } with (list [payoutOperation], s)
+    senderAccount.balance := abs(senderAccount.balance - value);
+  } with (list [Tezos.transaction(unit, value * 1mutez, (get_contract(Tezos.sender) : contract(unit)))], s)
 
 (* Main entrypoint *)
 function main (const action : entryAction; var s : storage) : return is
