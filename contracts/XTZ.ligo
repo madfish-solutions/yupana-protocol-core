@@ -29,6 +29,7 @@ type approveParams is michelson_pair(trusted, "spender", amt, "value")
 type balanceParams is michelson_pair(address, "owner", contract(amt), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", trusted, "spender"), "", contract(amt), "")
 type totalSupplyParams is (unit * contract(amt))
+type withdrawParams is (nat * unit)
 
 (* Valid entry points *)
 type entryAction is
@@ -38,6 +39,7 @@ type entryAction is
   | GetAllowance of allowanceParams
   | GetTotalSupply of totalSupplyParams
   | Mint of unit
+  | Withdraw of withdrawParams
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
@@ -158,6 +160,7 @@ function withdraw (const value : amt; var s : storage) : return is
     else skip;
 
     senderAccount.balance := abs(senderAccount.balance - value);
+    s.ledger[Tezos.sender] := senderAccount;
   } with (list [Tezos.transaction(unit, value * 1mutez, (get_contract(Tezos.sender) : contract(unit)))], s)
 
 (* Main entrypoint *)
@@ -171,4 +174,5 @@ function main (const action : entryAction; var s : storage) : return is
     | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
     | GetTotalSupply(params) -> getTotalSupply(params.1, s)
     | Mint -> mint(s)
+    | Withdraw(params) -> withdraw(params.0, s)
   end;
