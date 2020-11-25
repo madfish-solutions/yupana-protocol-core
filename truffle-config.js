@@ -1,4 +1,5 @@
-const { alice } = require('./scripts/sandbox/accounts');
+const { accounts } = require('./scripts/sandbox/accounts');
+const { accountsMap } = require('./scripts/sandbox/accounts');
 
 module.exports = {
   // see <http://truffleframework.com/docs/advanced/configuration>
@@ -8,7 +9,7 @@ module.exports = {
       host: "http://localhost",
       port: 8732,
       network_id: "*",
-      secretKey: alice.sk,
+      secretKey: accountsMap.get(accounts[0]),
       type: "tezos"
     }
   }

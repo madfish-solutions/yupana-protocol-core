@@ -29,7 +29,6 @@ type approveParams is michelson_pair(trusted, "spender", amt, "value")
 type balanceParams is michelson_pair(address, "owner", contract(amt), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", trusted, "spender"), "", contract(amt), "")
 type totalSupplyParams is (unit * contract(amt))
-//type mintParams is ()
 
 (* Valid entry points *)
 type entryAction is
@@ -38,7 +37,7 @@ type entryAction is
   | GetBalance of balanceParams
   | GetAllowance of allowanceParams
   | GetTotalSupply of totalSupplyParams
-  //| Mint //of mintParams
+  | Mint of unit
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
@@ -144,11 +143,23 @@ function getTotalSupply (const contr : contract(amt); var s : storage) : return 
     skip
   } with (list [transaction(s.totalSupply, 0tz, contr)], s)
 
-// function mint (var s : storage) : return is
+function mint (var s : storage) : return is
+  block {
+    const senderAccount : account = getAccount(Tezos.sender, s);
+    senderAccount.balance := senderAccount.balance + (Tezos.amount / 1mutez);
+    s.ledger[Tezos.sender] := senderAccount;
+  } with (noOperations, s)
+
+// function withdraw (const value : amt; var s : storage) : return is
 //   block {
 //     const senderAccount : account = getAccount(Tezos.sender, s);
-//     senderAccount.balance := senderAccount.balance + (Tezos.amount / 1mutez);
-//   } with (noOperations, s)
+//     if senderAccount.balance < value then
+//       failwith("NotEnoughBalance")
+//     else skip;
+
+//     //senderAccount.balance := 1n//senderAccount.balance - value;
+//     const payoutOperation : operation = Tezos.transaction(unit, value, Tezos.sender);
+//   } with (list [payoutOperation], s)
 
 (* Main entrypoint *)
 function main (const action : entryAction; var s : storage) : return is
@@ -160,5 +171,5 @@ function main (const action : entryAction; var s : storage) : return is
     | GetBalance(params) -> getBalance(params.0, params.1, s)
     | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
     | GetTotalSupply(params) -> getTotalSupply(params.1, s)
-    //| Mint(params) -> mint(s)
+    | Mint -> mint(s)
   end;
