@@ -1,12 +1,8 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-
 const { InMemorySigner } = require("@taquito/signer");
 
-const { networks } = require("../truffle-config");
-const { TezosToolkit } = require("@taquito/taquito");
-const Tezos = new TezosToolkit(networks.development.host + ":" + networks.development.port);
-
 const { accounts } = require("../scripts/sandbox/accounts");
+const { accountsMap } = require("../scripts/sandbox/accounts");
 
 const XTZ = artifacts.require("XTZ");
 
@@ -65,32 +61,14 @@ contract("XTZ", async () => {
     });
     it("should receive value from sender, who is not yet in storage", async () => {
       const amount = 5;
-      const balanceBeforeMint = await Tezos.tz.getBalance(SENDER);
 
-      let config = {
-        signer: await InMemorySigner.fromSecretKey('edsk3RFfvaFaxbHx8BMtEW1rKQcPtDML3LXjNqMNLCzC3wLC1bWbAt'),
-      };
-      let config2 = {
-        signer: 'edsk3RFfvaFaxbHx8BMtEW1rKQcPtDML3LXjNqMNLCzC3wLC1bWbAt'
-      }
-      Tezos.setProvider(config);
-      Tezos.setSignerProvider(config)
-      Tezos.setSignerProvider('edsk3RFfvaFaxbHx8BMtEW1rKQcPtDML3LXjNqMNLCzC3wLC1bWbAt')
-      Tezos.setSignerProvider(config2)
-      await Tezos.setSignerProvider(config2)
-      Tezos.setSignerProvider(await new InMemorySigner.fromSecretKey('edsk3RFfvaFaxbHx8BMtEW1rKQcPtDML3LXjNqMNLCzC3wLC1bWbAt'));
-      await Tezos.setSignerProvider(await new InMemorySigner.fromSecretKey('edsk3RFfvaFaxbHx8BMtEW1rKQcPtDML3LXjNqMNLCzC3wLC1bWbAt'));
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(SENDER)));
 
-      const tx = await XTZ_Instancce.mint(null, {amount: amount});
-      const balanceAfterMint = await Tezos.tz.getBalance(SENDER);
+      await XTZ_Instancce.mint(null, {amount: amount});
 
-      console.log('PK', await tezos.signer.publicKeyHash())
+      const balanceAfterMintS = (await (await XTZ_Instancce.storage()).ledger.get(SENDER)).balance;
 
-      console.log('balance', balanceBeforeMint.toString());
-      console.log('after', balanceAfterMint.toString());
-      console.log('FROOOM', tx.receipt.source);
-
-      //const balanceAfterMintS = (await (await XTZ_Instancce.storage()).ledger.get(DEFAULT)).balance;
+      assert.equal(amount * decimal, balanceAfterMintS);
     });
   });
 });
