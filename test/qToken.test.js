@@ -10,6 +10,19 @@ const qToken = artifacts.require("qToken");
 contract("qToken", async () => {
     const DEFAULT = accounts[0];
 
+    const lastUpdateTime = "2000-01-01T10:10:10.000Z";
+    const totalBorrows = 1e+5;
+    const totalLiquid = 1e+5;
+    const totalSupply = 1e+5;
+    const totalReserves = 1e+5;
+    const borrowIndex = 1e+5;
+    const accountBorrows = MichelsonMap.fromLiteral({
+        [DEFAULT]: 1e+5,
+    });
+    const accountTokens = MichelsonMap.fromLiteral({
+            [DEFAULT]: 1e+5,
+        });
+
     let storage;
     let qTokenInstance;
 
@@ -17,18 +30,14 @@ contract("qToken", async () => {
         storage = {
             owner:          DEFAULT,
             admin:          DEFAULT,
-            lastUpdateTime: "2000-01-01T10:10:10.000Z",
-            totalBorrows:   0,
-            totalLiquid:    0,
-            totalSupply:    0,
-            totalReserves:  0,
-            borrowIndex:    0,
-            accountBorrows: MichelsonMap.fromLiteral({
-                            [DEFAULT]: 0,
-            }),
-            accountTokens:  MichelsonMap.fromLiteral({
-                            [DEFAULT]: 0,
-            }),
+            lastUpdateTime: lastUpdateTime,
+            totalBorrows:   totalBorrows,
+            totalLiquid:    totalLiquid,
+            totalSupply:    totalSupply,
+            totalReserves:  totalReserves,
+            borrowIndex:    borrowIndex,
+            accountBorrows: accountBorrows,
+            accountTokens:  accountTokens,
         };
 
         qTokenInstance = await qToken.new(storage);
@@ -40,14 +49,14 @@ contract("qToken", async () => {
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(DEFAULT, qTokenStorage.owner);
             assert.equal(DEFAULT, qTokenStorage.admin);
-            assert.equal("2000-01-01T10:10:10.000Z", qTokenStorage.lastUpdateTime);
-            assert.equal(0, qTokenStorage.totalBorrows);
-            assert.equal(0, qTokenStorage.totalLiquid);
-            assert.equal(0, qTokenStorage.totalSupply);
-            assert.equal(0, qTokenStorage.totalReserves);
-            assert.equal(0, qTokenStorage.borrowIndex);
-            assert.equal(0, await qTokenStorage.accountBorrows.get(DEFAULT));
-            assert.equal(0, await qTokenStorage.accountTokens.get(DEFAULT));
+            assert.equal(lastUpdateTime, qTokenStorage.lastUpdateTime);
+            assert.equal(totalBorrows, qTokenStorage.totalBorrows);
+            assert.equal(totalLiquid, qTokenStorage.totalLiquid);
+            assert.equal(totalSupply, qTokenStorage.totalSupply);
+            assert.equal(totalReserves, qTokenStorage.totalReserves);
+            assert.equal(borrowIndex, qTokenStorage.borrowIndex);
+            assert.equal(1e+5, await qTokenStorage.accountBorrows.get(DEFAULT));
+            assert.equal(1e+5, await qTokenStorage.accountTokens.get(DEFAULT));
         });
     });
 
@@ -88,8 +97,10 @@ contract("qToken", async () => {
     });
 
     describe("updateInterest", async () => {
-        it("TODO", async () => {
-
+        it("should get expected value", async () => {
+            await qTokenInstance.updateInterest({s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+            console.log(qTokenStorage)
         });
     });
 });
