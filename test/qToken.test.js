@@ -96,9 +96,9 @@ contract("qToken", async () => {
         });
     });
 
-    describe("updateInterest", async () => {
+    describe.only("updateInterest", async () => {
         it("should get expected value", async () => {
-            await qTokenInstance.updateInterest({s: null});
+            await qTokenInstance.mint(DEFAULT, 100, {s: null});
             const qTokenStorage = await qTokenInstance.storage();
             console.log(qTokenStorage)
         });

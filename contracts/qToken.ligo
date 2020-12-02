@@ -19,7 +19,11 @@ const noOperations : list (operation) = nil;
 type entryAction is
   | SetAdmin of (address * unit)
   | SetOwner of (address * unit)
-  | UpdateInterest of unit
+  | Mint of (address * nat * unit)
+  | Redeem of (address * nat * unit)
+  | Borrow of (address * nat * unit)
+  | Repay of (address * nat * unit)
+  | Liquidate of (address * address * nat * nat * unit)
 
 function getBorrows(const addr : address; const s : storage) : nat is
   case s.accountBorrows[addr] of
@@ -59,7 +63,7 @@ function setOwner(const newOwner : address; var s : storage) : return is
     s.owner := newOwner;
   } with (noOperations, s)
 
-function updateInterest(var s : storage) : return is
+function updateInterest(var s : storage) : storage is
   block {
     const hundredPercent : nat = 1000000000n;
     const apr : nat = 25000000n; // 2.5% (0.025)
@@ -70,21 +74,21 @@ function updateInterest(var s : storage) : return is
     const utilizationBasePerSec : nat = utilizationBase / secondsPerYear; // 0.0000000063419584
     const debtRatePerSec : nat = apr / secondsPerYear; // 0.0000000007927448
     const utilizationRate : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
-    const borrowRatePerSec : nat = utilizationRate * utilizationBasePerSec + debtRatePerSec;
+    const borrowRatePerSec : nat = (utilizationRate * utilizationBasePerSec) / hundredPercent + (debtRatePerSec / hundredPercent);
     const simpleInterestFactor : nat = borrowRatePerSec * abs(Tezos.now - s.lastUpdateTime);
     const interestAccumulated : nat = simpleInterestFactor * s.totalBorrows;
 
     s.totalBorrows := interestAccumulated + s.totalBorrows;
-    s.totalReserves := interestAccumulated * reserveFactor + s.totalReserves; // todo reserve
+    s.totalReserves := interestAccumulated * reserveFactor / hundredPercent + s.totalReserves;
     s.borrowIndex := simpleInterestFactor * s.borrowIndex + s.borrowIndex;
-  } with (noOperations, s)
+  } with (s)
 
 // TODO FOR ALL add total liqudity
 // TODO FOR ALL add operations
-// TODO FOR ALL CALL updateInterest() before any action
 function mint(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    s := updateInterest(s);
 
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
     const mintTokens : nat = amt / exchangeRate;
@@ -97,6 +101,7 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
 function redeem(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    s := updateInterest(s);
 
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
     const burnTokens : nat = amt / exchangeRate;
@@ -109,6 +114,7 @@ function redeem(const user : address; const amt : nat; var s : storage) : return
 function borrow(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    s := updateInterest(s);
 
     const accountBorrows : nat = getBorrows(user, s);
     s.accountBorrows[user] := accountBorrows + amt;
@@ -118,6 +124,7 @@ function borrow(const user : address; const amt : nat; var s : storage) : return
 function repay(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    s := updateInterest(s);
 
     const accountBorrows : nat = getBorrows(user, s);
     s.accountBorrows[user] := abs((accountBorrows * s.borrowIndex) - amt); 
@@ -128,16 +135,14 @@ function liquidate(const user : address; const borrower : address; const amt : n
                    const collateral : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    s := updateInterest(s);
 
     // if amt == 0 // todo
-
+    const hundredPercent : nat = 1000000000n;
     const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const seizeTokens : nat = amt * liquidationIncentive / exchangeRate;
+    const seizeTokens : nat = amt * liquidationIncentive / hundredPercent / exchangeRate;
 
-    
-    //mock
-    s.totalBorrows := 1n;
   } with (noOperations, s)
 
 function main(const action : entryAction; var s : storage) : return is
@@ -146,5 +151,9 @@ function main(const action : entryAction; var s : storage) : return is
   } with case action of
     | SetAdmin(params) -> setAdmin(params.0, s)
     | SetOwner(params) -> setOwner(params.0, s)
-    | UpdateInterest -> updateInterest(s)
+    | Mint(params) -> mint(params.0, params.1, s)
+    | Redeem(params) -> redeem(params.0, params.1, s)
+    | Borrow(params) -> borrow(params.0, params.1, s)
+    | Repay(params) -> repay(params.0, params.1, s)
+    | Liquidate(params) -> liquidate(params.0, params.1, params.2, params.3, s)
   end;
