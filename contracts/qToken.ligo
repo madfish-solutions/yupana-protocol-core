@@ -131,18 +131,26 @@ function repay(const user : address; const amt : nat; var s : storage) : return 
     s.totalBorrows := abs(s.totalBorrows - amt);
   } with (noOperations, s)
 
-function liquidate(const user : address; const borrower : address; const amt : nat;
+function liquidate(const user : address; const borrower : address; var amt : nat;
                    const collateral : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
+    if user = borrower then
+      failwith("BorrowerCannotBeLiquidator")
+    else skip;
 
-    // if amt == 0 // todo
+    if amt = 0n then
+      amt := getBorrows(borrower, s)
+    else skip;
+
+
     const hundredPercent : nat = 1000000000n;
     const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
     const seizeTokens : nat = amt * liquidationIncentive / hundredPercent / exchangeRate;
-
+    s.accountBorrows[borrower] := abs(getBorrows(borrower, s) - seizeTokens);
+    s.accountTokens[user] := getTokens(user, s) + seizeTokens;
   } with (noOperations, s)
 
 function main(const action : entryAction; var s : storage) : return is
