@@ -7,7 +7,7 @@ const { setSigner } = require( "./helpers/signerSeter");
 
 const qToken = artifacts.require("qToken");
 
-contract("qToken", async () => {
+contract.only("qToken", async () => {
     const DEFAULT = accounts[0];
 
     const lastUpdateTime = "2000-01-01T10:10:10.000Z";
@@ -96,7 +96,7 @@ contract("qToken", async () => {
         });
     });
 
-    describe.only("updateInterest", async () => {
+    describe("updateInterest", async () => {
         it("should get expected value", async () => {
             await qTokenInstance.mint(DEFAULT, 100, {s: null});
             const qTokenStorage = await qTokenInstance.storage();

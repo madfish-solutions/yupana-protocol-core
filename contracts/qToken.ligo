@@ -27,24 +27,24 @@ type entryAction is
 
 function getBorrows(const addr : address; const s : storage) : nat is
   case s.accountBorrows[addr] of
-    Some (nat) -> nat
+    Some (value) -> value
   | None -> 0n
   end;
 
 function getTokens(const addr : address; const s : storage) : nat is
   case s.accountTokens[addr] of
-    Some (nat) -> nat
+    Some (value) -> value
   | None -> 0n
   end;
 
-function mustBeOwner(const s : storage) : unit is
+[@inline] function mustBeOwner(const s : storage) : unit is
   block {
     if Tezos.sender =/= s.owner then
       failwith("NotOwner")
     else skip;
   } with (unit)
 
-function mustBeAdmin(const s : storage) : unit is
+[@inline] function mustBeAdmin(const s : storage) : unit is
   block {
     if Tezos.sender =/= s.admin then
       failwith("NotAdmin")
@@ -65,16 +65,16 @@ function setOwner(const newOwner : address; var s : storage) : return is
 
 function updateInterest(var s : storage) : storage is
   block {
-    const hundredPercent : nat = 1000000000n;
-    const apr : nat = 25000000n; // 2.5% (0.025)
-    const utilizationBase : nat = 200000000n; // 20% (0.2)
+    const hundredPercent : nat = 10000000000000000n;
+    const apr : nat = 250000000000000n; // 2.5% (0.025)
+    const utilizationBase : nat = 2000000000000000n; // 20% (0.2)
     const secondsPerYear : nat = 31536000n;
-    const reserveFactor : nat = 1000000n;// 0.1% (0.001)
+    const reserveFactor : nat = 10000000000000n;// 0.1% (0.001)
+    const utilizationBasePerSec : nat = 63419584n; // utilizationBase / secondsPerYear; 0.0000000063419584
+    const debtRatePerSec : nat = 7927448n; // apr / secondsPerYear; 0.0000000007927448
 
-    const utilizationBasePerSec : nat = utilizationBase / secondsPerYear; // 0.0000000063419584
-    const debtRatePerSec : nat = apr / secondsPerYear; // 0.0000000007927448
     const utilizationRate : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
-    const borrowRatePerSec : nat = (utilizationRate * utilizationBasePerSec) / hundredPercent + (debtRatePerSec / hundredPercent);
+    const borrowRatePerSec : nat = (utilizationRate * utilizationBasePerSec + debtRatePerSec) / hundredPercent;
     const simpleInterestFactor : nat = borrowRatePerSec * abs(Tezos.now - s.lastUpdateTime);
     const interestAccumulated : nat = simpleInterestFactor * s.totalBorrows;
 
@@ -96,6 +96,7 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
     const accountTokens : nat = getTokens(user, s);
     s.accountTokens[user] := accountTokens + mintTokens;
     s.totalSupply := s.totalSupply + mintTokens;
+    s.totalLiquid := s.totalLiquid + 1n;
   } with (noOperations, s)
 
 function redeem(const user : address; const amt : nat; var s : storage) : return is
@@ -109,11 +110,15 @@ function redeem(const user : address; const amt : nat; var s : storage) : return
     const accountTokens : nat = getTokens(user, s);
     s.accountTokens[user] := abs(accountTokens - burnTokens);
     s.totalSupply := abs(s.totalSupply - burnTokens);
+    s.totalLiquid := abs(s.totalLiquid - 1n);
   } with (noOperations, s)
 
 function borrow(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    if s.totalLiquid < amt then
+      failwith("AmountShouldBeGreater")
+    else skip;
     s := updateInterest(s);
 
     const accountBorrows : nat = getBorrows(user, s);
