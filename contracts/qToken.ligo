@@ -1,3 +1,9 @@
+type borrows is
+  record [
+    amount           :nat;
+    lastBorrowIndex  :nat;
+  ]
+
 type storage is
   record [
     owner           :address;
@@ -8,7 +14,7 @@ type storage is
     totalSupply     :nat;
     totalReserves   :nat;
     borrowIndex     :nat;
-    accountBorrows  :big_map(address, nat);
+    accountBorrows  :big_map(address, borrows);
     accountTokens   :big_map(address, nat);
   ]
 
@@ -25,11 +31,18 @@ type entryAction is
   | Repay of (address * nat * unit)
   | Liquidate of (address * address * nat * nat * unit)
 
-function getBorrows(const addr : address; const s : storage) : nat is
-  case s.accountBorrows[addr] of
-    Some (value) -> value
-  | None -> 0n
-  end;
+function getBorrows(const addr : address; const s : storage) : borrows is
+  block {
+    var b : borrows :=
+      record [
+        amount          = 0n;
+        lastBorrowIndex = 0n;
+      ];
+    case s.accountBorrows[addr] of
+      None -> skip
+    | Some(value) -> b := value
+    end;
+  } with b
 
 function getTokens(const addr : address; const s : storage) : nat is
   case s.accountTokens[addr] of
@@ -121,8 +134,11 @@ function borrow(const user : address; const amt : nat; var s : storage) : return
     else skip;
     s := updateInterest(s);
 
-    const accountBorrows : nat = getBorrows(user, s);
-    s.accountBorrows[user] := accountBorrows + amt;
+    var accountBorrows : borrows := getBorrows(user, s);
+    accountBorrows.amount := accountBorrows.amount + amt;
+    accountBorrows.lastBorrowIndex := s.borrowIndex;
+
+    s.accountBorrows[user] := accountBorrows;
     s.totalBorrows := s.totalBorrows + amt;
   } with (noOperations, s)
 
@@ -131,8 +147,12 @@ function repay(const user : address; const amt : nat; var s : storage) : return 
     mustBeAdmin(s);
     s := updateInterest(s);
 
-    const accountBorrows : nat = getBorrows(user, s);
-    s.accountBorrows[user] := abs((accountBorrows * s.borrowIndex) - amt); 
+    var accountBorrows : borrows := getBorrows(user, s);
+    accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
+    accountBorrows.amount := abs(accountBorrows.amount - amt);
+    accountBorrows.lastBorrowIndex := s.borrowIndex;
+
+    s.accountBorrows[user] := accountBorrows;
     s.totalBorrows := abs(s.totalBorrows - amt);
   } with (noOperations, s)
 
@@ -145,8 +165,13 @@ function liquidate(const user : address; const borrower : address; var amt : nat
       failwith("BorrowerCannotBeLiquidator")
     else skip;
 
+    var userBorrows : borrows := getBorrows(user, s);
+    userBorrows.lastBorrowIndex := s.borrowIndex;
+    s.accountBorrows[user] := userBorrows;
+
+    var debtorBorrows : borrows := getBorrows(borrower, s);
     if amt = 0n then
-      amt := getBorrows(borrower, s)
+      amt := debtorBorrows.amount
     else skip;
 
 
@@ -154,7 +179,10 @@ function liquidate(const user : address; const borrower : address; var amt : nat
     const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
     const seizeTokens : nat = amt * liquidationIncentive / hundredPercent / exchangeRate;
-    s.accountBorrows[borrower] := abs(getBorrows(borrower, s) - seizeTokens);
+
+    debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
+
+    s.accountBorrows[borrower] := debtorBorrows;
     s.accountTokens[user] := getTokens(user, s) + seizeTokens;
   } with (noOperations, s)
 
