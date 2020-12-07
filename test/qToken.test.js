@@ -7,8 +7,9 @@ const { setSigner } = require( "./helpers/signerSeter");
 
 const qToken = artifacts.require("qToken");
 
-contract.only("qToken", async () => {
+contract("qToken", async () => {
     const DEFAULT = accounts[0];
+    const RECEIVER = accounts[1];
 
     const lastUpdateTime = "2000-01-01T10:10:10.000Z";
     const totalBorrows = 1e+5;
@@ -17,7 +18,10 @@ contract.only("qToken", async () => {
     const totalReserves = 1e+5;
     const borrowIndex = 1e+5;
     const accountBorrows = MichelsonMap.fromLiteral({
-        [DEFAULT]: 1e+5,
+        [DEFAULT]: {
+            amount:          1e+5,
+            lastBorrowIndex: 1e+5,
+        }
     });
     const accountTokens = MichelsonMap.fromLiteral({
             [DEFAULT]: 1e+5,
@@ -54,8 +58,10 @@ contract.only("qToken", async () => {
             assert.equal(totalSupply, qTokenStorage.totalSupply);
             assert.equal(totalReserves, qTokenStorage.totalReserves);
             assert.equal(borrowIndex, qTokenStorage.borrowIndex);
-            assert.equal(1e+5, await qTokenStorage.accountBorrows.get(DEFAULT));
-            assert.equal(1e+5, await qTokenStorage.accountTokens.get(DEFAULT));
+            let actual = await qTokenStorage.accountBorrows.get(DEFAULT);
+            assert.equal(accountBorrows.get(DEFAULT).amount, actual.amount);
+            assert.equal(accountBorrows.get(DEFAULT).lastBorrowIndex, actual.lastBorrowIndex);
+            assert.equal(accountTokens.get(DEFAULT), await qTokenStorage.accountTokens.get(DEFAULT));
         });
     });
 
@@ -95,11 +101,125 @@ contract.only("qToken", async () => {
         });
     });
 
-    describe("updateInterest", async () => {
-        it("should get expected value", async () => {
-            await qTokenInstance.mint(DEFAULT, 100, {s: null});
+    describe("mint", async () => {
+        it("should mint tokens", async () => {
+            const amount = 100;
+
+            await qTokenInstance.mint(RECEIVER, amount, {s: null});
             const qTokenStorage = await qTokenInstance.storage();
-            console.log(qTokenStorage)
+
+            assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(totalLiquid + 1, qTokenStorage.totalLiquid);
+            assert.equal(totalSupply + amount, qTokenStorage.totalSupply);
+        });
+    });
+
+    describe("redeem", async () => {
+        const amount = 100;
+        const _totalLiquid = totalLiquid + 1;
+        const _totalSupply = totalSupply + amount;
+        beforeEach("setup, mint 100 tokens on receiver", async () => {
+            await qTokenInstance.mint(RECEIVER, amount, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+
+            assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(_totalSupply, qTokenStorage.totalSupply);
+            assert.equal(_totalLiquid, qTokenStorage.totalLiquid);
+        });
+        it("should redeem amount", async () => {
+            await qTokenInstance.redeem(RECEIVER, amount, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+
+            assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(_totalSupply - amount, qTokenStorage.totalSupply);
+            assert.equal(_totalLiquid - 1, qTokenStorage.totalLiquid);
+        });
+        it("should redeem all users tokens, pass 0 as amount", async () => {
+            const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
+            await qTokenInstance.redeem(RECEIVER, 0, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+
+            assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(_totalSupply - usersTokens, qTokenStorage.totalSupply);
+            assert.equal(_totalLiquid - 1, qTokenStorage.totalLiquid);
+        });
+        it("should redeem 50 tokens", async () => {
+            const amountTo = 50;
+            const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
+            await qTokenInstance.redeem(RECEIVER, amountTo, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+
+            assert.equal(usersTokens - amountTo, await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(_totalSupply - amountTo, qTokenStorage.totalSupply);
+            assert.equal(_totalLiquid - 1, qTokenStorage.totalLiquid);
+        });
+    });
+
+    describe("borrow", async () => {
+        it("should borrow tokens", async () => {
+            const amount = 100;
+
+            await qTokenInstance.borrow(RECEIVER, amount, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+            const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
+
+            assert.equal(amount, _accountBorrows.amount);
+            assert.equal(totalBorrows + amount, qTokenStorage.totalBorrows);
+        });
+        it("should get exception, total liquid less than amount", async () => {
+            const amount = totalLiquid + 1;
+
+            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount, {s: null}),
+                truffleAssert.INVALID_OPCODE, "AmountTooBig");
+        });
+    });
+
+    describe("repay", async () => {
+        it("should repay tokens", async () => {
+            const amount = 100;
+
+            await qTokenInstance.borrow(RECEIVER, amount, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+            const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
+
+            assert.equal(amount, _accountBorrows.amount);
+            assert.equal(totalBorrows + amount, qTokenStorage.totalBorrows);
+        });
+    });
+
+    describe.only("liquidate", async () => {
+        const amount = 100;
+        const LIQUIDATOR = accounts[3];
+        beforeEach("setup, borrow 100 tokens on receiver", async () => {
+            await qTokenInstance.borrow(RECEIVER, amount, {s: null});
+            const qTokenStorage = await qTokenInstance.storage();
+            const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
+
+            assert.equal(amount, _accountBorrows.amount);
+            assert.equal(totalBorrows + amount, qTokenStorage.totalBorrows);
+        });
+        it("should liquidate borrow", async () => {
+            // TODO
+            // let qTokenStorage = await qTokenInstance.storage();
+            // await qTokenStorage.accountTokens.get(LIQUIDATOR);
+            // const BliquidatorTokens = await qTokenStorage.accountTokens.get(LIQUIDATOR);
+            // const BreceiverBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
+            // console.log("liqd tokens before", BliquidatorTokens);
+            // console.log("receiver borrows before", BreceiverBorrows);
+            // /////////////////////////////////////////////
+            // await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amount, 0, {s: null});
+            // qTokenStorage = await qTokenInstance.storage();
+            // //console.log(qTokenStorage);
+            // const receiverBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
+            // const liquidatorTokens = await qTokenStorage.accountTokens.get(LIQUIDATOR);
+            // console.log("receiver borrows", receiverBorrows);
+            // console.log("liqd tokens", liquidatorTokens);
+        });
+        it("should get exception, borrower is liquidator", async () => {
+            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amount, 0, {s: null}),
+                truffleAssert.INVALID_OPCODE, "BorrowerCannotBeLiquidator");
+        });
+        it("TODO amt = 0 test", async () => {
         });
     });
 });

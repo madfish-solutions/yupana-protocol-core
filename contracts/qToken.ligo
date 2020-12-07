@@ -119,7 +119,12 @@ function redeem(const user : address; const amt : nat; var s : storage) : return
 
     var burnTokens : nat := 0n;
     const accountTokens : nat = getTokens(user, s);
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+    var exchangeRate : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+
+    if exchangeRate = 0n then
+      exchangeRate := 1n;
+    else skip;
+
     if amt = 0n then
       burnTokens := accountTokens;
     else
@@ -135,7 +140,7 @@ function borrow(const user : address; const amt : nat; var s : storage) : return
   block {
     mustBeAdmin(s);
     if s.totalLiquid < amt then
-      failwith("AmountShouldBeGreater")
+      failwith("AmountTooBig")
     else skip;
     s := updateInterest(s);
 
