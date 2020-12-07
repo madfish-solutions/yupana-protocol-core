@@ -68,7 +68,7 @@ contract("qToken", async () => {
     describe("setAdmin", async () => {
         it("should set new admin", async () => {
             const newAdmin = accounts[1];
-            await qTokenInstance.setAdmin(newAdmin, {s: null});
+            await qTokenInstance.setAdmin(newAdmin);
 
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(newAdmin, qTokenStorage.admin);
@@ -78,7 +78,7 @@ contract("qToken", async () => {
             const newAdmin = accounts[2];
             await setSigner(notOwner);
 
-            await truffleAssert.fails(qTokenInstance.setAdmin(newAdmin, {s: null}),
+            await truffleAssert.fails(qTokenInstance.setAdmin(newAdmin),
                                       truffleAssert.INVALID_OPCODE, "NotOwner");
         });
     });
@@ -86,7 +86,7 @@ contract("qToken", async () => {
     describe("setOwner", async () => {
         it("should set new owner", async () => {
             const newOwner = accounts[1];
-            await qTokenInstance.setOwner(newOwner, {s: null});
+            await qTokenInstance.setOwner(newOwner);
 
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(newOwner, qTokenStorage.owner);
@@ -96,7 +96,7 @@ contract("qToken", async () => {
             const newOwner = accounts[2];
             await setSigner(notOwner);
 
-            await truffleAssert.fails(qTokenInstance.setOwner(newOwner, {s: null}),
+            await truffleAssert.fails(qTokenInstance.setOwner(newOwner),
                                       truffleAssert.INVALID_OPCODE, "NotOwner");
         });
     });
@@ -105,7 +105,7 @@ contract("qToken", async () => {
         it("should mint tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.mint(RECEIVER, amount, {s: null});
+            await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -119,7 +119,7 @@ contract("qToken", async () => {
         const _totalLiquid = totalLiquid + 1;
         const _totalSupply = totalSupply + amount;
         beforeEach("setup, mint 100 tokens on receiver", async () => {
-            await qTokenInstance.mint(RECEIVER, amount, {s: null});
+            await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -127,7 +127,7 @@ contract("qToken", async () => {
             assert.equal(_totalLiquid, qTokenStorage.totalLiquid);
         });
         it("should redeem amount", async () => {
-            await qTokenInstance.redeem(RECEIVER, amount, {s: null});
+            await qTokenInstance.redeem(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -136,7 +136,7 @@ contract("qToken", async () => {
         });
         it("should redeem all users tokens, pass 0 as amount", async () => {
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
-            await qTokenInstance.redeem(RECEIVER, 0, {s: null});
+            await qTokenInstance.redeem(RECEIVER, 0);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -146,7 +146,7 @@ contract("qToken", async () => {
         it("should redeem 50 tokens", async () => {
             const amountTo = 50;
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
-            await qTokenInstance.redeem(RECEIVER, amountTo, {s: null});
+            await qTokenInstance.redeem(RECEIVER, amountTo);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(usersTokens - amountTo, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -159,7 +159,7 @@ contract("qToken", async () => {
         it("should borrow tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.borrow(RECEIVER, amount, {s: null});
+            await qTokenInstance.borrow(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
@@ -169,7 +169,7 @@ contract("qToken", async () => {
         it("should get exception, total liquid less than amount", async () => {
             const amount = totalLiquid + 1;
 
-            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount, {s: null}),
+            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount),
                 truffleAssert.INVALID_OPCODE, "AmountTooBig");
         });
     });
@@ -178,7 +178,7 @@ contract("qToken", async () => {
         it("should repay tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.borrow(RECEIVER, amount, {s: null});
+            await qTokenInstance.borrow(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
@@ -187,11 +187,11 @@ contract("qToken", async () => {
         });
     });
 
-    describe.only("liquidate", async () => {
+    describe("liquidate", async () => {
         const amount = 100;
         const LIQUIDATOR = accounts[3];
         beforeEach("setup, borrow 100 tokens on receiver", async () => {
-            await qTokenInstance.borrow(RECEIVER, amount, {s: null});
+            await qTokenInstance.borrow(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
@@ -207,7 +207,7 @@ contract("qToken", async () => {
             // console.log("liqd tokens before", BliquidatorTokens);
             // console.log("receiver borrows before", BreceiverBorrows);
             // /////////////////////////////////////////////
-            // await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amount, 0, {s: null});
+            // await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amount, 0);
             // qTokenStorage = await qTokenInstance.storage();
             // //console.log(qTokenStorage);
             // const receiverBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
@@ -216,7 +216,7 @@ contract("qToken", async () => {
             // console.log("liqd tokens", liquidatorTokens);
         });
         it("should get exception, borrower is liquidator", async () => {
-            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amount, 0, {s: null}),
+            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amount, 0),
                 truffleAssert.INVALID_OPCODE, "BorrowerCannotBeLiquidator");
         });
         it("TODO amt = 0 test", async () => {

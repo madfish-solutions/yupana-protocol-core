@@ -23,13 +23,13 @@ type return is list (operation) * storage
 const noOperations : list (operation) = nil;
 
 type entryAction is
-  | SetAdmin of (address * unit)
-  | SetOwner of (address * unit)
-  | Mint of (address * nat * unit)
-  | Redeem of (address * nat * unit)
-  | Borrow of (address * nat * unit)
-  | Repay of (address * nat * unit)
-  | Liquidate of (address * address * nat * nat * unit)
+  | SetAdmin of address
+  | SetOwner of address
+  | Mint of (address * nat)
+  | Redeem of (address * nat)
+  | Borrow of (address * nat)
+  | Repay of (address * nat)
+  | Liquidate of (address * address * nat * nat)
 
 function getBorrows(const addr : address; const s : storage) : borrows is
   block {
@@ -200,8 +200,8 @@ function main(const action : entryAction; var s : storage) : return is
   block {
     skip
   } with case action of
-    | SetAdmin(params) -> setAdmin(params.0, s)
-    | SetOwner(params) -> setOwner(params.0, s)
+    | SetAdmin(params) -> setAdmin(params, s)
+    | SetOwner(params) -> setOwner(params, s)
     | Mint(params) -> mint(params.0, params.1, s)
     | Redeem(params) -> redeem(params.0, params.1, s)
     | Borrow(params) -> borrow(params.0, params.1, s)
