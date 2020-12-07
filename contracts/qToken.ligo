@@ -117,10 +117,15 @@ function redeem(const user : address; const amt : nat; var s : storage) : return
     mustBeAdmin(s);
     s := updateInterest(s);
 
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const burnTokens : nat = amt / exchangeRate;
-
+    var burnTokens : nat := 0n;
     const accountTokens : nat = getTokens(user, s);
+    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+    if amt = 0n then
+      burnTokens := accountTokens;
+    else
+      burnTokens := amt / exchangeRate;
+
+    
     s.accountTokens[user] := abs(accountTokens - burnTokens);
     s.totalSupply := abs(s.totalSupply - burnTokens);
     s.totalLiquid := abs(s.totalLiquid - 1n);

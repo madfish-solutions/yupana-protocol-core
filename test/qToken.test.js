@@ -39,7 +39,6 @@ contract.only("qToken", async () => {
             accountBorrows: accountBorrows,
             accountTokens:  accountTokens,
         };
-
         qTokenInstance = await qToken.new(storage);
         await revertDefaultSigner();
     });
