@@ -109,14 +109,14 @@ contract("qToken", async () => {
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
-            assert.equal(totalLiquid + 1, qTokenStorage.totalLiquid);
+            assert.equal(totalLiquid + amount, qTokenStorage.totalLiquid);
             assert.equal(totalSupply + amount, qTokenStorage.totalSupply);
         });
     });
 
     describe("redeem", async () => {
         const amount = 100;
-        const _totalLiquid = totalLiquid + 1;
+        const _totalLiquid = totalLiquid + amount;
         const _totalSupply = totalSupply + amount;
         beforeEach("setup, mint 100 tokens on receiver", async () => {
             await qTokenInstance.mint(RECEIVER, amount);
@@ -132,16 +132,15 @@ contract("qToken", async () => {
 
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - amount, qTokenStorage.totalSupply);
-            assert.equal(_totalLiquid - 1, qTokenStorage.totalLiquid);
+            assert.equal(_totalLiquid - amount, qTokenStorage.totalLiquid);
         });
         it("should redeem all users tokens, pass 0 as amount", async () => {
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
             await qTokenInstance.redeem(RECEIVER, 0);
             const qTokenStorage = await qTokenInstance.storage();
-
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - usersTokens, qTokenStorage.totalSupply);
-            assert.equal(_totalLiquid - 1, qTokenStorage.totalLiquid);
+            assert.equal(_totalLiquid - usersTokens, qTokenStorage.totalLiquid);
         });
         it("should redeem 50 tokens", async () => {
             const amountTo = 50;
@@ -151,7 +150,7 @@ contract("qToken", async () => {
 
             assert.equal(usersTokens - amountTo, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - amountTo, qTokenStorage.totalSupply);
-            assert.equal(_totalLiquid - 1, qTokenStorage.totalLiquid);
+            assert.equal(_totalLiquid - amountTo, qTokenStorage.totalLiquid);
         });
     });
 

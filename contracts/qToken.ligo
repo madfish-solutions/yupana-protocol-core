@@ -112,7 +112,7 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
     s.totalLiquid := s.totalLiquid + amt;
   } with (noOperations, s)
 
-function redeem(const user : address; const amt : nat; var s : storage) : return is
+function redeem(const user : address; var amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -125,8 +125,10 @@ function redeem(const user : address; const amt : nat; var s : storage) : return
       exchangeRate := 1n;
     else skip;
 
-    if amt = 0n then
+    if amt = 0n then block {
       burnTokens := accountTokens;
+      amt := accountTokens;
+    }
     else
       burnTokens := amt / exchangeRate;
 
