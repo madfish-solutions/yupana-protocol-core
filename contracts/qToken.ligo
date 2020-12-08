@@ -133,7 +133,7 @@ function redeem(const user : address; const amt : nat; var s : storage) : return
     
     s.accountTokens[user] := abs(accountTokens - burnTokens);
     s.totalSupply := abs(s.totalSupply - burnTokens);
-    s.totalLiquid := abs(s.totalLiquid - 1n);
+    s.totalLiquid := abs(s.totalLiquid - amt);
   } with (noOperations, s)
 
 function borrow(const user : address; const amt : nat; var s : storage) : return is
