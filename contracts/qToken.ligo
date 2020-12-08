@@ -109,7 +109,7 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
     const accountTokens : nat = getTokens(user, s);
     s.accountTokens[user] := accountTokens + mintTokens;
     s.totalSupply := s.totalSupply + mintTokens;
-    s.totalLiquid := s.totalLiquid + 1n;
+    s.totalLiquid := s.totalLiquid + amt;
   } with (noOperations, s)
 
 function redeem(const user : address; const amt : nat; var s : storage) : return is
