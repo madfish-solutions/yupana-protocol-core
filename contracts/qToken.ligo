@@ -122,7 +122,7 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
     var exchangeRate : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
 
     if exchangeRate = 0n then
-      exchangeRate := 1n;
+      failwith("NotEnoughTokensToSendToUser")
     else skip;
 
     if amt = 0n then block {

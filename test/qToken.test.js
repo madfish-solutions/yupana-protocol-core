@@ -152,6 +152,13 @@ contract("qToken", async () => {
             assert.equal(_totalSupply - amountTo, qTokenStorage.totalSupply);
             assert.equal(_totalLiquid - amountTo, qTokenStorage.totalLiquid);
         });
+        it("should get exception, exchange rate is zero", async () => {
+            // make zero exchange rate
+            let s = storage; s.totalSupply = 1e+18;
+            let q = await qToken.new(s);
+            await truffleAssert.fails(q.redeem(RECEIVER, 0),
+                truffleAssert.INVALID_OPCODE, "NotEnoughTokensToSendToUser");
+        });
     });
 
     describe("borrow", async () => {
