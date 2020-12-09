@@ -195,6 +195,7 @@ function liquidate(const user : address; const borrower : address; var amt : nat
 
     var userBorrows : borrows := getBorrows(user, s);
     userBorrows.lastBorrowIndex := s.borrowIndex;
+    userBorrows.amount := userBorrows.amount + amt;
     s.accountBorrows[user] := userBorrows;
 
     var debtorBorrows : borrows := getBorrows(borrower, s);
