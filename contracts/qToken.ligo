@@ -30,8 +30,8 @@ type entryAction is
   | Mint of (address * nat * address)
   | Redeem of (address * nat * address)
   | Borrow of (address * nat * address)
-  | Repay of (address * nat)
-  | Liquidate of (address * address * nat * nat)
+  | Repay of (address * nat * address)
+  | Liquidate of (address * address * nat * nat * address)
 
 function getBorrows(const addr : address; const s : storage) : borrows is
   block {
@@ -168,7 +168,7 @@ function borrow(const user : address; const amt : nat; const token : address; va
          0mutez, 
          get_token_contract(token))], s)
 
-function repay(const user : address; const amt : nat; var s : storage) : return is
+function repay(const user : address; const amt : nat; const token : address; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -180,10 +180,12 @@ function repay(const user : address; const amt : nat; var s : storage) : return 
 
     s.accountBorrows[user] := accountBorrows;
     s.totalBorrows := abs(s.totalBorrows - amt);
-  } with (noOperations, s)
+  } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
+         0mutez, 
+         get_token_contract(token))], s)
 
 function liquidate(const user : address; const borrower : address; var amt : nat;
-                   const collateral : nat; var s : storage) : return is
+                   const collateral : nat; const token : address; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -210,7 +212,9 @@ function liquidate(const user : address; const borrower : address; var amt : nat
 
     s.accountBorrows[borrower] := debtorBorrows;
     s.accountTokens[user] := getTokens(user, s) + seizeTokens;
-  } with (noOperations, s)
+  } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
+         0mutez, 
+         get_token_contract(token))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
@@ -221,6 +225,6 @@ function main(const action : entryAction; var s : storage) : return is
     | Mint(params) -> mint(params.0, params.1, params.2, s)
     | Redeem(params) -> redeem(params.0, params.1, params.2, s)
     | Borrow(params) -> borrow(params.0, params.1, params.2, s)
-    | Repay(params) -> repay(params.0, params.1, s)
-    | Liquidate(params) -> liquidate(params.0, params.1, params.2, params.3, s)
+    | Repay(params) -> repay(params.0, params.1, params.2, s)
+    | Liquidate(params) -> liquidate(params.0, params.1, params.2, params.3, params.4, s)
   end;
