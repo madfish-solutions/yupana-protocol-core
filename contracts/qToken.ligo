@@ -29,7 +29,7 @@ type entryAction is
   | SetOwner of address
   | Mint of (address * nat * address)
   | Redeem of (address * nat * address)
-  | Borrow of (address * nat)
+  | Borrow of (address * nat * address)
   | Repay of (address * nat)
   | Liquidate of (address * address * nat * nat)
 
@@ -150,7 +150,7 @@ function redeem(const user : address; var amt : nat; const token : address; var 
          0mutez, 
          get_token_contract(token))], s)
 
-function borrow(const user : address; const amt : nat; var s : storage) : return is
+function borrow(const user : address; const amt : nat; const token : address; var s : storage) : return is
   block {
     mustBeAdmin(s);
     if s.totalLiquid < amt then
@@ -164,7 +164,9 @@ function borrow(const user : address; const amt : nat; var s : storage) : return
 
     s.accountBorrows[user] := accountBorrows;
     s.totalBorrows := s.totalBorrows + amt;
-  } with (noOperations, s)
+  } with (list [Tezos.transaction(Transfer(Tezos.self_address, (Tezos.sender, amt)), 
+         0mutez, 
+         get_token_contract(token))], s)
 
 function repay(const user : address; const amt : nat; var s : storage) : return is
   block {
@@ -218,7 +220,7 @@ function main(const action : entryAction; var s : storage) : return is
     | SetOwner(params) -> setOwner(params, s)
     | Mint(params) -> mint(params.0, params.1, params.2, s)
     | Redeem(params) -> redeem(params.0, params.1, params.2, s)
-    | Borrow(params) -> borrow(params.0, params.1, s)
+    | Borrow(params) -> borrow(params.0, params.1, params.2, s)
     | Repay(params) -> repay(params.0, params.1, s)
     | Liquidate(params) -> liquidate(params.0, params.1, params.2, params.3, s)
   end;

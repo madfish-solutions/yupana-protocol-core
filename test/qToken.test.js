@@ -200,21 +200,28 @@ contract("qToken", async () => {
         });
     });
 
-    describe.only("borrow", async () => {
+    describe("borrow", async () => {
+        beforeEach("setup, add balance of xtz to qToken", async () => {
+            await setSigner(RECEIVER);
+            await XTZ_Instance.transfer(RECEIVER, qTokenInstance.address, receiverBalance);
+            await revertDefaultSigner();
+        });
         it("should borrow tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.borrow(RECEIVER, amount);
+            await qTokenInstance.borrow(RECEIVER, amount, XTZ_Instance.address);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
             assert.equal(amount, _accountBorrows.amount);
             assert.equal(totalBorrows + amount, qTokenStorage.totalBorrows);
+            assert.equal(amount,
+                        (await (await XTZ_Instance.storage()).ledger.get(DEFAULT)).balance);
         });
         it("should get exception, total liquid less than amount", async () => {
             const amount = totalLiquid + 1;
 
-            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount),
+            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount, XTZ_Instance.address),
                 truffleAssert.INVALID_OPCODE, "AmountTooBig");
         });
     });
