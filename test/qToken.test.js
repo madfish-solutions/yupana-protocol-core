@@ -6,6 +6,7 @@ const { revertDefaultSigner } = require( "./helpers/signerSeter");
 const { setSigner } = require( "./helpers/signerSeter");
 
 const qToken = artifacts.require("qToken");
+const XTZ = artifacts.require("XTZ");
 
 contract("qToken", async () => {
     const DEFAULT = accounts[0];
@@ -29,6 +30,11 @@ contract("qToken", async () => {
 
     let storage;
     let qTokenInstance;
+    let XTZ_Instance;
+    let XTZ_Storage;
+    const receiverBalance = 1500;
+    const receiverAmt = 15;
+    const totalSupplyXTZ = 50000;
 
     beforeEach("setup", async () => {
         storage = {
@@ -44,6 +50,20 @@ contract("qToken", async () => {
             accountTokens:  accountTokens,
         };
         qTokenInstance = await qToken.new(storage);
+
+        XTZ_Storage = {
+            ledger: MichelsonMap.fromLiteral({
+                [RECEIVER]: {
+                    balance: receiverBalance,
+                    allowances: MichelsonMap.fromLiteral({
+                        [RECEIVER]: receiverAmt,
+                    }),
+                },
+            }),
+            totalSupply: totalSupplyXTZ,
+        };
+        XTZ_Instance = await XTZ.new(XTZ_Storage);
+
         await revertDefaultSigner();
     });
 
@@ -102,15 +122,22 @@ contract("qToken", async () => {
     });
 
     describe("mint", async () => {
+        beforeEach("setup", async () => {
+            await setSigner(RECEIVER);
+            await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
+            await revertDefaultSigner();
+        });
         it("should mint tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.mint(RECEIVER, amount);
+            await qTokenInstance.mint(RECEIVER, amount, XTZ_Instance.address);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(totalLiquid + amount, qTokenStorage.totalLiquid);
             assert.equal(totalSupply + amount, qTokenStorage.totalSupply);
+            assert.equal(amount,
+                        (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
     });
 
@@ -119,7 +146,10 @@ contract("qToken", async () => {
         const _totalLiquid = totalLiquid + amount;
         const _totalSupply = totalSupply + amount;
         beforeEach("setup, mint 100 tokens on receiver", async () => {
-            await qTokenInstance.mint(RECEIVER, amount);
+            await setSigner(RECEIVER);
+            await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
+            await revertDefaultSigner();
+            await qTokenInstance.mint(RECEIVER, amount, XTZ_Instance.address);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -127,41 +157,50 @@ contract("qToken", async () => {
             assert.equal(_totalLiquid, qTokenStorage.totalLiquid);
         });
         it("should redeem amount", async () => {
-            await qTokenInstance.redeem(RECEIVER, amount);
+            const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
+            await qTokenInstance.redeem(RECEIVER, amount, XTZ_Instance.address);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - amount, qTokenStorage.totalSupply);
             assert.equal(_totalLiquid - amount, qTokenStorage.totalLiquid);
+            assert.equal(amountOfXTZbefore.toNumber() + amount,
+                        (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
         it("should redeem all users tokens, pass 0 as amount", async () => {
+            const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
-            await qTokenInstance.redeem(RECEIVER, 0);
+            await qTokenInstance.redeem(RECEIVER, 0, XTZ_Instance.address);
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - usersTokens, qTokenStorage.totalSupply);
             assert.equal(_totalLiquid - usersTokens, qTokenStorage.totalLiquid);
+            assert.equal(amountOfXTZbefore.toNumber() + usersTokens.toNumber(),
+                        (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
         it("should redeem 50 tokens", async () => {
+            const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             const amountTo = 50;
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
-            await qTokenInstance.redeem(RECEIVER, amountTo);
+            await qTokenInstance.redeem(RECEIVER, amountTo, XTZ_Instance.address);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(usersTokens - amountTo, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - amountTo, qTokenStorage.totalSupply);
             assert.equal(_totalLiquid - amountTo, qTokenStorage.totalLiquid);
+            assert.equal(amountOfXTZbefore.toNumber() + amountTo,
+                        (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
         it("should get exception, exchange rate is zero", async () => {
             // make zero exchange rate
             let s = storage; s.totalSupply = 1e+18;
             let q = await qToken.new(s);
-            await truffleAssert.fails(q.redeem(RECEIVER, 0),
+            await truffleAssert.fails(q.redeem(RECEIVER, 0, XTZ_Instance.address),
                 truffleAssert.INVALID_OPCODE, "NotEnoughTokensToSendToUser");
         });
     });
 
-    describe("borrow", async () => {
+    describe.only("borrow", async () => {
         it("should borrow tokens", async () => {
             const amount = 100;
 
