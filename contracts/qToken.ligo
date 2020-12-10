@@ -136,8 +136,8 @@ function redeem(const user : address; var amt : nat; const token : address; var 
     else skip;
 
     if amt = 0n then block {
-      burnTokens := accountTokens;
       amt := accountTokens;
+      burnTokens := amt / exchangeRate;
     }
     else
       burnTokens := amt / exchangeRate;
