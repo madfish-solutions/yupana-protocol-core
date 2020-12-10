@@ -141,12 +141,10 @@ function redeem(const user : address; var amt : nat; const token : address; var 
       failwith("NotEnoughTokensToSendToUser")
     else skip;
 
-    if amt = 0n then block {
+    if amt = 0n then
       amt := accountTokens;
-      burnTokens := amt / exchangeRate;
-    }
-    else
-      burnTokens := amt / exchangeRate;
+    else skip;
+    burnTokens := amt / exchangeRate;
 
     
     s.accountTokens[user] := abs(accountTokens - burnTokens);
