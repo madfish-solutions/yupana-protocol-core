@@ -52,7 +52,7 @@ function getTokens(const addr : address; const s : storage) : nat is
   | None -> 0n
   end;
 
-function get_token_contract(const token_address : address) : contract(transfer_type) is 
+function getTokenContract(const token_address : address) : contract(transfer_type) is 
   case (Tezos.get_entrypoint_opt("%transfer", token_address) : option(contract(transfer_type))) of 
     Some(contr) -> contr
     | None -> (failwith("CantGetContractToken") : contract(transfer_type))
@@ -120,7 +120,7 @@ function mint(const user : address; const amt : nat; const token : address; var 
     s.totalLiquid := s.totalLiquid + amt;
   } with (list [Tezos.transaction(Transfer(user, (Tezos.self_address, amt)), 
          0mutez, 
-         get_token_contract(token))], s)
+         getTokenContract(token))], s)
 
 function redeem(const user : address; var amt : nat; const token : address; var s : storage) : return is
   block {
@@ -148,7 +148,7 @@ function redeem(const user : address; var amt : nat; const token : address; var 
     s.totalLiquid := abs(s.totalLiquid - amt);
   } with (list [Tezos.transaction(Transfer(Tezos.self_address, (user, amt)), 
          0mutez, 
-         get_token_contract(token))], s)
+         getTokenContract(token))], s)
 
 function borrow(const user : address; const amt : nat; const token : address; var s : storage) : return is
   block {
@@ -166,7 +166,7 @@ function borrow(const user : address; const amt : nat; const token : address; va
     s.totalBorrows := s.totalBorrows + amt;
   } with (list [Tezos.transaction(Transfer(Tezos.self_address, (Tezos.sender, amt)), 
          0mutez, 
-         get_token_contract(token))], s)
+         getTokenContract(token))], s)
 
 function repay(const user : address; const amt : nat; const token : address; var s : storage) : return is
   block {
@@ -182,7 +182,7 @@ function repay(const user : address; const amt : nat; const token : address; var
     s.totalBorrows := abs(s.totalBorrows - amt);
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
          0mutez, 
-         get_token_contract(token))], s)
+         getTokenContract(token))], s)
 
 function liquidate(const user : address; const borrower : address; var amt : nat;
                    const collateral : nat; const token : address; var s : storage) : return is
@@ -215,7 +215,7 @@ function liquidate(const user : address; const borrower : address; var amt : nat
     s.accountTokens[user] := getTokens(user, s) + seizeTokens;
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
          0mutez, 
-         get_token_contract(token))], s)
+         getTokenContract(token))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
