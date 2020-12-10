@@ -20,7 +20,7 @@ type storage is
 
 
 type return is list (operation) * storage
-const noOperations : list (operation) = nil;
+[@inline] const noOperations : list (operation) = nil;
 
 type transfer_type is Transfer of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
 
