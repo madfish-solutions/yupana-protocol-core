@@ -24,13 +24,19 @@ type return is list (operation) * storage
 
 type transfer_type is Transfer of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
 
+type mintParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
+type redeemParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
+type borrowParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
+type repayParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
+type liquidateParams is michelson_pair(nat, "spender", nat, "value") // todo!!!
+
 type entryAction is
   | SetAdmin of address
   | SetOwner of address
-  | Mint of (address * nat * address)
-  | Redeem of (address * nat * address)
-  | Borrow of (address * nat * address)
-  | Repay of (address * nat * address)
+  | Mint of mintParams
+  | Redeem of redeemParams
+  | Borrow of borrowParams
+  | Repay of repayParams
   | Liquidate of (address * address * nat * nat * address)
 
 function getBorrows(const addr : address; const s : storage) : borrows is
@@ -223,9 +229,9 @@ function main(const action : entryAction; var s : storage) : return is
   } with case action of
     | SetAdmin(params) -> setAdmin(params, s)
     | SetOwner(params) -> setOwner(params, s)
-    | Mint(params) -> mint(params.0, params.1, params.2, s)
-    | Redeem(params) -> redeem(params.0, params.1, params.2, s)
-    | Borrow(params) -> borrow(params.0, params.1, params.2, s)
-    | Repay(params) -> repay(params.0, params.1, params.2, s)
+    | Mint(params) -> mint(params.0, params.1.0, params.1.1, s)
+    | Redeem(params) -> redeem(params.0, params.1.0, params.1.1, s)
+    | Borrow(params) -> borrow(params.0, params.1.0, params.1.1, s)
+    | Repay(params) -> repay(params.0, params.1.0, params.1.1, s)
     | Liquidate(params) -> liquidate(params.0, params.1, params.2, params.3, params.4, s)
   end;
