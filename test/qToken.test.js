@@ -11,6 +11,7 @@ const XTZ = artifacts.require("XTZ");
 contract("qToken", async () => {
     const DEFAULT = accounts[0];
     const RECEIVER = accounts[1];
+    const LIQUIDATOR = accounts[3];
 
     const lastUpdateTime = "2000-01-01T10:10:10.000Z";
     const totalBorrows = 1e+5;
@@ -34,6 +35,8 @@ contract("qToken", async () => {
     let XTZ_Storage;
     const receiverBalance = 1500;
     const receiverAmt = 15;
+    const liquidatorBalance = 200;
+    const liquidatorAmt = 20;
     const totalSupplyXTZ = 50000;
 
     beforeEach("setup", async () => {
@@ -57,6 +60,12 @@ contract("qToken", async () => {
                     balance: receiverBalance,
                     allowances: MichelsonMap.fromLiteral({
                         [RECEIVER]: receiverAmt,
+                    }),
+                },
+                [LIQUIDATOR]: {
+                    balance: liquidatorBalance,
+                    allowances: MichelsonMap.fromLiteral({
+                        [LIQUIDATOR]: liquidatorAmt,
                     }),
                 },
             }),
@@ -248,39 +257,35 @@ contract("qToken", async () => {
         });
     });
 
-    describe.skip("liquidate", async () => {
-        const amount = 100;
-        const LIQUIDATOR = accounts[3];
-        beforeEach("setup, borrow 100 tokens on receiver", async () => {
-            await qTokenInstance.borrow(RECEIVER, amount);
-            const qTokenStorage = await qTokenInstance.storage();
-            const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
-
-            assert.equal(amount, _accountBorrows.amount);
-            assert.equal(totalBorrows + amount, qTokenStorage.totalBorrows);
+    describe("liquidate", async () => {
+        const amountToBorrow = 100;
+        beforeEach("setup, borrow 100 tokens on receiver and users", async () => {
+            await setSigner(RECEIVER);
+            await XTZ_Instance.transfer(RECEIVER, qTokenInstance.address, amountToBorrow * 2);
+            await revertDefaultSigner();
+            await qTokenInstance.borrow(RECEIVER, amountToBorrow, XTZ_Instance.address);
+            await qTokenInstance.borrow(LIQUIDATOR, amountToBorrow, XTZ_Instance.address);
+            await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
         });
         it("should liquidate borrow", async () => {
-            // TODO
-            // let qTokenStorage = await qTokenInstance.storage();
-            // await qTokenStorage.accountTokens.get(LIQUIDATOR);
-            // const BliquidatorTokens = await qTokenStorage.accountTokens.get(LIQUIDATOR);
-            // const BreceiverBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
-            // console.log("liqd tokens before", BliquidatorTokens);
-            // console.log("receiver borrows before", BreceiverBorrows);
-            // /////////////////////////////////////////////
-            // await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amount, 0);
-            // qTokenStorage = await qTokenInstance.storage();
-            // //console.log(qTokenStorage);
-            // const receiverBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
-            // const liquidatorTokens = await qTokenStorage.accountTokens.get(LIQUIDATOR);
-            // console.log("receiver borrows", receiverBorrows);
-            // console.log("liqd tokens", liquidatorTokens);
+            assert.equal(amountToBorrow, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
+            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amountToBorrow, 0, XTZ_Instance.address);
+            //coz liquidation incentive is 105%
+            assert.equal(5, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
+            assert.equal(amountToBorrow,
+                        (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
         it("should get exception, borrower is liquidator", async () => {
-            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amount, 0, XTZ_Instance.address),
+            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amountToBorrow, 0, XTZ_Instance.address),
                 truffleAssert.INVALID_OPCODE, "BorrowerCannotBeLiquidator");
         });
-        it("TODO amt = 0 test", async () => {
+        it("should pass zero and expect same result in case pass amount to borrow", async () => {
+            assert.equal(amountToBorrow, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
+            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, 0, 0, XTZ_Instance.address);
+            //coz liquidation incentive is 105%
+            assert.equal(5, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
+            assert.equal(amountToBorrow,
+                        (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
     });
 });

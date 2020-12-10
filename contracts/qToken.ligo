@@ -200,8 +200,9 @@ function liquidate(const user : address; const borrower : address; var amt : nat
     else skip;
 
     var userBorrows : borrows := getBorrows(user, s);
+    userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
+    userBorrows.amount := abs(userBorrows.amount - amt);
     userBorrows.lastBorrowIndex := s.borrowIndex;
-    userBorrows.amount := userBorrows.amount + amt;
     s.accountBorrows[user] := userBorrows;
 
     var debtorBorrows : borrows := getBorrows(borrower, s);
@@ -220,7 +221,7 @@ function liquidate(const user : address; const borrower : address; var amt : nat
     s.accountBorrows[borrower] := debtorBorrows;
     s.accountTokens[user] := getTokens(user, s) + seizeTokens;
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
-         0mutez, 
+         0mutez,
          getTokenContract(token))], s)
 
 function main(const action : entryAction; var s : storage) : return is
