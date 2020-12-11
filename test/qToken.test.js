@@ -269,19 +269,19 @@ contract("qToken", async () => {
         });
         it("should liquidate borrow", async () => {
             assert.equal(amountToBorrow, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
-            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amountToBorrow, 0, XTZ_Instance.address);
+            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amountToBorrow, XTZ_Instance.address);
             //coz liquidation incentive is 105%
             assert.equal(5, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
             assert.equal(amountToBorrow,
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
         it("should get exception, borrower is liquidator", async () => {
-            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amountToBorrow, 0, XTZ_Instance.address),
+            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amountToBorrow, XTZ_Instance.address),
                 truffleAssert.INVALID_OPCODE, "BorrowerCannotBeLiquidator");
         });
         it("should pass zero and expect same result in case pass amount to borrow", async () => {
             assert.equal(amountToBorrow, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
-            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, 0, 0, XTZ_Instance.address);
+            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, 0, XTZ_Instance.address);
             //coz liquidation incentive is 105%
             assert.equal(5, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
             assert.equal(amountToBorrow,

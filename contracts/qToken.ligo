@@ -28,7 +28,7 @@ type mintParams is michelson_pair(address, "user", michelson_pair(nat, "amount",
 type redeemParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
 type borrowParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
 type repayParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
-type liquidateParams is michelson_pair(nat, "spender", nat, "value") // todo!!!
+type liquidateParams is michelson_pair(michelson_pair(address, "liquidator", address, "borrower"), "", michelson_pair(nat, "amount", address, "token"), "")
 
 type entryAction is
   | SetAdmin of address
@@ -37,7 +37,7 @@ type entryAction is
   | Redeem of redeemParams
   | Borrow of borrowParams
   | Repay of repayParams
-  | Liquidate of (address * address * nat * nat * address)
+  | Liquidate of liquidateParams
 
 function getBorrows(const addr : address; const s : storage) : borrows is
   block {
@@ -188,20 +188,14 @@ function repay(const user : address; const amt : nat; const token : address; var
          0mutez, 
          getTokenContract(token))], s)
 
-function liquidate(const user : address; const borrower : address; var amt : nat;
-                   const collateral : nat; const token : address; var s : storage) : return is
+function liquidate(const liquidator : address; const borrower : address; var amt : nat;
+                   const token : address; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
-    if user = borrower then
+    if liquidator = borrower then
       failwith("BorrowerCannotBeLiquidator")
     else skip;
-
-    var userBorrows : borrows := getBorrows(user, s);
-    userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
-    userBorrows.amount := abs(userBorrows.amount - amt);
-    userBorrows.lastBorrowIndex := s.borrowIndex;
-    s.accountBorrows[user] := userBorrows;
 
     var debtorBorrows : borrows := getBorrows(borrower, s);
     if amt = 0n then
@@ -214,10 +208,12 @@ function liquidate(const user : address; const borrower : address; var amt : nat
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
     const seizeTokens : nat = amt * liquidationIncentive / hundredPercent / exchangeRate;
 
+    debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
     debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
+    debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
     s.accountBorrows[borrower] := debtorBorrows;
-    s.accountTokens[user] := getTokens(user, s) + seizeTokens;
+    s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
          0mutez,
          getTokenContract(token))], s)
@@ -232,5 +228,5 @@ function main(const action : entryAction; var s : storage) : return is
     | Redeem(params) -> redeem(params.0, params.1.0, params.1.1, s)
     | Borrow(params) -> borrow(params.0, params.1.0, params.1.1, s)
     | Repay(params) -> repay(params.0, params.1.0, params.1.1, s)
-    | Liquidate(params) -> liquidate(params.0, params.1, params.2, params.3, params.4, s)
+    | Liquidate(params) -> liquidate(params.0.0, params.0.1, params.1.0, params.1.1, s)
   end;
