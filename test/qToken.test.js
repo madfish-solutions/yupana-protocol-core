@@ -40,20 +40,6 @@ contract("qToken", async () => {
     const totalSupplyXTZ = 50000;
 
     beforeEach("setup", async () => {
-        storage = {
-            owner:          DEFAULT,
-            admin:          DEFAULT,
-            lastUpdateTime: lastUpdateTime,
-            totalBorrows:   totalBorrows,
-            totalLiquid:    totalLiquid,
-            totalSupply:    totalSupply,
-            totalReserves:  totalReserves,
-            borrowIndex:    borrowIndex,
-            accountBorrows: accountBorrows,
-            accountTokens:  accountTokens,
-        };
-        qTokenInstance = await qToken.new(storage);
-
         XTZ_Storage = {
             ledger: MichelsonMap.fromLiteral({
                 [RECEIVER]: {
@@ -73,6 +59,21 @@ contract("qToken", async () => {
         };
         XTZ_Instance = await XTZ.new(XTZ_Storage);
 
+        storage = {
+            owner:          DEFAULT,
+            admin:          DEFAULT,
+            token:          XTZ_Instance.address,
+            lastUpdateTime: lastUpdateTime,
+            totalBorrows:   totalBorrows,
+            totalLiquid:    totalLiquid,
+            totalSupply:    totalSupply,
+            totalReserves:  totalReserves,
+            borrowIndex:    borrowIndex,
+            accountBorrows: accountBorrows,
+            accountTokens:  accountTokens,
+        };
+        qTokenInstance = await qToken.new(storage);
+
         await revertDefaultSigner();
     });
 
@@ -81,6 +82,7 @@ contract("qToken", async () => {
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(DEFAULT, qTokenStorage.owner);
             assert.equal(DEFAULT, qTokenStorage.admin);
+            assert.equal(XTZ_Instance.address, qTokenStorage.token);
             assert.equal(lastUpdateTime, qTokenStorage.lastUpdateTime);
             assert.equal(totalBorrows, qTokenStorage.totalBorrows);
             assert.equal(totalLiquid, qTokenStorage.totalLiquid);
@@ -139,7 +141,7 @@ contract("qToken", async () => {
         it("should mint tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.mint(RECEIVER, amount, XTZ_Instance.address);
+            await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -158,7 +160,7 @@ contract("qToken", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
             await revertDefaultSigner();
-            await qTokenInstance.mint(RECEIVER, amount, XTZ_Instance.address);
+            await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(amount, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -167,7 +169,7 @@ contract("qToken", async () => {
         });
         it("should redeem amount", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
-            await qTokenInstance.redeem(RECEIVER, amount, XTZ_Instance.address);
+            await qTokenInstance.redeem(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -179,7 +181,7 @@ contract("qToken", async () => {
         it("should redeem all users tokens, pass 0 as amount", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
-            await qTokenInstance.redeem(RECEIVER, 0, XTZ_Instance.address);
+            await qTokenInstance.redeem(RECEIVER, 0);
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
             assert.equal(_totalSupply - usersTokens, qTokenStorage.totalSupply);
@@ -191,7 +193,7 @@ contract("qToken", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             const amountTo = 50;
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
-            await qTokenInstance.redeem(RECEIVER, amountTo, XTZ_Instance.address);
+            await qTokenInstance.redeem(RECEIVER, amountTo);
             const qTokenStorage = await qTokenInstance.storage();
 
             assert.equal(usersTokens - amountTo, await qTokenStorage.accountTokens.get(RECEIVER));
@@ -204,7 +206,7 @@ contract("qToken", async () => {
             // make zero exchange rate
             let s = storage; s.totalSupply = 1e+18;
             let q = await qToken.new(s);
-            await truffleAssert.fails(q.redeem(RECEIVER, 0, XTZ_Instance.address),
+            await truffleAssert.fails(q.redeem(RECEIVER, 0),
                 truffleAssert.INVALID_OPCODE, "NotEnoughTokensToSendToUser");
         });
     });
@@ -218,7 +220,7 @@ contract("qToken", async () => {
         it("should borrow tokens", async () => {
             const amount = 100;
 
-            await qTokenInstance.borrow(RECEIVER, amount, XTZ_Instance.address);
+            await qTokenInstance.borrow(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
@@ -230,7 +232,7 @@ contract("qToken", async () => {
         it("should get exception, total liquid less than amount", async () => {
             const amount = totalLiquid + 1;
 
-            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount, XTZ_Instance.address),
+            await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount),
                 truffleAssert.INVALID_OPCODE, "AmountTooBig");
         });
     });
@@ -241,11 +243,11 @@ contract("qToken", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.transfer(RECEIVER, qTokenInstance.address, amountToBorrow);
             await revertDefaultSigner();
-            await qTokenInstance.borrow(RECEIVER, amountToBorrow, XTZ_Instance.address);
+            await qTokenInstance.borrow(RECEIVER, amountToBorrow);
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
         });
         it("should repay tokens", async () => {
-            await qTokenInstance.repay(RECEIVER, amountToBorrow, XTZ_Instance.address);
+            await qTokenInstance.repay(RECEIVER, amountToBorrow);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
@@ -263,25 +265,25 @@ contract("qToken", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.transfer(RECEIVER, qTokenInstance.address, amountToBorrow * 2);
             await revertDefaultSigner();
-            await qTokenInstance.borrow(RECEIVER, amountToBorrow, XTZ_Instance.address);
-            await qTokenInstance.borrow(LIQUIDATOR, amountToBorrow, XTZ_Instance.address);
+            await qTokenInstance.borrow(RECEIVER, amountToBorrow);
+            await qTokenInstance.borrow(LIQUIDATOR, amountToBorrow);
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
         });
         it("should liquidate borrow", async () => {
             assert.equal(amountToBorrow, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
-            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amountToBorrow, XTZ_Instance.address);
+            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amountToBorrow);
             //coz liquidation incentive is 105%
             assert.equal(5, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
             assert.equal(amountToBorrow,
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
         it("should get exception, borrower is liquidator", async () => {
-            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amountToBorrow, XTZ_Instance.address),
+            await truffleAssert.fails(qTokenInstance.liquidate(LIQUIDATOR, LIQUIDATOR, amountToBorrow),
                 truffleAssert.INVALID_OPCODE, "BorrowerCannotBeLiquidator");
         });
         it("should pass zero and expect same result in case pass amount to borrow", async () => {
             assert.equal(amountToBorrow, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
-            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, 0, XTZ_Instance.address);
+            await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, 0);
             //coz liquidation incentive is 105%
             assert.equal(5, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
             assert.equal(amountToBorrow,

@@ -8,6 +8,7 @@ type storage is
   record [
     owner           :address;
     admin           :address;
+    token           :address;
     lastUpdateTime  :timestamp;
     totalBorrows    :nat;
     totalLiquid     :nat;
@@ -24,11 +25,11 @@ type return is list (operation) * storage
 
 type transfer_type is Transfer of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
 
-type mintParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
-type redeemParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
-type borrowParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
-type repayParams is michelson_pair(address, "user", michelson_pair(nat, "amount", address, "token"), "")
-type liquidateParams is michelson_pair(michelson_pair(address, "liquidator", address, "borrower"), "", michelson_pair(nat, "amount", address, "token"), "")
+type mintParams is michelson_pair(address, "user", nat, "amount")
+type redeemParams is michelson_pair(address, "user", nat, "amount")
+type borrowParams is michelson_pair(address, "user", nat, "amount")
+type repayParams is michelson_pair(address, "user", nat, "amount")
+type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 
 type entryAction is
   | SetAdmin of address
@@ -112,7 +113,7 @@ function updateInterest(var s : storage) : storage is
 
 // TODO FOR ALL add total liqudity
 // TODO FOR ALL add operations
-function mint(const user : address; const amt : nat; const token : address; var s : storage) : return is
+function mint(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -126,9 +127,9 @@ function mint(const user : address; const amt : nat; const token : address; var 
     s.totalLiquid := s.totalLiquid + amt;
   } with (list [Tezos.transaction(Transfer(user, (Tezos.self_address, amt)), 
          0mutez, 
-         getTokenContract(token))], s)
+         getTokenContract(s.token))], s)
 
-function redeem(const user : address; var amt : nat; const token : address; var s : storage) : return is
+function redeem(const user : address; var amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -152,9 +153,9 @@ function redeem(const user : address; var amt : nat; const token : address; var 
     s.totalLiquid := abs(s.totalLiquid - amt);
   } with (list [Tezos.transaction(Transfer(Tezos.self_address, (user, amt)), 
          0mutez, 
-         getTokenContract(token))], s)
+         getTokenContract(s.token))], s)
 
-function borrow(const user : address; const amt : nat; const token : address; var s : storage) : return is
+function borrow(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     if s.totalLiquid < amt then
@@ -170,9 +171,9 @@ function borrow(const user : address; const amt : nat; const token : address; va
     s.totalBorrows := s.totalBorrows + amt;
   } with (list [Tezos.transaction(Transfer(Tezos.self_address, (Tezos.sender, amt)), 
          0mutez, 
-         getTokenContract(token))], s)
+         getTokenContract(s.token))], s)
 
-function repay(const user : address; const amt : nat; const token : address; var s : storage) : return is
+function repay(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -186,10 +187,9 @@ function repay(const user : address; const amt : nat; const token : address; var
     s.totalBorrows := abs(s.totalBorrows - amt);
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
          0mutez, 
-         getTokenContract(token))], s)
+         getTokenContract(s.token))], s)
 
-function liquidate(const liquidator : address; const borrower : address; var amt : nat;
-                   const token : address; var s : storage) : return is
+function liquidate(const liquidator : address; const borrower : address; var amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
@@ -216,7 +216,7 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
          0mutez,
-         getTokenContract(token))], s)
+         getTokenContract(s.token))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
@@ -224,9 +224,9 @@ function main(const action : entryAction; var s : storage) : return is
   } with case action of
     | SetAdmin(params) -> setAdmin(params, s)
     | SetOwner(params) -> setOwner(params, s)
-    | Mint(params) -> mint(params.0, params.1.0, params.1.1, s)
-    | Redeem(params) -> redeem(params.0, params.1.0, params.1.1, s)
-    | Borrow(params) -> borrow(params.0, params.1.0, params.1.1, s)
-    | Repay(params) -> repay(params.0, params.1.0, params.1.1, s)
-    | Liquidate(params) -> liquidate(params.0.0, params.0.1, params.1.0, params.1.1, s)
+    | Mint(params) -> mint(params.0, params.1, s)
+    | Redeem(params) -> redeem(params.0, params.1, s)
+    | Borrow(params) -> borrow(params.0, params.1, s)
+    | Repay(params) -> repay(params.0, params.1, s)
+    | Liquidate(params) -> liquidate(params.0, params.1.0, params.1.1, s)
   end;
