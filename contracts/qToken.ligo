@@ -120,7 +120,7 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
     s := updateInterest(s);
 
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const mintTokens : nat = amt / exchangeRate * accuracy;
+    const mintTokens : nat = amt * accuracy / exchangeRate;
 
     s.accountTokens[user] := getTokens(user, s) + mintTokens;
     s.totalSupply := s.totalSupply + mintTokens;
@@ -145,7 +145,7 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
     if amt = 0n then
       amt := accountTokens / accuracy;
     else skip;
-    burnTokens := amt / exchangeRate * accuracy;
+    burnTokens := amt * accuracy / exchangeRate;
 
     
     s.accountTokens[user] := abs(accountTokens - burnTokens);
