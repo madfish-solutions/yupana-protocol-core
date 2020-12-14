@@ -206,10 +206,9 @@ function liquidate(const liquidator : address; const borrower : address; var amt
       amt := amt * accuracy;
 
 
-    const hundredPercent : nat = 1000000000n;
-    const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
+    const liquidationIncentive : nat = 105000000n;// 105% (1.05) from accuracy
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const seizeTokens : nat = amt * liquidationIncentive / hundredPercent / exchangeRate;
+    const seizeTokens : nat = amt * liquidationIncentive / accuracy / exchangeRate;
 
     debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
     debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
