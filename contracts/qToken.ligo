@@ -18,7 +18,8 @@ type storage is
     accountBorrows  :big_map(address, borrows);
     accountTokens   :big_map(address, nat);
   ]
-
+//all numbers in storage are real numbers
+const accuracy : nat = 100000000n;
 
 type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
@@ -101,14 +102,14 @@ function updateInterest(var s : storage) : storage is
     const utilizationBasePerSec : nat = 63419584n; // utilizationBase / secondsPerYear; 0.0000000063419584
     const debtRatePerSec : nat = 7927448n; // apr / secondsPerYear; 0.0000000007927448
 
-    const utilizationRate : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
+    const utilizationRate : nat = (s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / accuracy);
     const borrowRatePerSec : nat = (utilizationRate * utilizationBasePerSec + debtRatePerSec) / hundredPercent;
     const simpleInterestFactor : nat = borrowRatePerSec * abs(Tezos.now - s.lastUpdateTime);
-    const interestAccumulated : nat = simpleInterestFactor * s.totalBorrows;
+    const interestAccumulated : nat = simpleInterestFactor * s.totalBorrows / accuracy;
 
-    s.totalBorrows := interestAccumulated + s.totalBorrows;
-    s.totalReserves := interestAccumulated * reserveFactor / hundredPercent + s.totalReserves;
-    s.borrowIndex := simpleInterestFactor * s.borrowIndex + s.borrowIndex;
+    s.totalBorrows := interestAccumulated * accuracy + s.totalBorrows;
+    s.totalReserves := interestAccumulated * reserveFactor * accuracy / hundredPercent + s.totalReserves;
+    s.borrowIndex := simpleInterestFactor * accuracy * s.borrowIndex + s.borrowIndex;
   } with (s)
 
 // TODO FOR ALL add total liqudity
@@ -119,12 +120,11 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
     s := updateInterest(s);
 
     const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const mintTokens : nat = amt / exchangeRate;
+    const mintTokens : nat = amt / exchangeRate * accuracy;
 
-    const accountTokens : nat = getTokens(user, s);
-    s.accountTokens[user] := accountTokens + mintTokens;
+    s.accountTokens[user] := getTokens(user, s) + mintTokens;
     s.totalSupply := s.totalSupply + mintTokens;
-    s.totalLiquid := s.totalLiquid + amt;
+    s.totalLiquid := s.totalLiquid + amt * accuracy;
   } with (list [Tezos.transaction(Transfer(user, (Tezos.self_address, amt)), 
          0mutez, 
          getTokenContract(s.token))], s)
@@ -143,21 +143,23 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
     else skip;
 
     if amt = 0n then
-      amt := accountTokens;
+      amt := accountTokens / accuracy;
     else skip;
-    burnTokens := amt / exchangeRate;
+    burnTokens := amt / exchangeRate * accuracy;
 
     
     s.accountTokens[user] := abs(accountTokens - burnTokens);
     s.totalSupply := abs(s.totalSupply - burnTokens);
-    s.totalLiquid := abs(s.totalLiquid - amt);
+    s.totalLiquid := abs(s.totalLiquid - amt * accuracy);
   } with (list [Tezos.transaction(Transfer(Tezos.self_address, (user, amt)), 
          0mutez, 
          getTokenContract(s.token))], s)
 
-function borrow(const user : address; const amt : nat; var s : storage) : return is
+function borrow(const user : address; var amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
+    //make amt as real number
+    amt := amt * accuracy;
     if s.totalLiquid < amt then
       failwith("AmountTooBig")
     else skip;
@@ -169,7 +171,7 @@ function borrow(const user : address; const amt : nat; var s : storage) : return
 
     s.accountBorrows[user] := accountBorrows;
     s.totalBorrows := s.totalBorrows + amt;
-  } with (list [Tezos.transaction(Transfer(Tezos.self_address, (Tezos.sender, amt)), 
+  } with (list [Tezos.transaction(Transfer(Tezos.self_address, (Tezos.sender, amt / accuracy)), 
          0mutez, 
          getTokenContract(s.token))], s)
 
@@ -180,11 +182,11 @@ function repay(const user : address; const amt : nat; var s : storage) : return 
 
     var accountBorrows : borrows := getBorrows(user, s);
     accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
-    accountBorrows.amount := abs(accountBorrows.amount - amt);
+    accountBorrows.amount := abs(accountBorrows.amount - amt * accuracy);
     accountBorrows.lastBorrowIndex := s.borrowIndex;
 
     s.accountBorrows[user] := accountBorrows;
-    s.totalBorrows := abs(s.totalBorrows - amt);
+    s.totalBorrows := abs(s.totalBorrows - amt * accuracy);
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
          0mutez, 
          getTokenContract(s.token))], s)
@@ -200,7 +202,8 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     var debtorBorrows : borrows := getBorrows(borrower, s);
     if amt = 0n then
       amt := debtorBorrows.amount
-    else skip;
+    else
+      amt := amt * accuracy;
 
 
     const hundredPercent : nat = 1000000000n;
@@ -214,7 +217,7 @@ function liquidate(const liquidator : address; const borrower : address; var amt
 
     s.accountBorrows[borrower] := debtorBorrows;
     s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
-  } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
+  } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt / accuracy)), 
          0mutez,
          getTokenContract(s.token))], s)
 
