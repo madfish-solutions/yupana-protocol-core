@@ -102,14 +102,14 @@ function updateInterest(var s : storage) : storage is
     const utilizationBasePerSec : nat = 63419584n; // utilizationBase / secondsPerYear; 0.0000000063419584
     const debtRatePerSec : nat = 7927448n; // apr / secondsPerYear; 0.0000000007927448
 
-    const utilizationRate : nat = (s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / accuracy);
-    const borrowRatePerSec : nat = (utilizationRate * utilizationBasePerSec + debtRatePerSec) / hundredPercent;
-    const simpleInterestFactor : nat = borrowRatePerSec * abs(Tezos.now - s.lastUpdateTime);
-    const interestAccumulated : nat = simpleInterestFactor * s.totalBorrows / accuracy;
+    const utilizationRate_ : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
+    const borrowRatePerSec_ : nat = (utilizationRate_ * (utilizationBasePerSec * accuracy)  + (debtRatePerSec * accuracy)) / hundredPercent;
+    const simpleInterestFactor_ : nat = borrowRatePerSec_ * abs(Tezos.now - s.lastUpdateTime) * accuracy;
+    const interestAccumulated_ : nat = simpleInterestFactor_ * s.totalBorrows;
 
-    s.totalBorrows := interestAccumulated * accuracy + s.totalBorrows;
-    s.totalReserves := interestAccumulated * reserveFactor * accuracy / hundredPercent + s.totalReserves;
-    s.borrowIndex := simpleInterestFactor * accuracy * s.borrowIndex + s.borrowIndex;
+    s.totalBorrows := interestAccumulated_ + s.totalBorrows;
+    s.totalReserves := interestAccumulated_ * reserveFactor / hundredPercent + s.totalReserves;
+    s.borrowIndex := simpleInterestFactor_ * s.borrowIndex + s.borrowIndex;
   } with (s)
 
 // TODO FOR ALL add total liqudity
