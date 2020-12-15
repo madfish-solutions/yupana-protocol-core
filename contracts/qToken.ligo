@@ -19,7 +19,7 @@ type storage is
     accountTokens   :big_map(address, nat);
   ]
 //all numbers in storage are real numbers
-const accuracy : nat = 100000000n;
+const accuracy : nat = 1000000000000000000n; //1e+18
 
 type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
@@ -94,26 +94,23 @@ function setOwner(const newOwner : address; var s : storage) : return is
 
 function updateInterest(var s : storage) : storage is
   block {
-    const hundredPercent : nat = 10000000000000000n;
-    const apr : nat = 250000000000000n; // 2.5% (0.025)
-    const utilizationBase : nat = 2000000000000000n; // 20% (0.2)
+    const apr : nat = 25000000000000000n; // 2.5% (0.025) from accuracy
+    const utilizationBase : nat = 200000000000000000n; // 20% (0.2)
     const secondsPerYear : nat = 31536000n;
-    const reserveFactor : nat = 10000000000000n;// 0.1% (0.001)
-    const utilizationBasePerSec : nat = 63419584n; // utilizationBase / secondsPerYear; 0.0000000063419584
-    const debtRatePerSec : nat = 7927448n; // apr / secondsPerYear; 0.0000000007927448
+    const reserveFactorFloat : nat = 1000000000000000n;// 0.1% (0.001)
+    const utilizationBasePerSecFloat : nat = 6341958397n; // utilizationBase / secondsPerYear; 0.000000006341958397
+    const debtRatePerSecFloat : nat = 792744800n; // apr / secondsPerYear; 0.000000000792744800
 
-    const utilizationRate_ : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
-    const borrowRatePerSec_ : nat = (utilizationRate_ * (utilizationBasePerSec * accuracy)  + (debtRatePerSec * accuracy)) / hundredPercent;
-    const simpleInterestFactor_ : nat = borrowRatePerSec_ * abs(Tezos.now - s.lastUpdateTime) * accuracy;
-    const interestAccumulated_ : nat = simpleInterestFactor_ * s.totalBorrows;
+    const utilizationRateFloat : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
+    const borrowRatePerSecFloat : nat = (utilizationRateFloat * utilizationBasePerSecFloat + debtRatePerSecFloat) / accuracy; // one mult operation with float require accuracy division
+    const simpleInterestFactorFloat : nat = borrowRatePerSecFloat * abs(Tezos.now - s.lastUpdateTime);
+    const interestAccumulatedFloat : nat = simpleInterestFactorFloat * s.totalBorrows / accuracy; // one mult operation with float require accuracy division
 
-    s.totalBorrows := interestAccumulated_ + s.totalBorrows;
-    s.totalReserves := interestAccumulated_ * reserveFactor / hundredPercent + s.totalReserves;
-    s.borrowIndex := simpleInterestFactor_ * s.borrowIndex + s.borrowIndex;
+    s.totalBorrows := interestAccumulatedFloat + s.totalBorrows;
+    s.totalReserves := (interestAccumulatedFloat * reserveFactorFloat + s.totalReserves) / accuracy; // one mult operation with float require accuracy division
+    s.borrowIndex := (simpleInterestFactorFloat * s.borrowIndex + s.borrowIndex) / accuracy; // one mult operation with float require accuracy division
   } with (s)
 
-// TODO FOR ALL add total liqudity
-// TODO FOR ALL add operations
 function mint(const user : address; const amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
@@ -181,7 +178,7 @@ function repay(const user : address; const amt : nat; var s : storage) : return 
     s := updateInterest(s);
 
     var accountBorrows : borrows := getBorrows(user, s);
-    accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
+    accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex / accuracy;
     accountBorrows.amount := abs(accountBorrows.amount - amt * accuracy);
     accountBorrows.lastBorrowIndex := s.borrowIndex;
 

@@ -1,5 +1,6 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const truffleAssert = require('truffle-assertions');
+const BigNumber = require('bignumber.js');
 
 const { accounts } = require("../scripts/sandbox/accounts");
 const { revertDefaultSigner } = require( "./helpers/signerSeter");
@@ -8,26 +9,34 @@ const { setSigner } = require( "./helpers/signerSeter");
 const qToken = artifacts.require("qToken");
 const XTZ = artifacts.require("XTZ");
 
+const toBN = (num) => {
+    return new BigNumber(num);
+};
+
+const Fixed = (value) => {
+    return value.toNumber().toLocaleString('fullwide', {useGrouping:false})
+}
+
 contract("qToken", async () => {
     const DEFAULT = accounts[0];
     const RECEIVER = accounts[1];
     const LIQUIDATOR = accounts[3];
-    const accuracy =  100000000;
+    const accuracy =  toBN(1e+18);
 
     const lastUpdateTime = "2000-01-01T10:10:10.000Z";
-    const totalBorrows = 1e+5 * accuracy;
-    const totalLiquid = 1e+5 * accuracy;
-    const totalSupply = 1e+5 * accuracy;
-    const totalReserves = 1e+5 * accuracy;
-    const borrowIndex = 1e+5 * accuracy;
+    const totalBorrows = accuracy.multipliedBy(1e+5);
+    const totalLiquid = accuracy.multipliedBy(1e+5);
+    const totalSupply = accuracy.multipliedBy(1e+5);
+    const totalReserves = accuracy.multipliedBy(1e+5);
+    const borrowIndex = accuracy.multipliedBy(1e+5);
     const accountBorrows = MichelsonMap.fromLiteral({
         [DEFAULT]: {
-            amount:          1e+5 * accuracy,
-            lastBorrowIndex: 1e+5 * accuracy,
+            amount:          Fixed(accuracy.multipliedBy(1e+5)),
+            lastBorrowIndex: Fixed(accuracy.multipliedBy(1e+5)),
         }
     });
     const accountTokens = MichelsonMap.fromLiteral({
-            [DEFAULT]: 1e+5 * accuracy,
+            [DEFAULT]: Fixed(accuracy.multipliedBy(1e+5)),
         });
 
     let storage;
@@ -65,11 +74,11 @@ contract("qToken", async () => {
             admin:          DEFAULT,
             token:          XTZ_Instance.address,
             lastUpdateTime: lastUpdateTime,
-            totalBorrows:   totalBorrows,
-            totalLiquid:    totalLiquid,
-            totalSupply:    totalSupply,
-            totalReserves:  totalReserves,
-            borrowIndex:    borrowIndex,
+            totalBorrows:   Fixed(totalBorrows),
+            totalLiquid:    Fixed(totalLiquid),
+            totalSupply:    Fixed(totalSupply),
+            totalReserves:  Fixed(totalReserves),
+            borrowIndex:    Fixed(borrowIndex),
             accountBorrows: accountBorrows,
             accountTokens:  accountTokens,
         };
@@ -85,15 +94,15 @@ contract("qToken", async () => {
             assert.equal(DEFAULT, qTokenStorage.admin);
             assert.equal(XTZ_Instance.address, qTokenStorage.token);
             assert.equal(lastUpdateTime, qTokenStorage.lastUpdateTime);
-            assert.equal(totalBorrows, qTokenStorage.totalBorrows);
-            assert.equal(totalLiquid, qTokenStorage.totalLiquid);
-            assert.equal(totalSupply, qTokenStorage.totalSupply);
-            assert.equal(totalReserves, qTokenStorage.totalReserves);
-            assert.equal(borrowIndex, qTokenStorage.borrowIndex);
+            assert.equal(totalBorrows, qTokenStorage.totalBorrows.toString());
+            assert.equal(totalLiquid, qTokenStorage.totalLiquid.toString());
+            assert.equal(totalSupply, qTokenStorage.totalSupply.toString());
+            assert.equal(totalReserves, qTokenStorage.totalReserves.toString());
+            assert.equal(borrowIndex, qTokenStorage.borrowIndex.toString());
             let actual = await qTokenStorage.accountBorrows.get(DEFAULT);
-            assert.equal(accountBorrows.get(DEFAULT).amount, actual.amount);
-            assert.equal(accountBorrows.get(DEFAULT).lastBorrowIndex, actual.lastBorrowIndex);
-            assert.equal(accountTokens.get(DEFAULT), await qTokenStorage.accountTokens.get(DEFAULT));
+            assert.equal(accountBorrows.get(DEFAULT).amount, Fixed(actual.amount));
+            assert.equal(accountBorrows.get(DEFAULT).lastBorrowIndex, Fixed(actual.lastBorrowIndex));
+            assert.equal(accountTokens.get(DEFAULT), Fixed((await qTokenStorage.accountTokens.get(DEFAULT))));
         });
     });
 
@@ -140,23 +149,23 @@ contract("qToken", async () => {
             await revertDefaultSigner();
         });
         it("should mint tokens", async () => {
-            const amount = 100;
+            const amount = toBN(100);
 
             await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
-            assert.equal(amount * accuracy, await qTokenStorage.accountTokens.get(RECEIVER));
-            assert.equal(totalLiquid + amount * accuracy, qTokenStorage.totalLiquid);
-            assert.equal(totalSupply + amount * accuracy, qTokenStorage.totalSupply);
-            assert.equal(amount,
+            assert.equal(amount * accuracy, Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
+            assert.equal(Fixed(amount.multipliedBy(accuracy).plus(totalLiquid)), Fixed(qTokenStorage.totalLiquid));
+            assert.equal(Fixed(amount.multipliedBy(accuracy).plus(totalSupply)), Fixed(qTokenStorage.totalSupply));
+            assert.equal(amount.toString(),
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
     });
 
     describe("redeem", async () => {
-        const amount = 100;
-        const _totalLiquid = totalLiquid + amount * accuracy;
-        const _totalSupply = totalSupply + amount * accuracy;
+        const amount = toBN(100);
+        const _totalLiquid = amount.multipliedBy(accuracy).plus(totalLiquid);
+        const _totalSupply = amount.multipliedBy(accuracy).plus(totalSupply);
         beforeEach("setup, mint 100 tokens on receiver", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
@@ -164,19 +173,19 @@ contract("qToken", async () => {
             await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
-            assert.equal(amount * accuracy, await qTokenStorage.accountTokens.get(RECEIVER));
-            assert.equal(_totalSupply, qTokenStorage.totalSupply);
-            assert.equal(_totalLiquid, qTokenStorage.totalLiquid);
+            assert.equal(Fixed(amount.multipliedBy(accuracy)), await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(Fixed(_totalSupply), Fixed(qTokenStorage.totalSupply));
+            assert.equal(Fixed(_totalLiquid), Fixed(qTokenStorage.totalLiquid));
         });
         it("should redeem amount", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             await qTokenInstance.redeem(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
-            assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
-            assert.equal(_totalSupply - amount * accuracy, qTokenStorage.totalSupply);
-            assert.equal(_totalLiquid - amount * accuracy, qTokenStorage.totalLiquid);
-            assert.equal(amountOfXTZbefore.toNumber() + amount,
+            assert.equal(0, Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
+            assert.equal(Fixed(_totalSupply.minus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalSupply));
+            assert.equal(Fixed(_totalLiquid.minus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalLiquid));
+            assert.equal(Fixed(amountOfXTZbefore.plus(amount)),
                         (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
         it("should redeem all users tokens, pass 0 as amount", async () => {
@@ -186,8 +195,8 @@ contract("qToken", async () => {
             const qTokenStorage = await qTokenInstance.storage();
             assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
             // usersTokens already with accuracy
-            assert.equal(_totalSupply - usersTokens, qTokenStorage.totalSupply);
-            assert.equal(_totalLiquid - usersTokens, qTokenStorage.totalLiquid);
+            assert.equal(Fixed(_totalSupply.minus(usersTokens)), Fixed(qTokenStorage.totalSupply));
+            assert.equal(Fixed(_totalLiquid.minus(usersTokens)), Fixed(qTokenStorage.totalLiquid));
             assert.equal(amountOfXTZbefore.toNumber() + usersTokens.toNumber() / accuracy,
                         (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
@@ -206,7 +215,7 @@ contract("qToken", async () => {
         });
         it("should get exception, exchange rate is zero", async () => {
             // make zero exchange rate
-            let s = storage; s.totalSupply = 1e+18;
+            let s = storage; s.totalSupply = Fixed(toBN(1e+50));
             let q = await qToken.new(s);
             await truffleAssert.fails(q.redeem(RECEIVER, 0),
                 truffleAssert.INVALID_OPCODE, "NotEnoughTokensToSendToUser");
@@ -220,19 +229,18 @@ contract("qToken", async () => {
             await revertDefaultSigner();
         });
         it("should borrow tokens", async () => {
-            const amount = 100;
-            const BEF = await qTokenInstance.storage();
+            const amount = toBN(100);
             await qTokenInstance.borrow(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
             assert.equal(amount * accuracy, _accountBorrows.amount);
-            assert.equal(totalBorrows + (amount * accuracy), qTokenStorage.totalBorrows);
-            assert.equal(amount,
+            assert.equal(Fixed(totalBorrows.plus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalBorrows));
+            assert.equal(amount.toNumber(),
                         (await (await XTZ_Instance.storage()).ledger.get(DEFAULT)).balance);
         });
         it("should get exception, total liquid less than amount", async () => {
-            const amount = totalLiquid + 1;
+            const amount = totalLiquid.plus(1);
 
             await truffleAssert.fails(qTokenInstance.borrow(RECEIVER, amount),
                 truffleAssert.INVALID_OPCODE, "AmountTooBig");
@@ -248,12 +256,12 @@ contract("qToken", async () => {
             await qTokenInstance.borrow(RECEIVER, amountToBorrow);
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
         });
-        it("should repay tokens", async () => {
+        it.only("should repay tokens", async () => {
             await qTokenInstance.repay(RECEIVER, amountToBorrow);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
-            assert.equal(0, _accountBorrows.amount);
+            assert.equal(0, Fixed(_accountBorrows.amount));
             //should be equal, coz we make borrow 100 and repay 100, so it's 0 now
             assert.equal(totalBorrows, qTokenStorage.totalBorrows);
             assert.equal(amountToBorrow,

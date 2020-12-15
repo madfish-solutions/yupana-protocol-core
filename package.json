@@ -4,6 +4,7 @@
   "description": "Tezos Example Box =================",
   "dependencies": {
     "@taquito/taquito": "^7.0.1-beta.0",
+    "bignumber.js": "^9.0.0",
     "@taquito/michelson-encoder": "latest",
     "@taquito/signer": "latest"
   },
