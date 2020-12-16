@@ -15,7 +15,40 @@ const toBN = (num) => {
 
 const Fixed = (value) => {
     return value.toNumber().toLocaleString('fullwide', {useGrouping:false})
-}
+};
+
+const ExchangeRate = async (s) => {
+    function fixFields(s) {
+        s.totalBorrows = toBN(s.totalBorrows);
+        s.totalLiquid = toBN(s.totalLiquid);
+        s.totalReserves = toBN(s.totalReserves);
+        s.borrowIndex = toBN(s.borrowIndex);
+        s.totalSupply = toBN(s.totalSupply);
+        return s
+    }
+    s = fixFields(s)
+    const accuracy = toBN(1e+18);
+    const lastUpdateTime = Date.parse("2000-01-01T10:10:10.000Z")
+
+    const apr = toBN(25000000000000000); // 2.5% (0.025) from accuracy
+    const utilizationBase = toBN(200000000000000000); // 20% (0.2)
+    const secondsPerYear = toBN(31536000);
+    const reserveFactorFloat = toBN(1000000000000000);// 0.1% (0.001)
+    const utilizationBasePerSecFloat = toBN(6341958397); // utilizationBase / secondsPerYear; 0.000000006341958397
+    const debtRatePerSecFloat = toBN(792744800); // apr / secondsPerYear; 0.000000000792744800
+
+    const utilizationRateFloat = s.totalBorrows.multipliedBy(accuracy).div(s.totalLiquid.plus(s.totalBorrows).minus(s.totalReserves)); // one div operation with float require accuracy mult
+    const borrowRatePerSecFloat = utilizationRateFloat.multipliedBy(utilizationBasePerSecFloat).div(accuracy).plus(debtRatePerSecFloat); // one mult operation with float require accuracy division
+    const simpleInterestFactorFloat = borrowRatePerSecFloat.multipliedBy((Date.parse((await tezos.rpc.getBlockHeader()).timestamp) - lastUpdateTime) / 1000 - 1);
+    const interestAccumulatedFloat = simpleInterestFactorFloat.multipliedBy(s.totalBorrows).div(accuracy); // one mult operation with float require accuracy division
+
+    s.totalBorrows = interestAccumulatedFloat.plus(s.totalBorrows);
+    s.totalReserves = interestAccumulatedFloat.multipliedBy(reserveFactorFloat).div(accuracy).plus(s.totalReserves); // one mult operation with float require accuracy division
+    s.borrowIndex = simpleInterestFactorFloat.multipliedBy(s.borrowIndex).div(accuracy).plus(s.borrowIndex);
+
+    const exchangeRate = s.totalLiquid.plus(s.totalBorrows).minus(s.totalReserves).div(s.totalSupply);
+    return Math.floor(exchangeRate)
+};
 
 contract("qToken", async () => {
     const DEFAULT = accounts[0];
@@ -153,10 +186,12 @@ contract("qToken", async () => {
 
             await qTokenInstance.mint(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
+            const exchangeRate = await ExchangeRate(storage);
+            const mintTokens = amount.multipliedBy(accuracy).div(exchangeRate);
 
-            assert.equal(amount * accuracy, Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
+            assert.equal(Fixed(mintTokens), Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
             assert.equal(Fixed(amount.multipliedBy(accuracy).plus(totalLiquid)), Fixed(qTokenStorage.totalLiquid));
-            assert.equal(Fixed(amount.multipliedBy(accuracy).plus(totalSupply)), Fixed(qTokenStorage.totalSupply));
+            assert.equal(Fixed(mintTokens.plus(totalSupply)), Fixed(qTokenStorage.totalSupply));
             assert.equal(amount.toString(),
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
@@ -165,25 +200,36 @@ contract("qToken", async () => {
     describe("redeem", async () => {
         const amount = toBN(100);
         const _totalLiquid = amount.multipliedBy(accuracy).plus(totalLiquid);
-        const _totalSupply = amount.multipliedBy(accuracy).plus(totalSupply);
+        let _totalSupply;
+        let storageAfterMint;
+        let accTokensAferMint;
         beforeEach("setup, mint 100 tokens on receiver", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
             await revertDefaultSigner();
             await qTokenInstance.mint(RECEIVER, amount);
-            const qTokenStorage = await qTokenInstance.storage();
+            storageAfterMint = await qTokenInstance.storage();
 
-            assert.equal(Fixed(amount.multipliedBy(accuracy)), await qTokenStorage.accountTokens.get(RECEIVER));
-            assert.equal(Fixed(_totalSupply), Fixed(qTokenStorage.totalSupply));
-            assert.equal(Fixed(_totalLiquid), Fixed(qTokenStorage.totalLiquid));
+            const exchangeRate = await ExchangeRate(storage);
+            const mintTokens = amount.multipliedBy(accuracy).div(exchangeRate);
+
+            _totalSupply = totalSupply.plus(mintTokens);
+            accTokensAferMint = Fixed(await storageAfterMint.accountTokens.get(RECEIVER));
+
+            assert.equal(Fixed(mintTokens), accTokensAferMint);
+            assert.equal(Fixed(_totalSupply), Fixed(storageAfterMint.totalSupply));
+            assert.equal(Fixed(_totalLiquid), Fixed(storageAfterMint.totalLiquid));
         });
         it("should redeem amount", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             await qTokenInstance.redeem(RECEIVER, amount);
             const qTokenStorage = await qTokenInstance.storage();
 
-            assert.equal(0, Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
-            assert.equal(Fixed(_totalSupply.minus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalSupply));
+            const exchangeRate = await ExchangeRate(storageAfterMint);
+            const burnTokens = amount.multipliedBy(accuracy).div(exchangeRate);
+
+            assert.equal(accTokensAferMint - burnTokens, Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
+            assert.equal(Fixed(_totalSupply.minus(burnTokens)), Fixed(qTokenStorage.totalSupply));
             assert.equal(Fixed(_totalLiquid.minus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalLiquid));
             assert.equal(Fixed(amountOfXTZbefore.plus(amount)),
                         (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
@@ -193,29 +239,42 @@ contract("qToken", async () => {
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
             await qTokenInstance.redeem(RECEIVER, 0);
             const qTokenStorage = await qTokenInstance.storage();
-            assert.equal(0, await qTokenStorage.accountTokens.get(RECEIVER));
+
+            const exchangeRate = await ExchangeRate(storageAfterMint);
+            const amt = toBN(usersTokens).div(accuracy);
+            const burnTokens = amt.multipliedBy(accuracy).div(exchangeRate);
+
+            assert.equal(accTokensAferMint - burnTokens, Fixed(await qTokenStorage.accountTokens.get(RECEIVER)));
+            assert.equal(Fixed(_totalSupply.minus(burnTokens)), Fixed(qTokenStorage.totalSupply));
             // usersTokens already with accuracy
-            assert.equal(Fixed(_totalSupply.minus(usersTokens)), Fixed(qTokenStorage.totalSupply));
             assert.equal(Fixed(_totalLiquid.minus(usersTokens)), Fixed(qTokenStorage.totalLiquid));
             assert.equal(amountOfXTZbefore.toNumber() + usersTokens.toNumber() / accuracy,
                         (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
         it("should redeem 50 tokens", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
-            const amountTo = 50;
+            const amountTo = toBN(50);
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
             await qTokenInstance.redeem(RECEIVER, amountTo);
             const qTokenStorage = await qTokenInstance.storage();
 
-            assert.equal(usersTokens - amountTo * accuracy, await qTokenStorage.accountTokens.get(RECEIVER));
-            assert.equal(_totalSupply - amountTo * accuracy, qTokenStorage.totalSupply);
+            const exchangeRate = await ExchangeRate(storageAfterMint);
+            const burnTokens = amountTo.multipliedBy(accuracy).div(exchangeRate);
+
+            assert.equal(usersTokens - burnTokens, await qTokenStorage.accountTokens.get(RECEIVER));
+            assert.equal(Fixed(_totalSupply.minus(burnTokens)), Fixed(qTokenStorage.totalSupply));
             assert.equal(_totalLiquid - amountTo * accuracy, qTokenStorage.totalLiquid);
-            assert.equal(amountOfXTZbefore.toNumber() + amountTo,
+            assert.equal(Fixed(amountTo.plus(amountOfXTZbefore)),
                         (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
         it("should get exception, exchange rate is zero", async () => {
             // make zero exchange rate
-            let s = storage; s.totalSupply = Fixed(toBN(1e+50));
+            let s = storage;
+            s.totalBorrows = 1;
+            s.totalLiquid = 1;
+            s.totalReserves = 1;
+            s.borrowIndex = 1;
+            s.totalSupply = Fixed(toBN(1e+228));
             let q = await qToken.new(s);
             await truffleAssert.fails(q.redeem(RECEIVER, 0),
                 truffleAssert.INVALID_OPCODE, "NotEnoughTokensToSendToUser");
@@ -234,8 +293,11 @@ contract("qToken", async () => {
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
+            // updateInterest updates total borrows
+            await ExchangeRate(storage);
+
             assert.equal(amount * accuracy, _accountBorrows.amount);
-            assert.equal(Fixed(totalBorrows.plus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalBorrows));
+            assert.equal(Fixed(storage.totalBorrows.plus(amount.multipliedBy(accuracy))), Fixed(qTokenStorage.totalBorrows));
             assert.equal(amount.toNumber(),
                         (await (await XTZ_Instance.storage()).ledger.get(DEFAULT)).balance);
         });
@@ -249,42 +311,67 @@ contract("qToken", async () => {
 
     describe("repay", async () => {
         const amountToBorrow = 100;
+        let storageAfterBorrow;
         beforeEach("setup, add balance of xtz to DEFAULT and make borrow to user", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.transfer(RECEIVER, qTokenInstance.address, amountToBorrow);
             await revertDefaultSigner();
             await qTokenInstance.borrow(RECEIVER, amountToBorrow);
+            storageAfterBorrow = await qTokenInstance.storage();
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
         });
-        it.only("should repay tokens", async () => {
+        it("should repay tokens", async () => {
+            const borrowsBeforeRepay = await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER);
+
             await qTokenInstance.repay(RECEIVER, amountToBorrow);
             const qTokenStorage = await qTokenInstance.storage();
             const _accountBorrows = await qTokenStorage.accountBorrows.get(RECEIVER);
 
-            assert.equal(0, Fixed(_accountBorrows.amount));
-            //should be equal, coz we make borrow 100 and repay 100, so it's 0 now
-            assert.equal(totalBorrows, qTokenStorage.totalBorrows);
+            await ExchangeRate(storageAfterBorrow);
+
+            let borrowsAmount = toBN(borrowsBeforeRepay.amount).multipliedBy(storageAfterBorrow.borrowIndex).
+                                div(borrowsBeforeRepay.lastBorrowIndex).div(accuracy);
+            borrowsAmount = borrowsAmount.minus(accuracy.multipliedBy(amountToBorrow));
+
+            assert.equal(Math.abs(Fixed(borrowsAmount)), Fixed(_accountBorrows.amount));
+            // accuracy division because there is an infelicity in the calculations
+            assert.equal(Math.floor(toBN(storageAfterBorrow.totalBorrows).minus(accuracy.multipliedBy(amountToBorrow)).div(accuracy)),
+                         Math.floor(toBN(qTokenStorage.totalBorrows).div(accuracy)));
             assert.equal(amountToBorrow,
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
     });
 
     describe("liquidate", async () => {
-        const amountToBorrow = 100;
+        const amountToBorrow = toBN(100);
+        let setupStorage;
+        let borrowsAmount;
         beforeEach("setup, borrow 100 tokens on receiver and users", async () => {
             await setSigner(RECEIVER);
             await XTZ_Instance.transfer(RECEIVER, qTokenInstance.address, amountToBorrow * 2);
             await revertDefaultSigner();
             await qTokenInstance.borrow(RECEIVER, amountToBorrow);
             await qTokenInstance.borrow(LIQUIDATOR, amountToBorrow);
+            setupStorage = await qTokenInstance.storage();
             await XTZ_Instance.approve(qTokenInstance.address, 1e+5);
+
+            const liquidationIncentive = toBN(105000000);// 105% (1.05) from accuracy
+            const exchangeRate = await ExchangeRate(setupStorage);
+            const seizeTokens = amountToBorrow.multipliedBy(liquidationIncentive).div(accuracy).div(exchangeRate);
+
+            const borrow = await setupStorage.accountBorrows.get(RECEIVER);
+
+            borrowsAmount = toBN(borrow.amount).multipliedBy(setupStorage.borrowIndex).div(borrow.lastBorrowIndex);
+            borrowsAmount = borrowsAmount.minus(seizeTokens);
         });
         it("should liquidate borrow", async () => {
             assert.equal(amountToBorrow * accuracy, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
             await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, amountToBorrow);
-            //coz liquidation incentive is 105%
-            assert.equal(5 * accuracy, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
-            assert.equal(amountToBorrow,
+
+            // accuracy division because there is an infelicity in the calculations
+            assert.equal(Math.floor(borrowsAmount.div(accuracy)),
+                         Math.floor(toBN((await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount).div(accuracy)));
+            assert.equal(amountToBorrow.toNumber(),
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
         it("should get exception, borrower is liquidator", async () => {
@@ -294,9 +381,10 @@ contract("qToken", async () => {
         it("should pass zero and expect same result in case pass amount to borrow", async () => {
             assert.equal(amountToBorrow * accuracy, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
             await qTokenInstance.liquidate(LIQUIDATOR, RECEIVER, 0);
-            //coz liquidation incentive is 105%
-            assert.equal(5 * accuracy, (await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount);
-            assert.equal(amountToBorrow,
+
+            assert.equal(Math.floor(borrowsAmount.div(accuracy)),
+                         Math.floor(toBN((await (await qTokenInstance.storage()).accountBorrows.get(RECEIVER)).amount).div(accuracy)));
+            assert.equal(amountToBorrow.toNumber(),
                         (await (await XTZ_Instance.storage()).ledger.get(qTokenInstance.address)).balance);
         });
     });

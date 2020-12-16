@@ -101,14 +101,14 @@ function updateInterest(var s : storage) : storage is
     const utilizationBasePerSecFloat : nat = 6341958397n; // utilizationBase / secondsPerYear; 0.000000006341958397
     const debtRatePerSecFloat : nat = 792744800n; // apr / secondsPerYear; 0.000000000792744800
 
-    const utilizationRateFloat : nat = s.totalBorrows / abs(s.totalLiquid + s.totalBorrows - s.totalReserves);
-    const borrowRatePerSecFloat : nat = (utilizationRateFloat * utilizationBasePerSecFloat + debtRatePerSecFloat) / accuracy; // one mult operation with float require accuracy division
+    const utilizationRateFloat : nat = s.totalBorrows * accuracy / abs(s.totalLiquid + s.totalBorrows - s.totalReserves); // one div operation with float require accuracy mult
+    const borrowRatePerSecFloat : nat = utilizationRateFloat * utilizationBasePerSecFloat / accuracy + debtRatePerSecFloat; // one mult operation with float require accuracy division
     const simpleInterestFactorFloat : nat = borrowRatePerSecFloat * abs(Tezos.now - s.lastUpdateTime);
     const interestAccumulatedFloat : nat = simpleInterestFactorFloat * s.totalBorrows / accuracy; // one mult operation with float require accuracy division
 
     s.totalBorrows := interestAccumulatedFloat + s.totalBorrows;
-    s.totalReserves := (interestAccumulatedFloat * reserveFactorFloat + s.totalReserves) / accuracy; // one mult operation with float require accuracy division
-    s.borrowIndex := (simpleInterestFactorFloat * s.borrowIndex + s.borrowIndex) / accuracy; // one mult operation with float require accuracy division
+    s.totalReserves := interestAccumulatedFloat * reserveFactorFloat / accuracy + s.totalReserves; // one mult operation with float require accuracy division
+    s.borrowIndex := simpleInterestFactorFloat * s.borrowIndex / accuracy + s.borrowIndex; // one mult operation with float require accuracy division
   } with (s)
 
 function mint(const user : address; const amt : nat; var s : storage) : return is
@@ -133,7 +133,7 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
 
     var burnTokens : nat := 0n;
     const accountTokens : nat = getTokens(user, s);
-    var exchangeRate : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
 
     if exchangeRate = 0n then
       failwith("NotEnoughTokensToSendToUser")
