@@ -142,6 +142,10 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
     if amt = 0n then
       amt := accountTokens / accuracy;
     else skip;
+    if s.totalLiquid < amt * accuracy then
+      failwith("NotEnoughLiquid")
+    else skip;
+
     burnTokens := amt * accuracy * accuracy / exchangeRateFloat;
 
     if accountTokens < burnTokens then
