@@ -17,6 +17,9 @@ type storage is
     borrowIndex     :nat;
     accountBorrows  :big_map(address, borrows);
     accountTokens   :big_map(address, nat);
+    t:nat;
+    tt:nat;
+    ttt:nat;
   ]
 //all numbers in storage are real numbers
 const accuracy : nat = 1000000000000000000n; //1e+18
@@ -116,11 +119,11 @@ function mint(const user : address; const amt : nat; var s : storage) : return i
     mustBeAdmin(s);
     s := updateInterest(s);
 
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const mintTokens : nat = amt * accuracy / exchangeRate;
+    const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+    const mintTokensFloat : nat = amt * accuracy * accuracy / exchangeRateFloat;
 
-    s.accountTokens[user] := getTokens(user, s) + mintTokens;
-    s.totalSupply := s.totalSupply + mintTokens;
+    s.accountTokens[user] := getTokens(user, s) + mintTokensFloat;
+    s.totalSupply := s.totalSupply + mintTokensFloat;
     s.totalLiquid := s.totalLiquid + amt * accuracy;
   } with (list [Tezos.transaction(Transfer(user, (Tezos.self_address, amt)), 
          0mutez, 
@@ -133,16 +136,19 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
 
     var burnTokens : nat := 0n;
     const accountTokens : nat = getTokens(user, s);
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+    var exchangeRateFloat : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+    s.t := exchangeRateFloat;
+    s.tt := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+    s.ttt := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
 
-    if exchangeRate = 0n then
+    if exchangeRateFloat = 0n then
       failwith("NotEnoughTokensToSendToUser")
     else skip;
 
     if amt = 0n then
       amt := accountTokens / accuracy;
     else skip;
-    burnTokens := amt * accuracy / exchangeRate;
+    burnTokens := amt * accuracy * accuracy / exchangeRateFloat;
 
     
     s.accountTokens[user] := abs(accountTokens - burnTokens);
