@@ -17,9 +17,6 @@ type storage is
     borrowIndex     :nat;
     accountBorrows  :big_map(address, borrows);
     accountTokens   :big_map(address, nat);
-    t:nat;
-    tt:nat;
-    ttt:nat;
   ]
 //all numbers in storage are real numbers
 const accuracy : nat = 1000000000000000000n; //1e+18
@@ -136,10 +133,7 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
 
     var burnTokens : nat := 0n;
     const accountTokens : nat = getTokens(user, s);
-    var exchangeRateFloat : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
-    s.t := exchangeRateFloat;
-    s.tt := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
-    s.ttt := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+    const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
 
     if exchangeRateFloat = 0n then
       failwith("NotEnoughTokensToSendToUser")
@@ -149,6 +143,10 @@ function redeem(const user : address; var amt : nat; var s : storage) : return i
       amt := accountTokens / accuracy;
     else skip;
     burnTokens := amt * accuracy * accuracy / exchangeRateFloat;
+
+    if accountTokens < burnTokens then
+      failwith("NotEnoughTokensToBurn")
+    else skip;
 
     
     s.accountTokens[user] := abs(accountTokens - burnTokens);
@@ -184,7 +182,7 @@ function repay(const user : address; const amt : nat; var s : storage) : return 
     s := updateInterest(s);
 
     var accountBorrows : borrows := getBorrows(user, s);
-    accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex / accuracy;
+    accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
     accountBorrows.amount := abs(accountBorrows.amount - amt * accuracy);
     accountBorrows.lastBorrowIndex := s.borrowIndex;
 
@@ -209,9 +207,9 @@ function liquidate(const liquidator : address; const borrower : address; var amt
       amt := amt * accuracy;
 
 
-    const liquidationIncentive : nat = 105000000n;// 105% (1.05) from accuracy
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const seizeTokens : nat = amt * liquidationIncentive / accuracy / exchangeRate;
+    const liquidationIncentive : nat = 1050000000000000000n;// 105% (1.05) from accuracy
+    const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+    const seizeTokens : nat = amt * liquidationIncentive / exchangeRateFloat;
 
     debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
     debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);

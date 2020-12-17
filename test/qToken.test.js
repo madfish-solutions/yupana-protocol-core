@@ -55,7 +55,7 @@ const ExchangeRate = async (s) => {
     return exchangeRate
 };
 
-contract("qToken", async () => {
+contract.skip("qToken", async () => {
     const DEFAULT = accounts[0];
     const RECEIVER = accounts[1];
     const LIQUIDATOR = accounts[3];
@@ -242,7 +242,7 @@ contract("qToken", async () => {
             assert.equal(Fixed(amountOfXTZbefore.plus(amount)),
                         (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance);
         });
-        it.only("should redeem all users tokens, pass 0 as amount", async () => {
+        it("should redeem all users tokens, pass 0 as amount", async () => {
             const amountOfXTZbefore = (await (await XTZ_Instance.storage()).ledger.get(RECEIVER)).balance;
             const usersTokens = await (await qTokenInstance.storage()).accountTokens.get(RECEIVER);
             await qTokenInstance.redeem(RECEIVER, 0);
@@ -251,11 +251,17 @@ contract("qToken", async () => {
             const exchangeRate = await ExchangeRate(storageAfterMint);
 
             // console.log("TEST2 rate ", Fixed(qTokenStorage.ttt));
-            console.log("TEST  rate ", Fixed(qTokenStorage.tt))
+            console.log("log   tt   ", qTokenStorage.tt.toNumber())//Fixed(qTokenStorage.tt))
+            console.log("ACTUAL rate", Fixed(exchangeRate))//Fixed(exchangeRate))
             //console.log("REAL", Fixed(storageAfterMint.totalSupply))
 
-            console.log("should rate", qTokenStorage.t)
-            // console.log("actual rate", Fixed(exchangeRate))
+            console.log("log       t", qTokenStorage.t.toNumber())
+            console.log("log2     tt", qTokenStorage.tt.toNumber().toLocaleString('fullwide', {useGrouping:false}))
+            console.log("log2      t", qTokenStorage.t.toNumber().toLocaleString('fullwide', {useGrouping:false}))
+            console.log("log3      t", Fixed(qTokenStorage.t))
+            console.log("log3     tt", Fixed(qTokenStorage.tt))
+
+
             const amt = toBN(usersTokens).div(accuracy);
             const burnTokens = amt.multipliedBy(accuracy).multipliedBy(accuracy).div(exchangeRate);
 
