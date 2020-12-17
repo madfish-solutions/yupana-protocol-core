@@ -176,19 +176,23 @@ function borrow(const user : address; var amt : nat; var s : storage) : return i
          0mutez, 
          getTokenContract(s.token))], s)
 
-function repay(const user : address; const amt : nat; var s : storage) : return is
+function repay(const user : address; var amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
     s := updateInterest(s);
+    amt := amt * accuracy;
 
     var accountBorrows : borrows := getBorrows(user, s);
     accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
-    accountBorrows.amount := abs(accountBorrows.amount - amt * accuracy);
+    if accountBorrows.amount < amt
+      failwith("AmountShouldBeLessOrEqual")
+    else skip;
+    accountBorrows.amount := abs(accountBorrows.amount - amt);
     accountBorrows.lastBorrowIndex := s.borrowIndex;
 
     s.accountBorrows[user] := accountBorrows;
-    s.totalBorrows := abs(s.totalBorrows - amt * accuracy);
-  } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt)), 
+    s.totalBorrows := abs(s.totalBorrows - amt);
+  } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt / accuracy)), 
          0mutez, 
          getTokenContract(s.token))], s)
 
@@ -212,6 +216,9 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     const seizeTokens : nat = amt * liquidationIncentive / exchangeRateFloat;
 
     debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
+    if debtorBorrows.amount < amt
+      failwith("AmountShouldBeLessOrEqual")
+    else skip;
     debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
     debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
