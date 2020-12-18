@@ -188,7 +188,7 @@ function repay(const user : address; var amt : nat; var s : storage) : return is
 
     var accountBorrows : borrows := getBorrows(user, s);
     accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
-    if accountBorrows.amount < amt
+    if accountBorrows.amount < amt then
       failwith("AmountShouldBeLessOrEqual")
     else skip;
     accountBorrows.amount := abs(accountBorrows.amount - amt);
@@ -220,7 +220,7 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     const seizeTokens : nat = amt * liquidationIncentive / exchangeRateFloat;
 
     debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
-    if debtorBorrows.amount < amt
+    if debtorBorrows.amount < amt then
       failwith("AmountShouldBeLessOrEqual")
     else skip;
     debtorBorrows.amount := abs(debtorBorrows.amount - amt);
