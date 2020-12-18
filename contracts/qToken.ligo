@@ -227,6 +227,7 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
     s.accountBorrows[borrower] := debtorBorrows;
+    s.accountTokens[borrower] := abs(getTokens(borrower, s)  - seizeTokens);
     s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt / accuracy)), 
          0mutez,
