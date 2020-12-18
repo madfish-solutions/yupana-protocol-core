@@ -219,6 +219,11 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
     const seizeTokens : nat = amt * liquidationIncentive / exchangeRateFloat;
 
+    const borrowerTokens : nat = getTokens(borrower, s);
+    if borrowerTokens < seizeTokens then
+      failwith("NotEnoughTokens")
+    else skip;
+
     debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
     if debtorBorrows.amount < amt then
       failwith("AmountShouldBeLessOrEqual")
@@ -227,7 +232,7 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
     s.accountBorrows[borrower] := debtorBorrows;
-    s.accountTokens[borrower] := abs(getTokens(borrower, s)  - seizeTokens);
+    s.accountTokens[borrower] := abs(borrowerTokens  - seizeTokens);
     s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
   } with (list [Tezos.transaction(Transfer(Tezos.sender, (Tezos.self_address, amt / accuracy)), 
          0mutez,
