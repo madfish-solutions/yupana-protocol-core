@@ -223,7 +223,7 @@ function liquidate(const liquidator : address; const borrower : address; var amt
     if debtorBorrows.amount < amt
       failwith("AmountShouldBeLessOrEqual")
     else skip;
-    debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
+    debtorBorrows.amount := abs(debtorBorrows.amount - amt);
     debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
     s.accountBorrows[borrower] := debtorBorrows;
