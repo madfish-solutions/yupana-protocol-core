@@ -233,6 +233,30 @@ function liquidate(const liquidator : address; const borrower : address; var amt
          0mutez,
          getTokenContract(s.token))], s)
 
+function seize(const liquidator : address; const borrower : address; const amt : nat; var s : storage) : return is
+  block {
+    mustBeAdmin(s);
+
+    const liquidationIncentive : nat = 1050000000000000000n;// 105% (1.05) from accuracy
+    const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+    const seizeTokens : nat = amt * liquidationIncentive / exchangeRateFloat;
+
+    s.accountTokens[borrower] := abs(getTokens(borrower, s)  - seizeTokens);
+    s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
+  } with (noOperations, s)
+
+function updateControllerState(const user : address; var s : storage) : return is
+  block {
+    mustBeAdmin(s);
+    s := updateInterest(s);
+
+    var userBorrows : borrows := getBorrows(user, s);
+    userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
+    userBorrows.lastBorrowIndex := s.borrowIndex;
+
+    s.accountBorrows[user] := userBorrows;
+  } with (noOperations, s)
+
 function main(const action : entryAction; var s : storage) : return is
   block {
     skip
