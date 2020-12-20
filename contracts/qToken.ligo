@@ -31,6 +31,7 @@ type redeemParams is michelson_pair(address, "user", nat, "amount")
 type borrowParams is michelson_pair(address, "user", nat, "amount")
 type repayParams is michelson_pair(address, "user", nat, "amount")
 type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+type seizeParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 
 type entryAction is
   | SetAdmin of address
@@ -40,6 +41,8 @@ type entryAction is
   | Borrow of borrowParams
   | Repay of repayParams
   | Liquidate of liquidateParams
+  | Seize of seizeParams
+  | UpdateControllerState of address
 
 function getBorrows(const addr : address; const s : storage) : borrows is
   block {
@@ -279,4 +282,6 @@ function main(const action : entryAction; var s : storage) : return is
     | Borrow(params) -> borrow(params.0, params.1, s)
     | Repay(params) -> repay(params.0, params.1, s)
     | Liquidate(params) -> liquidate(params.0, params.1.0, params.1.1, s)
+    | Seize(params) -> seize(params.0, params.1.0, params.1.1, s)
+    | UpdateControllerState(params) -> updateControllerState(params, s)
   end;
