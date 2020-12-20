@@ -200,6 +200,7 @@ function repay(const user : address; var amt : nat; var s : storage) : return is
          0mutez, 
          getTokenContract(s.token))], s)
 
+// todo call controller.seize(liquidator, borrower, amount, collateralAddr)
 function liquidate(const liquidator : address; const borrower : address; var amt : nat; var s : storage) : return is
   block {
     mustBeAdmin(s);
@@ -242,14 +243,19 @@ function seize(const liquidator : address; const borrower : address; const amt :
   block {
     mustBeAdmin(s);
 
-    const liquidationIncentive : nat = 1050000000000000000n;// 105% (1.05) from accuracy
     const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
-    const seizeTokens : nat = amt * liquidationIncentive / exchangeRateFloat;
+    const seizeTokensFloat : nat = amt * accuracy * accuracy / exchangeRateFloat;
 
-    s.accountTokens[borrower] := abs(getTokens(borrower, s)  - seizeTokens);
-    s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
+    const borrowerTokensFloat : nat = getTokens(borrower, s);
+    if borrowerTokensFloat < seizeTokensFloat then
+      failwith("NotEnoughTokens")
+    else skip;
+
+    s.accountTokens[borrower] := abs(borrowerTokensFloat  - seizeTokensFloat);
+    s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokensFloat;
   } with (noOperations, s)
 
+//todo call admin.updateQToken(user, user.balance, user.borrow, s.exchangeRate)
 function updateControllerState(const user : address; var s : storage) : return is
   block {
     mustBeAdmin(s);
