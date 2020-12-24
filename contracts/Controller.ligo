@@ -30,6 +30,9 @@ type return is list (operation) * storage
 type entryAction is
   | UpdatePrice of address * nat
 
+type mint_type is Mint of michelson_pair(address, "user", nat, "amount")
+
+
 
 // function getQTokens(const s : storage) : set(address) is
 //   case s.qTokens of
@@ -71,6 +74,12 @@ function getMarket(const qToken : address; const s : storage) : marketInfo is
     | Some(value) -> m := value
     end;
   } with m
+
+function getMintEntrypoint(const token_address : address) : contract(mint_type) is
+  case (Tezos.get_entrypoint_opt("%mint", token_address) : option(contract(mint_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetMintEntrypoint") : contract(mint_type))
+  end;
 
 function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : michelson_pair(nat, "surplus", nat, "shortfail") is
   block {
@@ -212,6 +221,7 @@ function exitMarket(const qToken : address; var s : storage) : return is
       failwith("BorrowsExists")
     else skip;
 
+    // todo after redeem?
     const pair = getUserLiquidity(Tezos.sender, qToken, getAccountTokens(Tezos.sender, qToken, s), 0n, s);
     
     if pair.1 =/= 0n then
@@ -227,7 +237,9 @@ function exitMarket(const qToken : address; var s : storage) : return is
 function safeMint(const amt : nat; const qToken : address; var s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
-  } with (noOperations, s)
+  } with (list [Tezos.transaction(Mint(Tezos.sender, amt), 
+         0mutez, 
+         getMintEntrypoint(qToken))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
