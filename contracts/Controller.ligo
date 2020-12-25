@@ -37,6 +37,11 @@ type redeemMiddle_type is RedeemMiddle of michelson_pair(michelson_pair(address,
 type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
 type ensuredRedeem_type is EnsuredRedeem of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                             michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
+type borrow_type is Borrow of michelson_pair(address, "user", nat, "amount")
+type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
+                                                         michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
+type ensuredBorrow_type is EnsuredBorrow of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
+                                                           michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 
 
 
@@ -111,7 +116,25 @@ function getEnsuredRedeemEntrypoint(const token_address : address) : contract(en
     | None -> (failwith("CantGetEnsuredRedeemEntrypoint") : contract(ensuredRedeem_type))
   end;
 
-function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : michelson_pair(nat, "surplus", nat, "shortfail") is
+function getBorrowEntrypoint(const token_address : address) : contract(borrow_type) is
+  case (Tezos.get_entrypoint_opt("%borrow", token_address) : option(contract(borrow_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetBorrowEntrypoint") : contract(borrow_type))
+  end;
+
+function getBorrowMiddleEntrypoint(const token_address : address) : contract(borrowMiddle_type) is
+  case (Tezos.get_entrypoint_opt("%borrowMiddle", token_address) : option(contract(borrowMiddle_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetBorrowMiddleEntrypoint") : contract(borrowMiddle_type))
+  end;
+
+function getEnsuredBorrowEntrypoint(const token_address : address) : contract(ensuredBorrow_type) is
+  case (Tezos.get_entrypoint_opt("%ensuredBorrow", token_address) : option(contract(ensuredBorrow_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetEnsuredBorrowEntrypoint") : contract(ensuredBorrow_type))
+  end;
+
+function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : michelson_pair(nat, "surplus", nat, "shortfail") is
   block {
     sumCollateral := 0n;
     sumBorrow := 0n;
@@ -324,7 +347,52 @@ function ensuredRedeem(const user : address; const qToken : address; const redee
                 0mutez,
                 getRedeemEntrypoint(qToken))], s)
 
-// function safeBorrow(const amt : nat; const qToken : address; var s : storage)
+function safeBorrow(const amt : nat; const qToken : address; var s : storage) : return is
+  block {
+    mustContainsQTokens(qToken, s);
+
+    var market : marketInfo := getMarket(qToken, s);
+    var ops := noOperations;
+
+    if market.users contains Tezos.sender then skip;
+    else block {
+      const res = enterMarket(qToken, s);
+      s := res.1;
+    };
+    //todo *ensure borrow amount smaller than max borrow limit (?)
+    for token in set s.qTokens block {
+      market := getMarket(token, s);
+      if market.users contains Tezos.sender then
+        ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+               0mutez, 
+               getUpdateControllerStateEntrypoint(qToken)) # ops;
+      else skip;
+    };
+    //todo will it self call?
+    ops := Tezos.transaction(BorrowMiddle((Tezos.sender, qToken), (amt, getAccountBorrows(Tezos.sender, qToken, s))), 
+                             0mutez, 
+                             getBorrowMiddleEntrypoint(Tezos.self_address)) # ops;
+  } with (ops, s)
+
+function borrowMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+  block {
+    mustBeSelf(unit);
+  } with (list [Tezos.transaction(EnsuredBorrow((user, qToken), (redeemTokens, borrowAmount)), 
+                                  0mutez, 
+                                  getEnsuredBorrowEntrypoint(Tezos.self_address))], s)
+
+function ensuredBorrow(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+  block {
+    mustBeSelf(unit);
+
+    const pair = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
+    if pair.1 =/= 0n then
+      failwith("ShortfailNotZero")
+    else skip;
+    
+  } with (list [Tezos.transaction(Borrow(user, borrowAmount), 
+                                  0mutez, 
+                                  getBorrowEntrypoint(qToken))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
