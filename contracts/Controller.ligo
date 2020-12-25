@@ -42,8 +42,7 @@ type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address,
                                                          michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 type ensuredBorrow_type is EnsuredBorrow of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                                            michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
-
-
+type repay_type is Repay of michelson_pair(address, "user", nat, "amount")
 
 // function getQTokens(const s : storage) : set(address) is
 //   case s.qTokens of
@@ -132,6 +131,12 @@ function getEnsuredBorrowEntrypoint(const token_address : address) : contract(en
   case (Tezos.get_entrypoint_opt("%ensuredBorrow", token_address) : option(contract(ensuredBorrow_type))) of 
     Some(contr) -> contr
     | None -> (failwith("CantGetEnsuredBorrowEntrypoint") : contract(ensuredBorrow_type))
+  end;
+
+function getRepayEntrypoint(const token_address : address) : contract(repay_type) is
+  case (Tezos.get_entrypoint_opt("%repay", token_address) : option(contract(repay_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetRepayEntrypoint") : contract(repay_type))
   end;
 
 function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : michelson_pair(nat, "surplus", nat, "shortfail") is
@@ -389,10 +394,17 @@ function ensuredBorrow(const user : address; const qToken : address; const redee
     if pair.1 =/= 0n then
       failwith("ShortfailNotZero")
     else skip;
-    
+
   } with (list [Tezos.transaction(Borrow(user, borrowAmount), 
                                   0mutez, 
                                   getBorrowEntrypoint(qToken))], s)
+
+function safeRepay(const amt : nat; const qToken : address; const s : storage) : return is
+  block {
+    mustContainsQTokens(qToken, s);
+  } with (list [Tezos.transaction(Repay(Tezos.sender, amt), 
+         0mutez, 
+         getRepayEntrypoint(qToken))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
