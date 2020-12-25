@@ -31,6 +31,12 @@ type entryAction is
   | UpdatePrice of address * nat
 
 type mint_type is Mint of michelson_pair(address, "user", nat, "amount")
+type updateControllerState_type is UpdateControllerState of address
+type redeemMiddle_type is RedeemMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
+                                                         michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
+type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
+type ensuredRedeem_type is EnsuredRedeem of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
+                                            michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 
 
 
@@ -81,6 +87,30 @@ function getMintEntrypoint(const token_address : address) : contract(mint_type) 
     | None -> (failwith("CantGetMintEntrypoint") : contract(mint_type))
   end;
 
+function getUpdateControllerStateEntrypoint(const token_address : address) : contract(updateControllerState_type) is
+  case (Tezos.get_entrypoint_opt("%updateControllerState", token_address) : option(contract(updateControllerState_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetUpdateControllerStateEntrypoint") : contract(updateControllerState_type))
+  end;
+
+function getRedeemMiddleEntrypoint(const token_address : address) : contract(redeemMiddle_type) is
+  case (Tezos.get_entrypoint_opt("%redeemMiddle", token_address) : option(contract(redeemMiddle_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetRedeemMiddleEntrypoint") : contract(redeemMiddle_type))
+  end;
+
+function getRedeemEntrypoint(const token_address : address) : contract(redeem_type) is
+  case (Tezos.get_entrypoint_opt("%redeem", token_address) : option(contract(redeem_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetRedeemEntrypoint") : contract(redeem_type))
+  end;
+
+function getEnsuredRedeemEntrypoint(const token_address : address) : contract(ensuredRedeem_type) is
+  case (Tezos.get_entrypoint_opt("%ensuredRedeem", token_address) : option(contract(ensuredRedeem_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetEnsuredRedeemEntrypoint") : contract(ensuredRedeem_type))
+  end;
+
 function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : michelson_pair(nat, "surplus", nat, "shortfail") is
   block {
     sumCollateral := 0n;
@@ -128,6 +158,13 @@ function getUserLiquidity(const user : address; const qToken : address; const re
   block {
     if (s.qTokens contains qToken) = True then
       failwith("Contains")
+    else skip;
+  } with (unit)
+
+[@inline] function mustBeSelf(const u : unit) : unit is
+  block {
+    if Tezos.sender =/= Tezos.self_address then
+      failwith("NotSelf")
     else skip;
   } with (unit)
 
@@ -233,13 +270,59 @@ function exitMarket(const qToken : address; var s : storage) : return is
     s.markets[qToken] := market;
   } with (noOperations, s)
 
-//todo
 function safeMint(const amt : nat; const qToken : address; var s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
   } with (list [Tezos.transaction(Mint(Tezos.sender, amt), 
          0mutez, 
          getMintEntrypoint(qToken))], s)
+
+function safeRedeem(const amt : nat; const qToken : address; var s : storage) : return is
+  block {
+    mustContainsQTokens(qToken, s);
+
+    var market : marketInfo := getMarket(qToken, s);
+    var ops := noOperations;
+
+    if market.users contains Tezos.sender then block {
+      // update controller state for all users assets
+      for token in set s.qTokens block {
+        market := getMarket(token, s);
+        if market.users contains Tezos.sender then
+          ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+                 0mutez, 
+                 getUpdateControllerStateEntrypoint(qToken)) # ops;
+        else skip;
+      };
+      //todo will it self call?
+      ops := Tezos.transaction(RedeemMiddle((Tezos.sender, qToken), (amt, getAccountBorrows(Tezos.sender, qToken, s))), 
+             0mutez, 
+             getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
+    }
+    else ops := Tezos.transaction(Redeem(Tezos.sender, amt), 
+                0mutez, 
+                getRedeemEntrypoint(qToken)) # ops;
+  } with (ops, s)
+
+function redeemMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : return is
+  block {
+    mustBeSelf(unit);
+  } with (list [Tezos.transaction(EnsuredRedeem((user, qToken), (redeemTokens, borrowAmount)), 
+                0mutez, 
+                getEnsuredRedeemEntrypoint(qToken))], s)
+
+function ensuredRedeem(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : return is
+  block {
+    mustBeSelf(unit);
+
+    const pair = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
+    if pair.1 =/= 0n then
+      failwith("ShortfailNotZero")
+    else skip;
+
+  } with (list [Tezos.transaction(Redeem(user, redeemTokens),
+                0mutez,
+                getRedeemEntrypoint(qToken))], s)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
