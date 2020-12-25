@@ -27,9 +27,6 @@ const accuracy : nat = 1000000000000000000n; //1e+18
 type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
-type entryAction is
-  | UpdatePrice of address * nat
-
 type mint_type is Mint of michelson_pair(address, "user", nat, "amount")
 type updateControllerState_type is UpdateControllerState of address
 type redeemMiddle_type is RedeemMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
@@ -48,6 +45,25 @@ type liquidateMiddle_type is LiquidateMiddle of michelson_pair(address, "liquida
 type ensuredLiquidate_type is EnsuredLiquidate of michelson_pair(address, "liquidator", michelson_pair(michelson_pair(address, "borrower", address, "qToken"), "", 
                                                                                                        michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), ""), "")
 type liquidate_type is Liquidate of michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+
+type entryAction is
+  | UpdatePrice of michelson_pair(address, "qToken", nat, "price")
+  | SetOracle of michelson_pair(address, "qToken", address, "oracle")
+  | Register of michelson_pair(address, "token", address, "qToken")
+  | UpdateQToken of michelson_pair(michelson_pair(address, "user", nat, "balance"), "", michelson_pair(nat, "borrow", nat, "exchangeRate"), "")
+  | EnterMarket of address
+  | ExitMarket of address
+  | SafeMint of michelson_pair(nat, "amount", address, "qToken")
+  | SafeRedeem of michelson_pair(nat, "amount", address, "qToken")
+  | RedeemMiddleAction of redeemMiddle_type
+  // | EnsuredRedeemAction of ensuredRedeem_type
+  // | SafeBorrow of michelson_pair(nat, "amount", address, "qToken")
+  // | BorrowMiddleAction of borrowMiddle_type
+  // | EnsuredBorrowAction of ensuredBorrow_type
+  // | SafeRepay of michelson_pair(nat, "amount", address, "qToken")
+  // | SafeLiquidate of michelson_pair(michelson_pair(address, "borrower", nat, "amount"), "", address, "qToken")
+  // | LiquidateMiddleAction of liquidateMiddle_type
+  // | EnsuredLiquidateAction of ensuredLiquidate_type
 
 function getAccountTokens(const user : address; const qToken : address; const s : storage) : nat is
   case s.accountTokens[(user, qToken)] of
@@ -462,4 +478,12 @@ function main(const action : entryAction; var s : storage) : return is
     skip
   } with case action of
     | UpdatePrice(params) -> updatePrice(params.0, params.1, s)
+    | SetOracle(params) -> setOracle(params.0, params.1, s)
+    | Register(params) -> register(params.0, params.1, s)
+    | UpdateQToken(params) -> updateQToken(params.0.0, params.0.1, params.1.0, params.1.1, s)
+    | EnterMarket(params) -> enterMarket(params, s)
+    | ExitMarket(params) -> exitMarket(params, s)
+    | SafeMint(params) -> safeMint(params.0, params.1, s)
+    | SafeRedeem(params) -> safeRedeem(params.0, params.1, s)
+    | RedeemMiddleAction(params) -> redeemMiddle(params.0.0.0, params.0.0.1, params.0.1.0, params.0.1.1, s)
   end;
