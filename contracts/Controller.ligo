@@ -270,14 +270,14 @@ function exitMarket(const qToken : address; var s : storage) : return is
     s.markets[qToken] := market;
   } with (noOperations, s)
 
-function safeMint(const amt : nat; const qToken : address; var s : storage) : return is
+function safeMint(const amt : nat; const qToken : address; const s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
   } with (list [Tezos.transaction(Mint(Tezos.sender, amt), 
          0mutez, 
          getMintEntrypoint(qToken))], s)
 
-function safeRedeem(const amt : nat; const qToken : address; var s : storage) : return is
+function safeRedeem(const amt : nat; const qToken : address; const s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
 
@@ -304,14 +304,14 @@ function safeRedeem(const amt : nat; const qToken : address; var s : storage) : 
                 getRedeemEntrypoint(qToken)) # ops;
   } with (ops, s)
 
-function redeemMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : return is
+function redeemMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
   block {
     mustBeSelf(unit);
   } with (list [Tezos.transaction(EnsuredRedeem((user, qToken), (redeemTokens, borrowAmount)), 
                 0mutez, 
                 getEnsuredRedeemEntrypoint(qToken))], s)
 
-function ensuredRedeem(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; var s : storage) : return is
+function ensuredRedeem(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
   block {
     mustBeSelf(unit);
 
@@ -323,6 +323,8 @@ function ensuredRedeem(const user : address; const qToken : address; const redee
   } with (list [Tezos.transaction(Redeem(user, redeemTokens),
                 0mutez,
                 getRedeemEntrypoint(qToken))], s)
+
+// function safeBorrow(const amt : nat; const qToken : address; var s : storage)
 
 function main(const action : entryAction; var s : storage) : return is
   block {
