@@ -49,19 +49,6 @@ type ensuredLiquidate_type is EnsuredLiquidate of michelson_pair(address, "liqui
                                                                                                        michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), ""), "")
 type liquidate_type is Liquidate of michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 
-// function getQTokens(const s : storage) : set(address) is
-//   case s.qTokens of
-//     Some (value) -> value
-//   | None -> (set [] : set(address))
-//   end;
-
-//todo do i deen this function
-// function getPair(const underlyingToken : address; const s : storage) : address is
-//   case s.pairs[underlyingToken] of
-//     Some (value) -> value
-//   | None -> zeroAddress
-//   end;
-
 function getAccountTokens(const user : address; const qToken : address; const s : storage) : nat is
   case s.accountTokens[(user, qToken)] of
     Some (value) -> value
