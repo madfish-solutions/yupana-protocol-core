@@ -210,7 +210,7 @@ function getUserLiquidity(const user : address; const qToken : address; const re
 // will throw an exception if contains
 [@inline] function mustNotContainsQTokens(const qToken : address; const s : storage) : unit is
   block {
-    if (s.qTokens contains qToken) = True then
+    if (s.qTokens contains qToken) then
       failwith("Contains")
     else skip;
   } with (unit)
