@@ -341,20 +341,17 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
   block {
     mustContainsQTokens(qToken, s);
 
-    var market : marketInfo := getMarket(qToken, s);
+    //var market : marketInfo := getMarket(qToken, s);
+    const tokens : set(address) = getAccountMembership(Tezos.sender, s);
     var ops := noOperations;
 
-    if market.users contains Tezos.sender then block {
+    if tokens contains qToken then block {
       // update controller state for all users assets
-      for token in set s.qTokens block {
-        market := getMarket(token, s);
-        if market.users contains Tezos.sender then
-          ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-                 0mutez, 
-                 getUpdateControllerStateEntrypoint(qToken)) # ops;
-        else skip;
+      for token in set tokens block {
+        ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+                0mutez, 
+                getUpdateControllerStateEntrypoint(token)) # ops;
       };
-      //todo will it self call?
       ops := Tezos.transaction(RedeemMiddle((Tezos.sender, qToken), (amt, getAccountBorrows(Tezos.sender, qToken, s))), 
              0mutez, 
              getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
