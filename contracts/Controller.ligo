@@ -14,7 +14,6 @@ type marketInfo is
     lastPrice         :nat;
     oracle            :address;
     exchangeRate      :nat;
-    users             :set(address)
   ]
 
 type storage is
@@ -26,6 +25,7 @@ type storage is
     accountBorrows    :big_map(michelson_pair(address, "user", address, "token"), nat);
     accountTokens     :big_map(michelson_pair(address, "user", address, "token"), nat);
     markets           :big_map(address, marketInfo); // qToken -> info
+    accountMembership :big_map(address, set(address)); // user -> qTokens
   ]
 //all numbers in storage are real numbers
 const accuracy : nat = 1000000000000000000n; //1e+18
@@ -91,13 +91,18 @@ function getMarket(const qToken : address; const s : storage) : marketInfo is
         lastPrice        = 0n;
         oracle           = zeroAddress;
         exchangeRate     = 0n;
-        users            = (set [] : set(address));
       ];
     case s.markets[qToken] of
       None -> skip
     | Some(value) -> m := value
     end;
   } with m
+
+function getAccountMembership(const user : address; const s : storage) : set(address) is
+  case s.accountMembership[user] of
+    Some (value) -> value
+  | None -> (set [] : set(address))
+  end;
 
 function getMintEntrypoint(const token_address : address) : contract(mint_type) is
   case (Tezos.get_entrypoint_opt("%mint", token_address) : option(contract(mint_type))) of 
@@ -175,10 +180,12 @@ function getUserLiquidity(const user : address; const qToken : address; const re
   block {
     sumCollateral := 0n;
     sumBorrow := 0n;
+    const tokens : set(address) = getAccountMembership(user, s);
     var tokensToDenom : nat := 0n;
     var m : marketInfo := getMarket(qToken, s);
 
-    for token in set s.qTokens block {
+
+    for token in set tokens block {
       m := getMarket(token, s);
       tokensToDenom := m.collateralFactor * m.exchangeRate * m.lastPrice / accuracy / accuracy;
       sumCollateral := sumCollateral + tokensToDenom * getAccountTokens(user, token, s) / accuracy;
@@ -204,7 +211,7 @@ function getUserLiquidity(const user : address; const qToken : address; const re
       response.shortfail := abs(sumBorrow - sumCollateral);
     else skip;
 
-  } with (response)//(surplus, shortfail)
+  } with (response)
 
 // check that input address contains in storage.qTokens
 // will throw an exception if NOT contains
@@ -282,37 +289,28 @@ function enterMarket(const qToken : address; var s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
 
-    var market : marketInfo := getMarket(qToken, s);
+    var tokens : set(address) := getAccountMembership(Tezos.sender, s);
 
-    if market.users contains Tezos.sender then
+    if tokens contains qToken then
       failwith("AlreadyEnter")
     else skip;
 
-    var m : marketInfo := getMarket(zeroAddress, s);
-    var counter : nat := 0n;
-    for token in set s.qTokens block {
-      m := getMarket(token, s);
-      if m.users contains Tezos.sender then
-        counter := counter + 1n;
-      else skip;
-    };
-
-    if counter >= 4n then
+    if Set.size(tokens) >= 4n then
       failwith("LimitExceeded")
     else skip;
 
-    market.users := Set.add(Tezos.sender, market.users);
+    tokens := Set.add(qToken, tokens);
 
-    s.markets[qToken] := market;
+    s.accountMembership[Tezos.sender] := tokens;
   } with (noOperations, s)
 
 function exitMarket(const qToken : address; var s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
 
-    var market : marketInfo := getMarket(qToken, s);
+    var tokens : set(address) := getAccountMembership(Tezos.sender, s);
 
-    if not (market.users contains Tezos.sender) then
+    if not (tokens contains qToken) then
       failwith("NotEnter")
     else skip;
 
@@ -327,9 +325,9 @@ function exitMarket(const qToken : address; var s : storage) : return is
       failwith("ShortfailNotZero")
     else skip;
 
-    market.users := Set.remove(Tezos.sender, market.users);
+    tokens := Set.remove(qToken, tokens);
 
-    s.markets[qToken] := market;
+    s.accountMembership[Tezos.sender] := tokens;
   } with (noOperations, s)
 
 function safeMint(const amt : nat; const qToken : address; const s : storage) : return is
