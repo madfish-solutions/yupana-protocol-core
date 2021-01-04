@@ -40,6 +40,7 @@ type redeemMiddle_type is RedeemMiddle of michelson_pair(michelson_pair(address,
 type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
 type ensuredRedeem_type is EnsuredRedeem of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                             michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
+type ensureExitMarket_type is EnsureExitMarket of (address * address * set(address)) //(const user : address; const qToken : address; var tokens : set(address); var s : storage)
 type borrow_type is Borrow of michelson_pair(address, "user", nat, "amount")
 type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                                          michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
@@ -174,6 +175,12 @@ function getLiquidateEntrypoint(const token_address : address) : contract(liquid
   case (Tezos.get_entrypoint_opt("%liquidate", token_address) : option(contract(liquidate_type))) of 
     Some(contr) -> contr
     | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidate_type))
+  end;
+
+function getEnsureExitMarketEntrypoint(const token_address : address) : contract(ensureExitMarket_type) is
+  case (Tezos.get_entrypoint_opt("%ensureExitMarket", token_address) : option(contract(ensureExitMarket_type))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetEnsureExitMarketEntrypoint") : contract(ensureExitMarket_type))
   end;
 
 function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : getUserLiquidityReturn is
@@ -318,8 +325,28 @@ function exitMarket(const qToken : address; var s : storage) : return is
       failwith("BorrowsExists")
     else skip;
 
-    // todo after redeem?
-    const response = getUserLiquidity(Tezos.sender, qToken, getAccountTokens(Tezos.sender, qToken, s), 0n, s);
+    var ops := noOperations;
+    for token in set tokens block {
+      ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+             0mutez, 
+             getUpdateControllerStateEntrypoint(token)) # ops;
+    };
+
+    ops := Tezos.transaction(RedeemMiddle((Tezos.sender, qToken), (getAccountTokens(Tezos.sender, qToken, s), getAccountBorrows(Tezos.sender, qToken, s))), 
+           0mutez, 
+           getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
+
+    ops := Tezos.transaction(EnsureExitMarket(Tezos.sender, qToken, tokens), 
+           0mutez, 
+           getEnsureExitMarketEntrypoint(Tezos.self_address)) # ops;
+  } with (ops, s)
+
+function ensureExitMarket(const user : address; const qToken : address; var tokens : set(address); var s : storage) : return is
+  block {
+    mustBeSelf(unit);
+    
+    const response = 
+    getUserLiquidity(user, qToken, getAccountTokens(user, qToken, s), getAccountBorrows(user, qToken, s), s);
     
     if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
@@ -327,7 +354,7 @@ function exitMarket(const qToken : address; var s : storage) : return is
 
     tokens := Set.remove(qToken, tokens);
 
-    s.accountMembership[Tezos.sender] := tokens;
+    s.accountMembership[user] := tokens;
   } with (noOperations, s)
 
 function safeMint(const amt : nat; const qToken : address; const s : storage) : return is
@@ -435,7 +462,6 @@ function safeLiquidate(const borrower : address; const amt : nat; const qToken :
     mustContainsQTokens(qToken, s);
     //todo *ensure repay amount smaller than max repay (?)
     const tokens : set(address) = getAccountMembership(Tezos.sender, s);
-    //var market : marketInfo := getMarket(qToken, s);
     var ops := noOperations;
 
     for token in set tokens block {
