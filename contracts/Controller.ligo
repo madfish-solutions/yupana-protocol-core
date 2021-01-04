@@ -341,7 +341,6 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
   block {
     mustContainsQTokens(qToken, s);
 
-    //var market : marketInfo := getMarket(qToken, s);
     const tokens : set(address) = getAccountMembership(Tezos.sender, s);
     var ops := noOperations;
 
@@ -349,8 +348,8 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
       // update controller state for all users assets
       for token in set tokens block {
         ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-                0mutez, 
-                getUpdateControllerStateEntrypoint(token)) # ops;
+               0mutez, 
+               getUpdateControllerStateEntrypoint(token)) # ops;
       };
       ops := Tezos.transaction(RedeemMiddle((Tezos.sender, qToken), (amt, getAccountBorrows(Tezos.sender, qToken, s))), 
              0mutez, 
@@ -385,24 +384,20 @@ function safeBorrow(const amt : nat; const qToken : address; var s : storage) : 
   block {
     mustContainsQTokens(qToken, s);
 
-    var market : marketInfo := getMarket(qToken, s);
+    const tokens : set(address) = getAccountMembership(Tezos.sender, s);
     var ops := noOperations;
 
-    if market.users contains Tezos.sender then skip;
+    if tokens contains qToken then skip;
     else block {
       const res = enterMarket(qToken, s);
       s := res.1;
     };
     //todo *ensure borrow amount smaller than max borrow limit (?)
-    for token in set s.qTokens block {
-      market := getMarket(token, s);
-      if market.users contains Tezos.sender then
-        ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-               0mutez, 
-               getUpdateControllerStateEntrypoint(qToken)) # ops;
-      else skip;
+    for token in set tokens block {
+      ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+             0mutez, 
+             getUpdateControllerStateEntrypoint(token)) # ops;
     };
-    //todo will it self call?
     ops := Tezos.transaction(BorrowMiddle((Tezos.sender, qToken), (amt, getAccountBorrows(Tezos.sender, qToken, s))), 
                              0mutez, 
                              getBorrowMiddleEntrypoint(Tezos.self_address)) # ops;
@@ -439,18 +434,15 @@ function safeLiquidate(const borrower : address; const amt : nat; const qToken :
   block {
     mustContainsQTokens(qToken, s);
     //todo *ensure repay amount smaller than max repay (?)
-    var market : marketInfo := getMarket(qToken, s);
+    const tokens : set(address) = getAccountMembership(Tezos.sender, s);
+    //var market : marketInfo := getMarket(qToken, s);
     var ops := noOperations;
 
-    for token in set s.qTokens block {
-      market := getMarket(token, s);
-      if market.users contains Tezos.sender then
-        ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-               0mutez, 
-               getUpdateControllerStateEntrypoint(qToken)) # ops;
-      else skip;
+    for token in set tokens block {
+      ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+             0mutez, 
+             getUpdateControllerStateEntrypoint(token)) # ops;
     };
-    //todo will it self call?
     ops := Tezos.transaction(LiquidateMiddle(Tezos.sender, ((borrower, qToken), (amt, getAccountBorrows(borrower, qToken, s)))), 
                              0mutez, 
                              getLiquidateMiddleEntrypoint(Tezos.self_address)) # ops;
