@@ -303,7 +303,7 @@ function exitMarket(const qToken : address; var s : storage) : return is
 
     var market : marketInfo := getMarket(qToken, s);
 
-    if (market.users contains Tezos.sender) = False then
+    if not (market.users contains Tezos.sender) then
       failwith("NotEnter")
     else skip;
 
