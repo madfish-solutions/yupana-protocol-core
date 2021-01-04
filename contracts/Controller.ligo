@@ -55,7 +55,7 @@ type entryAction is
   | ExitMarket of address
   | SafeMint of michelson_pair(nat, "amount", address, "qToken")
   | SafeRedeem of michelson_pair(nat, "amount", address, "qToken")
-  | RedeemMiddleAction of redeemMiddle_type
+  // | RedeemMiddleAction of redeemMiddle_type
   // | EnsuredRedeemAction of ensuredRedeem_type
   // | SafeBorrow of michelson_pair(nat, "amount", address, "qToken")
   // | BorrowMiddleAction of borrowMiddle_type
@@ -199,7 +199,7 @@ function getUserLiquidity(const user : address; const qToken : address; const re
 
 // check that input address contains in storage.qTokens
 // will throw an exception if NOT contains
-[@inline] function mustContainsQTokens(const qToken : address; const s : storage) : unit is
+function mustContainsQTokens(const qToken : address; const s : storage) : unit is
   block {
     if (s.qTokens contains qToken) then skip
     else failwith("NotContains");
@@ -214,7 +214,7 @@ function getUserLiquidity(const user : address; const qToken : address; const re
     else skip;
   } with (unit)
 
-[@inline] function mustBeSelf(const u : unit) : unit is
+function mustBeSelf(const u : unit) : unit is
   block {
     if Tezos.sender =/= Tezos.self_address then
       failwith("NotSelf")
@@ -484,5 +484,5 @@ function main(const action : entryAction; var s : storage) : return is
     | ExitMarket(params) -> exitMarket(params, s)
     | SafeMint(params) -> safeMint(params.0, params.1, s)
     | SafeRedeem(params) -> safeRedeem(params.0, params.1, s)
-    | RedeemMiddleAction(params) -> redeemMiddle(params.0.0.0, params.0.0.1, params.0.1.0, params.0.1.1, s)
+    // | RedeemMiddleAction(params) -> redeemMiddle(params.0.0.0, params.0.0.1, params.0.1.0, params.0.1.1, s)
   end;
