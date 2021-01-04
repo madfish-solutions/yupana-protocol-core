@@ -2,6 +2,12 @@ const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address)
 const sumCollateral : nat = 0n;
 const sumBorrow : nat = 0n;
 
+type getUserLiquidityReturn is
+  record [
+    surplus   :nat;
+    shortfail :nat;
+  ]
+
 type marketInfo is
   record [
     collateralFactor  :nat;
@@ -165,7 +171,7 @@ function getLiquidateEntrypoint(const token_address : address) : contract(liquid
     | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidate_type))
   end;
 
-function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : michelson_pair(nat, "surplus", nat, "shortfail") is
+function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : getUserLiquidityReturn is
   block {
     sumCollateral := 0n;
     sumBorrow := 0n;
@@ -184,18 +190,21 @@ function getUserLiquidity(const user : address; const qToken : address; const re
       else skip;
     };
 
-    var surplus : nat := 0n;
-    var shortfail : nat := 0n;
+    var response : getUserLiquidityReturn := 
+    record [
+      surplus   = 0n;
+      shortfail = 0n;
+    ];
 
     if sumCollateral > sumBorrow then
-      surplus := abs(sumCollateral - sumBorrow);
+      response.surplus := abs(sumCollateral - sumBorrow);
     else skip;
 
     if sumBorrow > sumCollateral then
-      shortfail := abs(sumBorrow - sumCollateral);
+      response.shortfail := abs(sumBorrow - sumCollateral);
     else skip;
 
-  } with (surplus, shortfail)
+  } with (response)//(surplus, shortfail)
 
 // check that input address contains in storage.qTokens
 // will throw an exception if NOT contains
@@ -312,9 +321,9 @@ function exitMarket(const qToken : address; var s : storage) : return is
     else skip;
 
     // todo after redeem?
-    const pair = getUserLiquidity(Tezos.sender, qToken, getAccountTokens(Tezos.sender, qToken, s), 0n, s);
+    const response = getUserLiquidity(Tezos.sender, qToken, getAccountTokens(Tezos.sender, qToken, s), 0n, s);
     
-    if pair.1 =/= 0n then
+    if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
     else skip;
 
@@ -368,8 +377,8 @@ function ensuredRedeem(const user : address; const qToken : address; const redee
   block {
     mustBeSelf(unit);
 
-    const pair = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
-    if pair.1 =/= 0n then
+    const response = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
+    if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
     else skip;
 
@@ -415,8 +424,8 @@ function ensuredBorrow(const user : address; const qToken : address; const redee
   block {
     mustBeSelf(unit);
 
-    const pair = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
-    if pair.1 =/= 0n then
+    const response = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
+    if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
     else skip;
 
@@ -463,8 +472,8 @@ function ensuredLiquidate(const liquidator : address; const borrower : address; 
   block {
     mustBeSelf(unit);
 
-    const pair = getUserLiquidity(borrower, qToken, redeemTokens, borrowAmount, s);
-    if pair.1 =/= 0n then
+    const response = getUserLiquidity(borrower, qToken, redeemTokens, borrowAmount, s);
+    if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
     else skip;
 
