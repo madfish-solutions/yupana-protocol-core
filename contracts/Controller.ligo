@@ -33,7 +33,6 @@ const accuracy : nat = 1000000000000000000n; //1e+18
 type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
-type mint_type is Mint of michelson_pair(address, "user", nat, "amount")
 type updateControllerState_type is UpdateControllerState of address
 type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
 type borrow_type is Borrow of michelson_pair(address, "user", nat, "amount")
@@ -47,6 +46,16 @@ type liquidateMiddle_type is LiquidateMiddle of michelson_pair(address, "liquida
 type ensuredLiquidate_type is EnsuredLiquidate of michelson_pair(address, "liquidator", michelson_pair(michelson_pair(address, "borrower", address, "qToken"), "", 
                                                                                                        michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), ""), "")
 type liquidate_type is Liquidate of michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+
+type mintType is record [
+  user           :address;
+  amt            :nat;
+]
+
+type mintParams is record [
+  amt            :nat;
+  qToken         :address;
+]
 
 type redeemMiddleType is record [
     user         :address;
@@ -68,6 +77,7 @@ type ensureExitMarketType is record [
    tokens       :set(address);
 ]
 
+//todo do some actions missing???
 type entryAction is
   | UpdatePrice of michelson_pair(address, "qToken", nat, "price")
   | SetOracle of michelson_pair(address, "qToken", address, "oracle")
@@ -76,7 +86,7 @@ type entryAction is
   | EnterMarket of address
   | ExitMarket of address
   | EnsureExitMarket of ensureExitMarketType
-  | SafeMint of michelson_pair(nat, "amount", address, "qToken")
+  | SafeMint of mintParams
   | SafeRedeem of michelson_pair(nat, "amount", address, "qToken")
   | RedeemMiddle of redeemMiddleType
   | EnsuredRedeem of ensuredRedeemType
@@ -121,10 +131,10 @@ function getAccountMembership(const user : address; const s : storage) : set(add
   | None -> (set [] : set(address))
   end;
 
-function getMintEntrypoint(const token_address : address) : contract(mint_type) is
-  case (Tezos.get_entrypoint_opt("%mint", token_address) : option(contract(mint_type))) of 
+function getMintEntrypoint(const token_address : address) : contract(mintType) is
+  case (Tezos.get_entrypoint_opt("%mint", token_address) : option(contract(mintType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetMintEntrypoint") : contract(mint_type))
+    | None -> (failwith("CantGetMintEntrypoint") : contract(mintType))
   end;
 
 function getUpdateControllerStateEntrypoint(const token_address : address) : contract(updateControllerState_type) is
@@ -380,7 +390,10 @@ function ensureExitMarket(const user : address; const qToken : address; var toke
 function safeMint(const amt : nat; const qToken : address; const s : storage) : return is
   block {
     mustContainsQTokens(qToken, s);
-  } with (list [Tezos.transaction(Mint(Tezos.sender, amt), 
+  } with (list [Tezos.transaction(record [
+                                            user         = Tezos.sender;
+                                            amt          = amt;
+                                          ], 
          0mutez, 
          getMintEntrypoint(qToken))], s)
 
@@ -547,7 +560,7 @@ function main(const action : entryAction; var s : storage) : return is
     | EnterMarket(params) -> enterMarket(params, s)
     | ExitMarket(params) -> exitMarket(params, s)
     | EnsureExitMarket(params) -> ensureExitMarket(params.user, params.qToken, params.tokens, s)
-    | SafeMint(params) -> safeMint(params.0, params.1, s)
+    | SafeMint(params) -> safeMint(params.amt, params.qToken, s)
     | SafeRedeem(params) -> safeRedeem(params.0, params.1, s)
     | RedeemMiddle(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | EnsuredRedeem(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
