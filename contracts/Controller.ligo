@@ -131,6 +131,28 @@ type ensuredLiquidateType is record [
     borrowAmount :nat;
 ]
 
+type updatePriceParams is record [
+    qToken      :address;
+    price       :nat;
+]
+
+type setOracleParams is record [
+    qToken       :address;
+    oracle       :address;
+]
+
+type registerParams is record [
+    token        :address;
+    qToken       :address;
+]
+
+type updateQTokenParams is record [
+    user          :address;
+    balance       :nat;
+    borrow        :nat;
+    exchangeRate  :nat;
+]
+
 type ensureExitMarketType is record [
    user         :address;
    qToken       :address;
@@ -138,10 +160,10 @@ type ensureExitMarketType is record [
 ]
 
 type entryAction is
-  | UpdatePrice of michelson_pair(address, "qToken", nat, "price")
-  | SetOracle of michelson_pair(address, "qToken", address, "oracle")
-  | Register of michelson_pair(address, "token", address, "qToken")
-  | UpdateQToken of michelson_pair(michelson_pair(address, "user", nat, "balance"), "", michelson_pair(nat, "borrow", nat, "exchangeRate"), "")
+  | UpdatePrice of updatePriceParams
+  | SetOracle of setOracleParams
+  | Register of registerParams
+  | UpdateQToken of updateQTokenParams
   | EnterMarket of address
   | ExitMarket of address
   | EnsureExitMarket of ensureExitMarketType
@@ -650,10 +672,10 @@ function main(const action : entryAction; var s : storage) : return is
   block {
     skip
   } with case action of
-    | UpdatePrice(params) -> updatePrice(params.0, params.1, s)
-    | SetOracle(params) -> setOracle(params.0, params.1, s)
-    | Register(params) -> register(params.0, params.1, s)
-    | UpdateQToken(params) -> updateQToken(params.0.0, params.0.1, params.1.0, params.1.1, s)
+    | UpdatePrice(params) -> updatePrice(params.qToken, params.price, s)
+    | SetOracle(params) -> setOracle(params.qToken, params.oracle, s)
+    | Register(params) -> register(params.token, params.qToken, s)
+    | UpdateQToken(params) -> updateQToken(params.user, params.balance, params.borrow, params.exchangeRate, s)
     | EnterMarket(params) -> enterMarket(params, s)
     | ExitMarket(params) -> exitMarket(params, s)
     | EnsureExitMarket(params) -> ensureExitMarket(params.user, params.qToken, params.tokens, s)
