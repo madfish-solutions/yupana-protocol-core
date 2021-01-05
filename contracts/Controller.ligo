@@ -34,8 +34,6 @@ type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
 type updateControllerState_type is UpdateControllerState of address
-type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
-                                                         michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 type ensuredBorrow_type is EnsuredBorrow of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                                            michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 type repay_type is Repay of michelson_pair(address, "user", nat, "amount")
@@ -89,6 +87,13 @@ type borrowParams is record [
   qToken         :address;
 ]
 
+type borrowMiddleType is record [
+  user         :address;
+  qToken       :address;
+  redeemTokens :nat;
+  borrowAmount :nat;
+]
+
 type ensureExitMarketType is record [
    user         :address;
    qToken       :address;
@@ -109,7 +114,7 @@ type entryAction is
   | RedeemMiddle of redeemMiddleType
   | EnsuredRedeem of ensuredRedeemType
   | SafeBorrow of borrowParams
-  // | BorrowMiddleAction of borrowMiddle_type
+  | BorrowMiddle of borrowMiddleType
   // | EnsuredBorrowAction of ensuredBorrow_type
   // | SafeRepay of michelson_pair(nat, "amount", address, "qToken")
   // | SafeLiquidate of michelson_pair(michelson_pair(address, "borrower", nat, "amount"), "", address, "qToken")
@@ -185,10 +190,10 @@ function getBorrowEntrypoint(const token_address : address) : contract(borrowTyp
     | None -> (failwith("CantGetBorrowEntrypoint") : contract(borrowType))
   end;
 
-function getBorrowMiddleEntrypoint(const token_address : address) : contract(borrowMiddle_type) is
-  case (Tezos.get_entrypoint_opt("%borrowMiddle", token_address) : option(contract(borrowMiddle_type))) of 
+function getBorrowMiddleEntrypoint(const token_address : address) : contract(borrowMiddleType) is
+  case (Tezos.get_entrypoint_opt("%borrowMiddle", token_address) : option(contract(borrowMiddleType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetBorrowMiddleEntrypoint") : contract(borrowMiddle_type))
+    | None -> (failwith("CantGetBorrowMiddleEntrypoint") : contract(borrowMiddleType))
   end;
 
 function getEnsuredBorrowEntrypoint(const token_address : address) : contract(ensuredBorrow_type) is
@@ -496,7 +501,12 @@ function safeBorrow(const amt : nat; const qToken : address; var s : storage) : 
              0mutez, 
              getUpdateControllerStateEntrypoint(token)) # ops;
     };
-    ops := Tezos.transaction(BorrowMiddle((Tezos.sender, qToken), (amt, getAccountBorrows(Tezos.sender, qToken, s))), 
+    ops := Tezos.transaction(record [
+                                      user         = Tezos.sender;
+                                      qToken       = qToken;
+                                      redeemTokens = amt;
+                                      borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
+                                    ],
                              0mutez, 
                              getBorrowMiddleEntrypoint(Tezos.self_address)) # ops;
   } with (ops, s)
@@ -592,4 +602,5 @@ function main(const action : entryAction; var s : storage) : return is
     | RedeemMiddle(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | EnsuredRedeem(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | SafeBorrow(params) -> safeBorrow(params.amt, params.qToken, s)
+    | BorrowMiddle(params) -> borrowMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
   end;
