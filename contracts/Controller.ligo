@@ -34,8 +34,6 @@ type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
 type updateControllerState_type is UpdateControllerState of address
-type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
-type borrow_type is Borrow of michelson_pair(address, "user", nat, "amount")
 type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                                          michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 type ensuredBorrow_type is EnsuredBorrow of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
@@ -57,6 +55,16 @@ type mintParams is record [
   qToken         :address;
 ]
 
+type redeemType is record [
+  user           :address;
+  amt            :nat;
+]
+
+type redeemParams is record [
+  amt            :nat;
+  qToken         :address;
+]
+
 type redeemMiddleType is record [
     user         :address;
     qToken       :address;
@@ -69,6 +77,16 @@ type ensuredRedeemType is record [
     qToken       :address;
     redeemTokens :nat;
     borrowAmount :nat;
+]
+
+type borrowType is record [
+  user           :address;
+  amt            :nat;
+]
+
+type borrowParams is record [
+  amt            :nat;
+  qToken         :address;
 ]
 
 type ensureExitMarketType is record [
@@ -87,10 +105,10 @@ type entryAction is
   | ExitMarket of address
   | EnsureExitMarket of ensureExitMarketType
   | SafeMint of mintParams
-  | SafeRedeem of michelson_pair(nat, "amount", address, "qToken")
+  | SafeRedeem of redeemParams
   | RedeemMiddle of redeemMiddleType
   | EnsuredRedeem of ensuredRedeemType
-  // | SafeBorrow of michelson_pair(nat, "amount", address, "qToken")
+  | SafeBorrow of borrowParams
   // | BorrowMiddleAction of borrowMiddle_type
   // | EnsuredBorrowAction of ensuredBorrow_type
   // | SafeRepay of michelson_pair(nat, "amount", address, "qToken")
@@ -149,10 +167,10 @@ function getRedeemMiddleEntrypoint(const token_address : address) : contract(red
     | None -> (failwith("CantGetRedeemMiddleEntrypoint") : contract(redeemMiddleType))
   end;
 
-function getRedeemEntrypoint(const token_address : address) : contract(redeem_type) is
-  case (Tezos.get_entrypoint_opt("%redeem", token_address) : option(contract(redeem_type))) of 
+function getRedeemEntrypoint(const token_address : address) : contract(redeemType) is
+  case (Tezos.get_entrypoint_opt("%redeem", token_address) : option(contract(redeemType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetRedeemEntrypoint") : contract(redeem_type))
+    | None -> (failwith("CantGetRedeemEntrypoint") : contract(redeemType))
   end;
 
 function getEnsuredRedeemEntrypoint(const token_address : address) : contract(ensuredRedeemType) is
@@ -161,10 +179,10 @@ function getEnsuredRedeemEntrypoint(const token_address : address) : contract(en
     | None -> (failwith("CantGetEnsuredRedeemEntrypoint") : contract(ensuredRedeemType))
   end;
 
-function getBorrowEntrypoint(const token_address : address) : contract(borrow_type) is
-  case (Tezos.get_entrypoint_opt("%borrow", token_address) : option(contract(borrow_type))) of 
+function getBorrowEntrypoint(const token_address : address) : contract(borrowType) is
+  case (Tezos.get_entrypoint_opt("%borrow", token_address) : option(contract(borrowType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetBorrowEntrypoint") : contract(borrow_type))
+    | None -> (failwith("CantGetBorrowEntrypoint") : contract(borrowType))
   end;
 
 function getBorrowMiddleEntrypoint(const token_address : address) : contract(borrowMiddle_type) is
@@ -420,7 +438,10 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
              0mutez, 
              getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
     }
-    else ops := Tezos.transaction(Redeem(Tezos.sender, amt), 
+    else ops := Tezos.transaction(record [
+                                            user           = Tezos.sender;
+                                            amt            = amt;
+                                         ], 
                 0mutez, 
                 getRedeemEntrypoint(qToken)) # ops;
   } with (ops, s)
@@ -450,7 +471,10 @@ function ensuredRedeem(const user : address; const qToken : address; const redee
       failwith("ShortfailNotZero")
     else skip;
 
-  } with (list [Tezos.transaction(Redeem(user, redeemTokens),
+  } with (list [Tezos.transaction(record [
+                                            user           = user;
+                                            amt            = redeemTokens;
+                                         ], 
                 0mutez,
                 getRedeemEntrypoint(qToken))], s)
 
@@ -497,7 +521,10 @@ function ensuredBorrow(const user : address; const qToken : address; const redee
       failwith("ShortfailNotZero")
     else skip;
 
-  } with (list [Tezos.transaction(Borrow(user, borrowAmount), 
+  } with (list [Tezos.transaction(record [
+                                            user           = user;
+                                            amt            = borrowAmount;
+                                          ],
                                   0mutez, 
                                   getBorrowEntrypoint(qToken))], s)
 
@@ -561,7 +588,8 @@ function main(const action : entryAction; var s : storage) : return is
     | ExitMarket(params) -> exitMarket(params, s)
     | EnsureExitMarket(params) -> ensureExitMarket(params.user, params.qToken, params.tokens, s)
     | SafeMint(params) -> safeMint(params.amt, params.qToken, s)
-    | SafeRedeem(params) -> safeRedeem(params.0, params.1, s)
+    | SafeRedeem(params) -> safeRedeem(params.amt, params.qToken, s)
     | RedeemMiddle(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | EnsuredRedeem(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
+    | SafeBorrow(params) -> safeBorrow(params.amt, params.qToken, s)
   end;
