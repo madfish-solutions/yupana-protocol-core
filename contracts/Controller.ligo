@@ -108,13 +108,18 @@ type repayParams is record [
   qToken         :address;
 ]
 
+type liquidateParams is record [
+  borrower       :address;
+  amt            :nat;
+  qToken         :address;
+]
+
 type ensureExitMarketType is record [
    user         :address;
    qToken       :address;
    tokens       :set(address);
 ]
 
-//todo do some actions missing???
 type entryAction is
   | UpdatePrice of michelson_pair(address, "qToken", nat, "price")
   | SetOracle of michelson_pair(address, "qToken", address, "oracle")
@@ -131,7 +136,7 @@ type entryAction is
   | BorrowMiddle of borrowMiddleType
   | EnsuredBorrow of ensuredBorrowType
   | SafeRepay of repayParams
-  // | SafeLiquidate of michelson_pair(michelson_pair(address, "borrower", nat, "amount"), "", address, "qToken")
+  | SafeLiquidate of liquidateParams
   // | LiquidateMiddleAction of liquidateMiddle_type
   // | EnsuredLiquidateAction of ensuredLiquidate_type
 
@@ -627,4 +632,5 @@ function main(const action : entryAction; var s : storage) : return is
     | BorrowMiddle(params) -> borrowMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | EnsuredBorrow(params) -> ensuredBorrow(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | SafeRepay(params) -> safeRepay(params.amt, params.qToken, s)
+    | SafeLiquidate(params) -> safeLiquidate(params.borrower, params.amt, params.qToken, s)
   end;
