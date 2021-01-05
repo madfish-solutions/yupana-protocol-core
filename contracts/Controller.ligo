@@ -33,12 +33,7 @@ const accuracy : nat = 1000000000000000000n; //1e+18
 type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
-type updateControllerState_type is UpdateControllerState of address
-type liquidateMiddle_type is LiquidateMiddle of michelson_pair(address, "liquidator", michelson_pair(michelson_pair(address, "borrower", address, "qToken"), "", 
-                                                                                                     michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), ""), "")
-type ensuredLiquidate_type is EnsuredLiquidate of michelson_pair(address, "liquidator", michelson_pair(michelson_pair(address, "borrower", address, "qToken"), "", 
-                                                                                                       michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), ""), "")
-type liquidate_type is Liquidate of michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+type updateControllerStateType is UpdateControllerState of address
 
 type mintType is record [
   user           :address;
@@ -108,10 +103,32 @@ type repayParams is record [
   qToken         :address;
 ]
 
+type liquidateType is record [
+  liquidator     :address;
+  borrower       :address;
+  amt            :nat;
+]
+
 type liquidateParams is record [
   borrower       :address;
   amt            :nat;
   qToken         :address;
+]
+
+type liquidateMiddleType is record [
+    liquidator   :address;
+    borrower     :address;
+    qToken       :address;
+    redeemTokens :nat;
+    borrowAmount :nat;
+]
+
+type ensuredLiquidateType is record [
+    liquidator   :address;
+    borrower     :address;
+    qToken       :address;
+    redeemTokens :nat;
+    borrowAmount :nat;
 ]
 
 type ensureExitMarketType is record [
@@ -137,8 +154,8 @@ type entryAction is
   | EnsuredBorrow of ensuredBorrowType
   | SafeRepay of repayParams
   | SafeLiquidate of liquidateParams
-  // | LiquidateMiddleAction of liquidateMiddle_type
-  // | EnsuredLiquidateAction of ensuredLiquidate_type
+  | LiquidateMiddle of liquidateMiddleType
+  | EnsuredLiquidate of ensuredLiquidateType
 
 function getAccountTokens(const user : address; const qToken : address; const s : storage) : nat is
   case s.accountTokens[(user, qToken)] of
@@ -179,10 +196,10 @@ function getMintEntrypoint(const token_address : address) : contract(mintType) i
     | None -> (failwith("CantGetMintEntrypoint") : contract(mintType))
   end;
 
-function getUpdateControllerStateEntrypoint(const token_address : address) : contract(updateControllerState_type) is
-  case (Tezos.get_entrypoint_opt("%updateControllerState", token_address) : option(contract(updateControllerState_type))) of 
+function getUpdateControllerStateEntrypoint(const token_address : address) : contract(updateControllerStateType) is
+  case (Tezos.get_entrypoint_opt("%updateControllerState", token_address) : option(contract(updateControllerStateType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetUpdateControllerStateEntrypoint") : contract(updateControllerState_type))
+    | None -> (failwith("CantGetUpdateControllerStateEntrypoint") : contract(updateControllerStateType))
   end;
 
 function getRedeemMiddleEntrypoint(const token_address : address) : contract(redeemMiddleType) is
@@ -227,22 +244,22 @@ function getRepayEntrypoint(const token_address : address) : contract(repayType)
     | None -> (failwith("CantGetRepayEntrypoint") : contract(repayType))
   end;
 
-function getLiquidateMiddleEntrypoint(const token_address : address) : contract(liquidateMiddle_type) is
-  case (Tezos.get_entrypoint_opt("%liquidateMiddle", token_address) : option(contract(liquidateMiddle_type))) of 
+function getLiquidateMiddleEntrypoint(const token_address : address) : contract(liquidateMiddleType) is
+  case (Tezos.get_entrypoint_opt("%liquidateMiddle", token_address) : option(contract(liquidateMiddleType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetLiquidateMiddleEntrypoint") : contract(liquidateMiddle_type))
+    | None -> (failwith("CantGetLiquidateMiddleEntrypoint") : contract(liquidateMiddleType))
   end;
 
-function getEnsuredLiquidateEntrypoint(const token_address : address) : contract(ensuredLiquidate_type) is
-  case (Tezos.get_entrypoint_opt("%ensuredLiquidate", token_address) : option(contract(ensuredLiquidate_type))) of 
+function getEnsuredLiquidateEntrypoint(const token_address : address) : contract(ensuredLiquidateType) is
+  case (Tezos.get_entrypoint_opt("%ensuredLiquidate", token_address) : option(contract(ensuredLiquidateType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetEnsuredLiquidateEntrypoint") : contract(ensuredLiquidate_type))
+    | None -> (failwith("CantGetEnsuredLiquidateEntrypoint") : contract(ensuredLiquidateType))
   end;
 
-function getLiquidateEntrypoint(const token_address : address) : contract(liquidate_type) is
-  case (Tezos.get_entrypoint_opt("%liquidate", token_address) : option(contract(liquidate_type))) of 
+function getLiquidateEntrypoint(const token_address : address) : contract(liquidateType) is
+  case (Tezos.get_entrypoint_opt("%liquidate", token_address) : option(contract(liquidateType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidate_type))
+    | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidateType))
   end;
 
 function getEnsureExitMarketEntrypoint(const token_address : address) : contract(ensureExitMarketType) is
@@ -584,7 +601,13 @@ function safeLiquidate(const borrower : address; const amt : nat; const qToken :
              0mutez, 
              getUpdateControllerStateEntrypoint(token)) # ops;
     };
-    ops := Tezos.transaction(LiquidateMiddle(Tezos.sender, ((borrower, qToken), (amt, getAccountBorrows(borrower, qToken, s)))), 
+    ops := Tezos.transaction(record [
+                                        liquidator   = Tezos.sender;
+                                        borrower     = borrower;
+                                        qToken       = qToken;
+                                        redeemTokens = amt;
+                                        borrowAmount = getAccountBorrows(borrower, qToken, s);
+                                    ], 
                              0mutez, 
                              getLiquidateMiddleEntrypoint(Tezos.self_address)) # ops;
   } with (noOperations, s)
@@ -594,7 +617,13 @@ function liquidateMiddle(const liquidator : address; const borrower : address; c
     if Tezos.sender =/= Tezos.self_address then
       failwith("NotSelf")
     else skip;
-  } with (list [Tezos.transaction(EnsuredLiquidate(liquidator, ((borrower, qToken), (redeemTokens, borrowAmount))), 
+  } with (list [Tezos.transaction(record [
+                                              liquidator   = liquidator;
+                                              borrower     = borrower;
+                                              qToken       = qToken;
+                                              redeemTokens = redeemTokens;
+                                              borrowAmount = borrowAmount;
+                                          ], 
                                   0mutez, 
                                   getEnsuredLiquidateEntrypoint(Tezos.self_address))], s)
 
@@ -609,7 +638,11 @@ function ensuredLiquidate(const liquidator : address; const borrower : address; 
       failwith("ShortfailNotZero")
     else skip;
 
-  } with (list [Tezos.transaction(Liquidate(liquidator, (borrower, redeemTokens)), 
+  } with (list [Tezos.transaction(record [
+                                            liquidator     = liquidator;
+                                            borrower       = borrower;
+                                            amt            = redeemTokens;
+                                          ], 
                                   0mutez, 
                                   getLiquidateEntrypoint(qToken))], s)
 
@@ -633,4 +666,6 @@ function main(const action : entryAction; var s : storage) : return is
     | EnsuredBorrow(params) -> ensuredBorrow(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | SafeRepay(params) -> safeRepay(params.amt, params.qToken, s)
     | SafeLiquidate(params) -> safeLiquidate(params.borrower, params.amt, params.qToken, s)
+    | LiquidateMiddle(params) -> liquidateMiddle(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s)
+    | EnsuredLiquidate(params) -> ensuredLiquidate(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s)
   end;
