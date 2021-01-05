@@ -36,8 +36,6 @@ type return is list (operation) * storage
 type mint_type is Mint of michelson_pair(address, "user", nat, "amount")
 type updateControllerState_type is UpdateControllerState of address
 type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
-type ensuredRedeem_type is EnsuredRedeem of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
-                                            michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
 type ensureExitMarket_type is EnsureExitMarket of (address * address * set(address)) //(const user : address; const qToken : address; var tokens : set(address); var s : storage)
 type borrow_type is Borrow of michelson_pair(address, "user", nat, "amount")
 type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
@@ -56,7 +54,14 @@ type redeemMiddleType is record [
     qToken       :address;
     redeemTokens :nat;
     borrowAmount :nat;
-  ]
+]
+
+type ensuredRedeemType is record [
+    user         :address;
+    qToken       :address;
+    redeemTokens :nat;
+    borrowAmount :nat;
+]
 
 type ensureExitMarketType is record [
    user         :address;
@@ -75,7 +80,7 @@ type entryAction is
   | SafeMint of michelson_pair(nat, "amount", address, "qToken")
   | SafeRedeem of michelson_pair(nat, "amount", address, "qToken")
   | RedeemMiddleAction of redeemMiddleType
-  // | EnsuredRedeemAction of ensuredRedeem_type
+  | EnsuredRedeemAction of ensuredRedeemType
   // | SafeBorrow of michelson_pair(nat, "amount", address, "qToken")
   // | BorrowMiddleAction of borrowMiddle_type
   // | EnsuredBorrowAction of ensuredBorrow_type
@@ -141,10 +146,10 @@ function getRedeemEntrypoint(const token_address : address) : contract(redeem_ty
     | None -> (failwith("CantGetRedeemEntrypoint") : contract(redeem_type))
   end;
 
-function getEnsuredRedeemEntrypoint(const token_address : address) : contract(ensuredRedeem_type) is
-  case (Tezos.get_entrypoint_opt("%ensuredRedeem", token_address) : option(contract(ensuredRedeem_type))) of 
+function getEnsuredRedeemEntrypoint(const token_address : address) : contract(ensuredRedeemType) is
+  case (Tezos.get_entrypoint_opt("%ensuredRedeem", token_address) : option(contract(ensuredRedeemType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetEnsuredRedeemEntrypoint") : contract(ensuredRedeem_type))
+    | None -> (failwith("CantGetEnsuredRedeemEntrypoint") : contract(ensuredRedeemType))
   end;
 
 function getBorrowEntrypoint(const token_address : address) : contract(borrow_type) is
@@ -391,11 +396,11 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
                getUpdateControllerStateEntrypoint(token)) # ops;
       };
       ops := Tezos.transaction(record [
-                                      user         = Tezos.sender;
-                                      qToken       = qToken;
-                                      redeemTokens = amt;
-                                      borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
-                                    ], 
+                                        user         = Tezos.sender;
+                                        qToken       = qToken;
+                                        redeemTokens = amt;
+                                        borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
+                                      ], 
              0mutez, 
              getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
     }
@@ -409,7 +414,12 @@ function redeemMiddle(const user : address; const qToken : address; const redeem
     if Tezos.sender =/= Tezos.self_address then
       failwith("NotSelf")
     else skip;
-  } with (list [Tezos.transaction(EnsuredRedeem((user, qToken), (redeemTokens, borrowAmount)), 
+  } with (list [Tezos.transaction(record [
+                                            user         = user;
+                                            qToken       = qToken;
+                                            redeemTokens = redeemTokens;
+                                            borrowAmount = borrowAmount;
+                                          ], 
                 0mutez, 
                 getEnsuredRedeemEntrypoint(qToken))], s)
 
@@ -537,4 +547,5 @@ function main(const action : entryAction; var s : storage) : return is
     | SafeMint(params) -> safeMint(params.0, params.1, s)
     | SafeRedeem(params) -> safeRedeem(params.0, params.1, s)
     | RedeemMiddleAction(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
+    | EnsuredRedeemAction(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
   end;
