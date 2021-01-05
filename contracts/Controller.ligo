@@ -36,7 +36,6 @@ type return is list (operation) * storage
 type mint_type is Mint of michelson_pair(address, "user", nat, "amount")
 type updateControllerState_type is UpdateControllerState of address
 type redeem_type is Redeem of michelson_pair(address, "user", nat, "amount")
-type ensureExitMarket_type is EnsureExitMarket of (address * address * set(address)) //(const user : address; const qToken : address; var tokens : set(address); var s : storage)
 type borrow_type is Borrow of michelson_pair(address, "user", nat, "amount")
 type borrowMiddle_type is BorrowMiddle of michelson_pair(michelson_pair(address, "user", address, "qToken"), "", 
                                                          michelson_pair(nat, "redeemTokens", nat, "borrowAmount"), "")
@@ -76,11 +75,11 @@ type entryAction is
   | UpdateQToken of michelson_pair(michelson_pair(address, "user", nat, "balance"), "", michelson_pair(nat, "borrow", nat, "exchangeRate"), "")
   | EnterMarket of address
   | ExitMarket of address
-  | EnsureExitMarketAction of ensureExitMarketType
+  | EnsureExitMarket of ensureExitMarketType
   | SafeMint of michelson_pair(nat, "amount", address, "qToken")
   | SafeRedeem of michelson_pair(nat, "amount", address, "qToken")
-  | RedeemMiddleAction of redeemMiddleType
-  | EnsuredRedeemAction of ensuredRedeemType
+  | RedeemMiddle of redeemMiddleType
+  | EnsuredRedeem of ensuredRedeemType
   // | SafeBorrow of michelson_pair(nat, "amount", address, "qToken")
   // | BorrowMiddleAction of borrowMiddle_type
   // | EnsuredBorrowAction of ensuredBorrow_type
@@ -194,10 +193,10 @@ function getLiquidateEntrypoint(const token_address : address) : contract(liquid
     | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidate_type))
   end;
 
-function getEnsureExitMarketEntrypoint(const token_address : address) : contract(ensureExitMarket_type) is
-  case (Tezos.get_entrypoint_opt("%ensureExitMarket", token_address) : option(contract(ensureExitMarket_type))) of 
+function getEnsureExitMarketEntrypoint(const token_address : address) : contract(ensureExitMarketType) is
+  case (Tezos.get_entrypoint_opt("%ensureExitMarket", token_address) : option(contract(ensureExitMarketType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetEnsureExitMarketEntrypoint") : contract(ensureExitMarket_type))
+    | None -> (failwith("CantGetEnsureExitMarketEntrypoint") : contract(ensureExitMarketType))
   end;
 
 function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : getUserLiquidityReturn is
@@ -351,7 +350,11 @@ function exitMarket(const qToken : address; var s : storage) : return is
            0mutez, 
            getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
 
-    ops := Tezos.transaction(EnsureExitMarket(Tezos.sender, qToken, tokens), 
+    ops := Tezos.transaction(record [
+                                      user         = Tezos.sender;
+                                      qToken       = qToken;
+                                      tokens       = tokens;
+                                    ], 
            0mutez, 
            getEnsureExitMarketEntrypoint(Tezos.self_address)) # ops;
   } with (ops, s)
@@ -543,9 +546,9 @@ function main(const action : entryAction; var s : storage) : return is
     | UpdateQToken(params) -> updateQToken(params.0.0, params.0.1, params.1.0, params.1.1, s)
     | EnterMarket(params) -> enterMarket(params, s)
     | ExitMarket(params) -> exitMarket(params, s)
-    | EnsureExitMarketAction(params) -> ensureExitMarket(params.user, params.qToken, params.tokens, s)
+    | EnsureExitMarket(params) -> ensureExitMarket(params.user, params.qToken, params.tokens, s)
     | SafeMint(params) -> safeMint(params.0, params.1, s)
     | SafeRedeem(params) -> safeRedeem(params.0, params.1, s)
-    | RedeemMiddleAction(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
-    | EnsuredRedeemAction(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
+    | RedeemMiddle(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
+    | EnsuredRedeem(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
   end;
