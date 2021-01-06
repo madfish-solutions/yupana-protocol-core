@@ -1,6 +1,4 @@
 const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
-const sumCollateral : nat = 0n;
-const sumBorrow : nat = 0n;
 
 type getUserLiquidityReturn is
   record [
@@ -292,8 +290,8 @@ function getEnsureExitMarketEntrypoint(const token_address : address) : contract
 
 function getUserLiquidity(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : getUserLiquidityReturn is
   block {
-    sumCollateral := 0n;
-    sumBorrow := 0n;
+    var sumCollateral : nat := 0n;
+    var sumBorrow : nat := 0n;
     const tokens : set(address) = getAccountMembership(user, s);
     var tokensToDenom : nat := 0n;
     var m : marketInfo := getMarket(qToken, s);
@@ -380,14 +378,14 @@ function register(const token : address; const qToken : address; var s : storage
     s.pairs[token] := qToken;
   } with (noOperations, s)
 
-function updateQToken(const user : address; const balance_ : nat; const borrow : nat; const exchangeRate : nat; var s : storage) : return is
+function updateQToken(const user : address; const userBalance : nat; const borrow : nat; const exchangeRate : nat; var s : storage) : return is
   block {
     mustContainsQTokens(Tezos.sender, s);
 
     var market : marketInfo := getMarket(Tezos.sender, s);
     market.exchangeRate := exchangeRate;
 
-    s.accountTokens[(user, Tezos.sender)] := balance_;
+    s.accountTokens[(user, Tezos.sender)] := userBalance;
     s.accountBorrows[(user, Tezos.sender)] := borrow;
     s.markets[Tezos.sender] := market;
   } with (noOperations, s)
