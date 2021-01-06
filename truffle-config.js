@@ -11,6 +11,13 @@ module.exports = {
       network_id: "*",
       secretKey: accountsMap.get(accounts[0]),
       type: "tezos"
-    }
+    },
+    delphinet: {
+      host: "https://delphinet.smartpy.io",
+      port: 443,
+      network_id: "*",
+      secretKey: accountsMap.get(accounts[0]),
+      type: "tezos",
+    },
   }
 };
