@@ -13,7 +13,8 @@
     "truffle-assertions": "^0.9.2"
   },
   "scripts": {
-    "start-sandbox": "ganache-cli --flavor tezos --seed alice"
+    "start-sandbox": "ganache-cli --flavor tezos --seed alice",
+    "migrate": "truffle migrate"
   },
   "repository": {
     "type": "git",
