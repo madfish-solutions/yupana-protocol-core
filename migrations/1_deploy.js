@@ -34,13 +34,13 @@ module.exports = async function (deployer) {
   accBorrows.set({
     user: accounts[0],
     token: accounts[1],
-  }, 0)
+  }, 0);
 
   let accTokens = new MichelsonMap()
   accTokens.set({
     user: accounts[0],
     token: accounts[1],
-  }, 0)
+  }, 0);
 
   const storage = {
     factory: accounts[0],
@@ -65,6 +65,4 @@ module.exports = async function (deployer) {
   };
 
   await deployer.deploy(Controller, storage);
-
-  console.log("CONTROLLER ADDRESS", Controller.address)
 };

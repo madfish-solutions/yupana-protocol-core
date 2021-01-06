@@ -33,87 +33,87 @@ type return is list (operation) * storage
 
 type updateControllerStateType is UpdateControllerState of address
 
-type mintType is record [
+type mintType is [@layout:comb] record [
   user           :address;
   amt            :nat;
 ]
 
-type mintParams is record [
+type mintParams is [@layout:comb] record [
   amt            :nat;
   qToken         :address;
 ]
 
-type redeemType is record [
+type redeemType is [@layout:comb] record [
   user           :address;
   amt            :nat;
 ]
 
-type redeemParams is record [
+type redeemParams is [@layout:comb] record [
   amt            :nat;
   qToken         :address;
 ]
 
-type redeemMiddleType is record [
+type redeemMiddleType is [@layout:comb] record [
     user         :address;
     qToken       :address;
     redeemTokens :nat;
     borrowAmount :nat;
 ]
 
-type ensuredRedeemType is record [
+type ensuredRedeemType is [@layout:comb] record [
     user         :address;
     qToken       :address;
     redeemTokens :nat;
     borrowAmount :nat;
 ]
 
-type borrowType is record [
+type borrowType is [@layout:comb] record [
   user           :address;
   amt            :nat;
 ]
 
-type borrowParams is record [
+type borrowParams is [@layout:comb] record [
   amt            :nat;
   qToken         :address;
 ]
 
-type borrowMiddleType is record [
+type borrowMiddleType is [@layout:comb] record [
   user         :address;
   qToken       :address;
   redeemTokens :nat;
   borrowAmount :nat;
 ]
 
-type ensuredBorrowType is record [
+type ensuredBorrowType is [@layout:comb] record [
   user         :address;
   qToken       :address;
   redeemTokens :nat;
   borrowAmount :nat;
 ]
 
-type repayType is record [
+type repayType is [@layout:comb] record [
   user           :address;
   amt            :nat;
 ]
 
-type repayParams is record [
+type repayParams is [@layout:comb] record [
   amt            :nat;
   qToken         :address;
 ]
 
-type liquidateType is record [
+type liquidateType is [@layout:comb] record [
   liquidator     :address;
   borrower       :address;
   amt            :nat;
 ]
 
-type liquidateParams is record [
+type liquidateParams is [@layout:comb] record [
   borrower       :address;
   amt            :nat;
   qToken         :address;
 ]
 
-type liquidateMiddleType is record [
+type liquidateMiddleType is [@layout:comb] record [
     liquidator   :address;
     borrower     :address;
     qToken       :address;
@@ -121,7 +121,7 @@ type liquidateMiddleType is record [
     borrowAmount :nat;
 ]
 
-type ensuredLiquidateType is record [
+type ensuredLiquidateType is [@layout:comb] record [
     liquidator   :address;
     borrower     :address;
     qToken       :address;
@@ -129,29 +129,29 @@ type ensuredLiquidateType is record [
     borrowAmount :nat;
 ]
 
-type updatePriceParams is record [
+type updatePriceParams is [@layout:comb] record [
     qToken      :address;
     price       :nat;
 ]
 
-type setOracleParams is record [
+type setOracleParams is [@layout:comb] record [
     qToken       :address;
     oracle       :address;
 ]
 
-type registerParams is record [
+type registerParams is [@layout:comb] record [
     token        :address;
     qToken       :address;
 ]
 
-type updateQTokenParams is record [
+type updateQTokenParams is [@layout:comb] record [
     user          :address;
     balance       :nat;
     borrow        :nat;
     exchangeRate  :nat;
 ]
 
-type ensureExitMarketType is record [
+type ensureExitMarketType is [@layout:comb] record [
    user         :address;
    qToken       :address;
    tokens       :set(address);
