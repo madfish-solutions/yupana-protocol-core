@@ -1,35 +1,4 @@
-const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
-
-type getUserLiquidityReturn is
-  record [
-    surplus   :nat;
-    shortfail :nat;
-  ]
-
-type marketInfo is
-  record [
-    collateralFactor  :nat;
-    lastPrice         :nat;
-    oracle            :address;
-    exchangeRate      :nat;
-  ]
-
-type storage is
-  record [
-    factory           :address;
-    admin             :address;
-    qTokens           :set(address);
-    pairs             :big_map(address, address); // underlying token -> qToken
-    accountBorrows    :big_map(michelson_pair(address, "user", address, "token"), nat);
-    accountTokens     :big_map(michelson_pair(address, "user", address, "token"), nat);
-    markets           :big_map(address, marketInfo); // qToken -> info
-    accountMembership :big_map(address, set(address)); // user -> qTokens
-  ]
-//all numbers in storage are real numbers
-const accuracy : nat = 1000000000000000000n; //1e+18
-
-type return is list (operation) * storage
-[@inline] const noOperations : list (operation) = nil;
+// ****************************** Params ******************************
 
 type updateControllerStateType is UpdateControllerState of address
 
@@ -157,25 +126,76 @@ type ensureExitMarketType is [@layout:comb] record [
    tokens       :set(address);
 ]
 
+// ****************************** Params ******************************
+
+type getUserLiquidityReturn is
+  record [
+    surplus   :nat;
+    shortfail :nat;
+  ]
+
+type marketInfo is
+  record [
+    collateralFactor  :nat;
+    lastPrice         :nat;
+    oracle            :address;
+    exchangeRate      :nat;
+  ]
+
+type storage is
+  record [
+    factory           :address;
+    admin             :address;
+    qTokens           :set(address);
+    pairs             :big_map(address, address); // underlying token -> qToken
+    accountBorrows    :big_map(michelson_pair(address, "user", address, "token"), nat);
+    accountTokens     :big_map(michelson_pair(address, "user", address, "token"), nat);
+    markets           :big_map(address, marketInfo); // qToken -> info
+    accountMembership :big_map(address, set(address)); // user -> qTokens
+  ]
+//all numbers in storage are real numbers
+const accuracy : nat = 1000000000000000000n; //1e+18
+
+const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
+
+type return is list (operation) * storage
+[@inline] const noOperations : list (operation) = nil;
+
+// ****************************** Funcs ******************************
+
+type updateControllerStateFunc is updateControllerStateType -> return
+
+// ****************************** Funcs ******************************
+
+type fullStorage is
+  record [
+    s :storage;
+
+    //funcs
+    updateControllerStateLambdas :big_map(nat, updateControllerStateFunc);
+  ]
+
+type fullReturn is list (operation) * fullStorage
+
 type entryAction is
-  | UpdatePrice of updatePriceParams
-  | SetOracle of setOracleParams
+  // | UpdatePrice of updatePriceParams
+  // | SetOracle of setOracleParams
   | Register of registerParams
-  | UpdateQToken of updateQTokenParams
+  // | UpdateQToken of updateQTokenParams
   | EnterMarket of address
   | ExitMarket of address
   | EnsureExitMarket of ensureExitMarketType
-  | SafeMint of mintParams
+  // | SafeMint of mintParams
   | SafeRedeem of redeemParams
   | RedeemMiddle of redeemMiddleType
   | EnsuredRedeem of ensuredRedeemType
-  | SafeBorrow of borrowParams
-  | BorrowMiddle of borrowMiddleType
-  | EnsuredBorrow of ensuredBorrowType
-  | SafeRepay of repayParams
-  | SafeLiquidate of liquidateParams
-  | LiquidateMiddle of liquidateMiddleType
-  | EnsuredLiquidate of ensuredLiquidateType
+  // | SafeBorrow of borrowParams
+  // | BorrowMiddle of borrowMiddleType
+  // | EnsuredBorrow of ensuredBorrowType
+  // | SafeRepay of repayParams
+  // | SafeLiquidate of liquidateParams
+  // | LiquidateMiddle of liquidateMiddleType
+  // | EnsuredLiquidate of ensuredLiquidateType
 
 function getAccountTokens(const user : address; const qToken : address; const s : storage) : nat is
   case s.accountTokens[(user, qToken)] of
@@ -366,16 +386,16 @@ function setOracle(const qToken : address; const oracle : address; var s : stora
     s.markets[qToken] := market;
   } with (noOperations, s)
 
-function register(const token : address; const qToken : address; var s : storage) : return is
+function register(const token : address; const qToken : address; var s : fullStorage) : fullReturn is
   block {
-    if Tezos.sender =/= s.factory then
+    if Tezos.sender =/= s.s.factory then
       failwith("NotFactory")
     else skip;
 
-    mustNotContainsQTokens(qToken, s);
+    mustNotContainsQTokens(qToken, s.s);
 
-    s.qTokens := Set.add(qToken, s.qTokens);
-    s.pairs[token] := qToken;
+    s.s.qTokens := Set.add(qToken, s.s.qTokens);
+    s.s.pairs[token] := qToken;
   } with (noOperations, s)
 
 function updateQToken(const user : address; const userBalance : nat; const borrow : nat; const exchangeRate : nat; var s : storage) : return is
@@ -390,11 +410,11 @@ function updateQToken(const user : address; const userBalance : nat; const borro
     s.markets[Tezos.sender] := market;
   } with (noOperations, s)
 
-function enterMarket(const qToken : address; var s : storage) : return is
+function enterMarket(const qToken : address; var s : fullStorage) : fullReturn is
   block {
-    mustContainsQTokens(qToken, s);
+    mustContainsQTokens(qToken, s.s);
 
-    var tokens : set(address) := getAccountMembership(Tezos.sender, s);
+    var tokens : set(address) := getAccountMembership(Tezos.sender, s.s);
 
     if tokens contains qToken then
       failwith("AlreadyEnter")
@@ -406,20 +426,20 @@ function enterMarket(const qToken : address; var s : storage) : return is
 
     tokens := Set.add(qToken, tokens);
 
-    s.accountMembership[Tezos.sender] := tokens;
+    s.s.accountMembership[Tezos.sender] := tokens;
   } with (noOperations, s)
 
-function exitMarket(const qToken : address; var s : storage) : return is
+function exitMarket(const qToken : address; var s : fullStorage) : fullReturn is
   block {
-    mustContainsQTokens(qToken, s);
+    mustContainsQTokens(qToken, s.s);
 
-    var tokens : set(address) := getAccountMembership(Tezos.sender, s);
+    var tokens : set(address) := getAccountMembership(Tezos.sender, s.s);
 
     if not (tokens contains qToken) then
       failwith("NotEnter")
     else skip;
 
-    if getAccountBorrows(Tezos.sender, qToken, s) =/= 0n then
+    if getAccountBorrows(Tezos.sender, qToken, s.s) =/= 0n then
       failwith("BorrowsExists")
     else skip;
 
@@ -433,8 +453,8 @@ function exitMarket(const qToken : address; var s : storage) : return is
     ops := Tezos.transaction(record [
                                       user         = Tezos.sender;
                                       qToken       = qToken;
-                                      redeemTokens = getAccountTokens(Tezos.sender, qToken, s);
-                                      borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
+                                      redeemTokens = getAccountTokens(Tezos.sender, qToken, s.s);
+                                      borrowAmount = getAccountBorrows(Tezos.sender, qToken, s.s);
                                     ],
            0mutez, 
            getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
@@ -448,14 +468,14 @@ function exitMarket(const qToken : address; var s : storage) : return is
            getEnsureExitMarketEntrypoint(Tezos.self_address)) # ops;
   } with (ops, s)
 
-function ensureExitMarket(const user : address; const qToken : address; var tokens : set(address); var s : storage) : return is
+function ensureExitMarket(const user : address; const qToken : address; var tokens : set(address); var s : fullStorage) : fullReturn is
   block {
     if Tezos.sender =/= Tezos.self_address then
       failwith("NotSelf")
     else skip;
     
     const response = 
-    getUserLiquidity(user, qToken, getAccountTokens(user, qToken, s), getAccountBorrows(user, qToken, s), s);
+    getUserLiquidity(user, qToken, getAccountTokens(user, qToken, s.s), getAccountBorrows(user, qToken, s.s), s.s);
     
     if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
@@ -463,7 +483,7 @@ function ensureExitMarket(const user : address; const qToken : address; var toke
 
     tokens := Set.remove(qToken, tokens);
 
-    s.accountMembership[user] := tokens;
+    s.s.accountMembership[user] := tokens;
   } with (noOperations, s)
 
 function safeMint(const amt : nat; const qToken : address; const s : storage) : return is
@@ -476,11 +496,11 @@ function safeMint(const amt : nat; const qToken : address; const s : storage) : 
          0mutez, 
          getMintEntrypoint(qToken))], s)
 
-function safeRedeem(const amt : nat; const qToken : address; const s : storage) : return is
+function safeRedeem(const amt : nat; const qToken : address; const s : fullStorage) : fullReturn is
   block {
-    mustContainsQTokens(qToken, s);
+    mustContainsQTokens(qToken, s.s);
 
-    const tokens : set(address) = getAccountMembership(Tezos.sender, s);
+    const tokens : set(address) = getAccountMembership(Tezos.sender, s.s);
     var ops := noOperations;
 
     if tokens contains qToken then block {
@@ -494,7 +514,7 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
                                         user         = Tezos.sender;
                                         qToken       = qToken;
                                         redeemTokens = amt;
-                                        borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
+                                        borrowAmount = getAccountBorrows(Tezos.sender, qToken, s.s);
                                       ], 
              0mutez, 
              getRedeemMiddleEntrypoint(Tezos.self_address)) # ops;
@@ -507,7 +527,7 @@ function safeRedeem(const amt : nat; const qToken : address; const s : storage) 
                 getRedeemEntrypoint(qToken)) # ops;
   } with (ops, s)
 
-function redeemMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+function redeemMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : fullStorage) : fullReturn is
   block {
     if Tezos.sender =/= Tezos.self_address then
       failwith("NotSelf")
@@ -519,15 +539,15 @@ function redeemMiddle(const user : address; const qToken : address; const redeem
                                             borrowAmount = borrowAmount;
                                           ], 
                 0mutez, 
-                getEnsuredRedeemEntrypoint(qToken))], s)
+                getEnsuredRedeemEntrypoint(Tezos.self_address))], s)
 
-function ensuredRedeem(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+function ensuredRedeem(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : fullStorage) : fullReturn is
   block {
     if Tezos.sender =/= Tezos.self_address then
       failwith("NotSelf")
     else skip;
 
-    const response = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
+    const response = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s.s);
     if response.shortfail =/= 0n then
       failwith("ShortfailNotZero")
     else skip;
@@ -539,153 +559,153 @@ function ensuredRedeem(const user : address; const qToken : address; const redee
                 0mutez,
                 getRedeemEntrypoint(qToken))], s)
 
-function safeBorrow(const amt : nat; const qToken : address; var s : storage) : return is
-  block {
-    mustContainsQTokens(qToken, s);
+// function safeBorrow(const amt : nat; const qToken : address; var s : storage) : return is
+//   block {
+//     mustContainsQTokens(qToken, s);
 
-    const tokens : set(address) = getAccountMembership(Tezos.sender, s);
-    var ops := noOperations;
+//     const tokens : set(address) = getAccountMembership(Tezos.sender, s);
+//     var ops := noOperations;
 
-    if tokens contains qToken then skip;
-    else block {
-      const res = enterMarket(qToken, s);
-      s := res.1;
-    };
-    //todo *ensure borrow amount smaller than max borrow limit (?)
-    for token in set tokens block {
-      ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-             0mutez, 
-             getUpdateControllerStateEntrypoint(token)) # ops;
-    };
-    ops := Tezos.transaction(record [
-                                      user         = Tezos.sender;
-                                      qToken       = qToken;
-                                      redeemTokens = amt;
-                                      borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
-                                    ],
-                             0mutez, 
-                             getBorrowMiddleEntrypoint(Tezos.self_address)) # ops;
-  } with (ops, s)
+//     if tokens contains qToken then skip;
+//     else block {
+//       const res = enterMarket(qToken, s);
+//       s := res.1;
+//     };
+//     //todo *ensure borrow amount smaller than max borrow limit (?)
+//     for token in set tokens block {
+//       ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+//              0mutez, 
+//              getUpdateControllerStateEntrypoint(token)) # ops;
+//     };
+//     ops := Tezos.transaction(record [
+//                                       user         = Tezos.sender;
+//                                       qToken       = qToken;
+//                                       redeemTokens = amt;
+//                                       borrowAmount = getAccountBorrows(Tezos.sender, qToken, s);
+//                                     ],
+//                              0mutez, 
+//                              getBorrowMiddleEntrypoint(Tezos.self_address)) # ops;
+//   } with (ops, s)
 
-function borrowMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
-  block {
-    if Tezos.sender =/= Tezos.self_address then
-      failwith("NotSelf")
-    else skip;
-  } with (list [Tezos.transaction(record [
-                                            user         = user;
-                                            qToken       = qToken;
-                                            redeemTokens = redeemTokens;
-                                            borrowAmount = borrowAmount;
-                                          ], 
-                                  0mutez, 
-                                  getEnsuredBorrowEntrypoint(Tezos.self_address))], s)
+// function borrowMiddle(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+//   block {
+//     if Tezos.sender =/= Tezos.self_address then
+//       failwith("NotSelf")
+//     else skip;
+//   } with (list [Tezos.transaction(record [
+//                                             user         = user;
+//                                             qToken       = qToken;
+//                                             redeemTokens = redeemTokens;
+//                                             borrowAmount = borrowAmount;
+//                                           ], 
+//                                   0mutez, 
+//                                   getEnsuredBorrowEntrypoint(Tezos.self_address))], s)
 
-function ensuredBorrow(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
-  block {
-    if Tezos.sender =/= Tezos.self_address then
-      failwith("NotSelf")
-    else skip;
+// function ensuredBorrow(const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+//   block {
+//     if Tezos.sender =/= Tezos.self_address then
+//       failwith("NotSelf")
+//     else skip;
 
-    const response = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
-    if response.shortfail =/= 0n then
-      failwith("ShortfailNotZero")
-    else skip;
+//     const response = getUserLiquidity(user, qToken, redeemTokens, borrowAmount, s);
+//     if response.shortfail =/= 0n then
+//       failwith("ShortfailNotZero")
+//     else skip;
 
-  } with (list [Tezos.transaction(record [
-                                            user           = user;
-                                            amt            = borrowAmount;
-                                          ],
-                                  0mutez, 
-                                  getBorrowEntrypoint(qToken))], s)
+//   } with (list [Tezos.transaction(record [
+//                                             user           = user;
+//                                             amt            = borrowAmount;
+//                                           ],
+//                                   0mutez, 
+//                                   getBorrowEntrypoint(qToken))], s)
 
-function safeRepay(const amt : nat; const qToken : address; const s : storage) : return is
-  block {
-    mustContainsQTokens(qToken, s);
-  } with (list [Tezos.transaction(record [
-                                            user           = Tezos.sender;
-                                            amt            = amt;
-                                          ], 
-         0mutez, 
-         getRepayEntrypoint(qToken))], s)
+// function safeRepay(const amt : nat; const qToken : address; const s : storage) : return is
+//   block {
+//     mustContainsQTokens(qToken, s);
+//   } with (list [Tezos.transaction(record [
+//                                             user           = Tezos.sender;
+//                                             amt            = amt;
+//                                           ], 
+//          0mutez, 
+//          getRepayEntrypoint(qToken))], s)
 
-function safeLiquidate(const borrower : address; const amt : nat; const qToken : address; var s : storage) : return is
-  block {
-    mustContainsQTokens(qToken, s);
-    //todo *ensure repay amount smaller than max repay (?)
-    const tokens : set(address) = getAccountMembership(Tezos.sender, s);
-    var ops := noOperations;
+// function safeLiquidate(const borrower : address; const amt : nat; const qToken : address; var s : storage) : return is
+//   block {
+//     mustContainsQTokens(qToken, s);
+//     //todo *ensure repay amount smaller than max repay (?)
+//     const tokens : set(address) = getAccountMembership(Tezos.sender, s);
+//     var ops := noOperations;
 
-    for token in set tokens block {
-      ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-             0mutez, 
-             getUpdateControllerStateEntrypoint(token)) # ops;
-    };
-    ops := Tezos.transaction(record [
-                                        liquidator   = Tezos.sender;
-                                        borrower     = borrower;
-                                        qToken       = qToken;
-                                        redeemTokens = amt;
-                                        borrowAmount = getAccountBorrows(borrower, qToken, s);
-                                    ], 
-                             0mutez, 
-                             getLiquidateMiddleEntrypoint(Tezos.self_address)) # ops;
-  } with (noOperations, s)
+//     for token in set tokens block {
+//       ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+//              0mutez, 
+//              getUpdateControllerStateEntrypoint(token)) # ops;
+//     };
+//     ops := Tezos.transaction(record [
+//                                         liquidator   = Tezos.sender;
+//                                         borrower     = borrower;
+//                                         qToken       = qToken;
+//                                         redeemTokens = amt;
+//                                         borrowAmount = getAccountBorrows(borrower, qToken, s);
+//                                     ], 
+//                              0mutez, 
+//                              getLiquidateMiddleEntrypoint(Tezos.self_address)) # ops;
+//   } with (noOperations, s)
 
-function liquidateMiddle(const liquidator : address; const borrower : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
-  block {
-    if Tezos.sender =/= Tezos.self_address then
-      failwith("NotSelf")
-    else skip;
-  } with (list [Tezos.transaction(record [
-                                              liquidator   = liquidator;
-                                              borrower     = borrower;
-                                              qToken       = qToken;
-                                              redeemTokens = redeemTokens;
-                                              borrowAmount = borrowAmount;
-                                          ], 
-                                  0mutez, 
-                                  getEnsuredLiquidateEntrypoint(Tezos.self_address))], s)
+// function liquidateMiddle(const liquidator : address; const borrower : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+//   block {
+//     if Tezos.sender =/= Tezos.self_address then
+//       failwith("NotSelf")
+//     else skip;
+//   } with (list [Tezos.transaction(record [
+//                                               liquidator   = liquidator;
+//                                               borrower     = borrower;
+//                                               qToken       = qToken;
+//                                               redeemTokens = redeemTokens;
+//                                               borrowAmount = borrowAmount;
+//                                           ], 
+//                                   0mutez, 
+//                                   getEnsuredLiquidateEntrypoint(Tezos.self_address))], s)
 
-function ensuredLiquidate(const liquidator : address; const borrower : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
-  block {
-    if Tezos.sender =/= Tezos.self_address then
-      failwith("NotSelf")
-    else skip;
+// function ensuredLiquidate(const liquidator : address; const borrower : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : storage) : return is
+//   block {
+//     if Tezos.sender =/= Tezos.self_address then
+//       failwith("NotSelf")
+//     else skip;
 
-    const response = getUserLiquidity(borrower, qToken, redeemTokens, borrowAmount, s);
-    if response.shortfail =/= 0n then
-      failwith("ShortfailNotZero")
-    else skip;
+//     const response = getUserLiquidity(borrower, qToken, redeemTokens, borrowAmount, s);
+//     if response.shortfail =/= 0n then
+//       failwith("ShortfailNotZero")
+//     else skip;
 
-  } with (list [Tezos.transaction(record [
-                                            liquidator     = liquidator;
-                                            borrower       = borrower;
-                                            amt            = redeemTokens;
-                                          ], 
-                                  0mutez, 
-                                  getLiquidateEntrypoint(qToken))], s)
+//   } with (list [Tezos.transaction(record [
+//                                             liquidator     = liquidator;
+//                                             borrower       = borrower;
+//                                             amt            = redeemTokens;
+//                                           ], 
+//                                   0mutez, 
+//                                   getLiquidateEntrypoint(qToken))], s)
 
-function main(const action : entryAction; var s : storage) : return is
+function main(const action : entryAction; var s : fullStorage) : fullReturn is
   block {
     skip
   } with case action of
-    | UpdatePrice(params) -> updatePrice(params.qToken, params.price, s)
-    | SetOracle(params) -> setOracle(params.qToken, params.oracle, s)
+    // | UpdatePrice(params) -> updatePrice(params.qToken, params.price, s.s)
+    // | SetOracle(params) -> setOracle(params.qToken, params.oracle, s.s)
     | Register(params) -> register(params.token, params.qToken, s)
-    | UpdateQToken(params) -> updateQToken(params.user, params.balance, params.borrow, params.exchangeRate, s)
+    // | UpdateQToken(params) -> updateQToken(params.user, params.balance, params.borrow, params.exchangeRate, s.s)
     | EnterMarket(params) -> enterMarket(params, s)
     | ExitMarket(params) -> exitMarket(params, s)
     | EnsureExitMarket(params) -> ensureExitMarket(params.user, params.qToken, params.tokens, s)
-    | SafeMint(params) -> safeMint(params.amt, params.qToken, s)
+    // | SafeMint(params) -> safeMint(params.amt, params.qToken, s.s)
     | SafeRedeem(params) -> safeRedeem(params.amt, params.qToken, s)
     | RedeemMiddle(params) -> redeemMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
     | EnsuredRedeem(params) -> ensuredRedeem(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
-    | SafeBorrow(params) -> safeBorrow(params.amt, params.qToken, s)
-    | BorrowMiddle(params) -> borrowMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
-    | EnsuredBorrow(params) -> ensuredBorrow(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s)
-    | SafeRepay(params) -> safeRepay(params.amt, params.qToken, s)
-    | SafeLiquidate(params) -> safeLiquidate(params.borrower, params.amt, params.qToken, s)
-    | LiquidateMiddle(params) -> liquidateMiddle(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s)
-    | EnsuredLiquidate(params) -> ensuredLiquidate(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s)
+    // | SafeBorrow(params) -> safeBorrow(params.amt, params.qToken, s.s)
+    // | BorrowMiddle(params) -> borrowMiddle(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s.s)
+    // | EnsuredBorrow(params) -> ensuredBorrow(params.user, params.qToken, params.redeemTokens, params.borrowAmount, s.s)
+    // | SafeRepay(params) -> safeRepay(params.amt, params.qToken, s.s)
+    // | SafeLiquidate(params) -> safeLiquidate(params.borrower, params.amt, params.qToken, s.s)
+    // | LiquidateMiddle(params) -> liquidateMiddle(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s.s)
+    // | EnsuredLiquidate(params) -> ensuredLiquidate(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s.s)
   end;

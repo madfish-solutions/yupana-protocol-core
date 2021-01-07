@@ -62,6 +62,7 @@ contract.only("Controller", async () => {
   let Controller_Instance;
   let DAI_Storage;
   let storage;
+  let fullStorage;
 
   beforeEach("setup", async () => {
     DAI_Storage = {
@@ -97,7 +98,13 @@ contract.only("Controller", async () => {
       accountMembership: accountMembership,
     };
 
-    Controller_Instance = await Controller.new(storage);
+    fullStorage = {
+      s: storage,
+
+      updateControllerStateLambdas: MichelsonMap.fromLiteral({}),
+    }
+
+    Controller_Instance = await Controller.new(fullStorage);
     await revertDefaultSigner();
   });
 
