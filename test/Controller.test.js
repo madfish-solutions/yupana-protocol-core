@@ -267,6 +267,8 @@ contract.only("Controller", async () => {
       setSigner(newUSER);
       await Controller_Instance.enterMarket(DAI_Instance.address);
 
+      await Controller_Instance.setUpdateControllerStateLambdas(DAI_Instance.updateControllerState);
+
       await Controller_Instance.exitMarket(DAI_Instance.address);
       const s = await Controller_Instance.storage();
 

@@ -163,7 +163,7 @@ type return is list (operation) * storage
 
 // ****************************** Funcs ******************************
 
-type updateControllerStateFunc is updateControllerStateType -> return
+type updateControllerStateFunc is address -> return
 
 // ****************************** Funcs ******************************
 
@@ -196,6 +196,7 @@ type entryAction is
   // | SafeLiquidate of liquidateParams
   // | LiquidateMiddle of liquidateMiddleType
   // | EnsuredLiquidate of ensuredLiquidateType
+  | SetUpdateControllerStateLambdas of updateControllerStateFunc
 
 function getAccountTokens(const user : address; const qToken : address; const s : storage) : nat is
   case s.accountTokens[(user, qToken)] of
@@ -229,6 +230,22 @@ function getAccountMembership(const user : address; const s : storage) : set(add
     Some (value) -> value
   | None -> (set [] : set(address))
   end;
+
+function getUpdateControllerStateLambdas(const user : address; const s : fullStorage) : fullReturn is
+  block {
+    const res : return = case s.updateControllerStateLambdas[1n] of
+      Some(f) -> f(user)
+    | None -> (failwith("NoIndexForUpdateControllerStateLambdas") : return)
+    end;
+  } with (res.0, s)
+
+function setUpdateControllerStateLambdas(const func : updateControllerStateFunc; var s : fullStorage) : fullReturn is
+  block {
+    case s.updateControllerStateLambdas[1n] of
+      Some(f) -> failwith("FunctionAlreadySet")
+    | None -> s.updateControllerStateLambdas[1n] := func
+    end;
+  } with (noOperations, s)
 
 function getMintEntrypoint(const token_address : address) : contract(mintType) is
   case (Tezos.get_entrypoint_opt("%mint", token_address) : option(contract(mintType))) of 
@@ -445,9 +462,11 @@ function exitMarket(const qToken : address; var s : fullStorage) : fullReturn is
 
     var ops := noOperations;
     for token in set tokens block {
-      ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
-             0mutez, 
-             getUpdateControllerStateEntrypoint(token)) # ops;
+      // ops := Tezos.transaction(UpdateControllerState(Tezos.sender), 
+      //        0mutez, 
+      //        getUpdateControllerStateEntrypoint(token)) # ops;
+
+      var res := getUpdateControllerStateLambdas(Tezos.sender, s);
     };
 
     ops := Tezos.transaction(record [
@@ -708,4 +727,5 @@ function main(const action : entryAction; var s : fullStorage) : fullReturn is
     // | SafeLiquidate(params) -> safeLiquidate(params.borrower, params.amt, params.qToken, s.s)
     // | LiquidateMiddle(params) -> liquidateMiddle(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s.s)
     // | EnsuredLiquidate(params) -> ensuredLiquidate(params.liquidator, params.borrower, params.qToken, params.redeemTokens, params.borrowAmount, s.s)
+    | SetUpdateControllerStateLambdas(params) -> setUpdateControllerStateLambdas(params, s)
   end;
