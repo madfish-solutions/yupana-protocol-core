@@ -1,6 +1,7 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const truffleAssert = require('truffle-assertions');
 const BigNumber = require('bignumber.js');
+const { execSync } = require("child_process");
 
 const { accounts } = require("../scripts/sandbox/accounts");
 const { revertDefaultSigner } = require( "./helpers/signerSeter");
@@ -260,6 +261,35 @@ contract.only("Controller", async () => {
       setSigner(FACTORY);
     });
     it("should exit from market", async () => {
+      function getLigo(isDockerizedLigo) {
+        let path = "ligo";
+        if (isDockerizedLigo) {
+          path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:next";
+          try {
+            execSync(`${path}  --help`);
+          } catch (err) {
+            path = "ligo";
+            execSync(`${path}  --help`);
+          }
+        } else {
+          try {
+            execSync(`${path}  --help`);
+          } catch (err) {
+            path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:next";
+            execSync(`${path}  --help`);
+          }
+        }
+        return path;
+      }
+      let ligo = getLigo(false);
+      console.log("HERE1")
+
+      const stdOut = execSync(`${ligo} compile-parameter --michelson-format=json contracts/Controller.ligo main 'SetUpdateControllerStateLambdas(UpdateControllerState)'`,
+                     { maxBuffer: 1024 * 500 });
+
+      console.log("HERE2")
+
+
       setSigner(FACTORY)
       await Controller_Instance.register(DAI_Instance.address, DAI_Instance.address)
 
@@ -271,6 +301,7 @@ contract.only("Controller", async () => {
 
       await Controller_Instance.exitMarket(DAI_Instance.address);
       const s = await Controller_Instance.storage();
+
 
     });
 

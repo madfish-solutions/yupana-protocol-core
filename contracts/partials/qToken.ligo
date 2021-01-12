@@ -24,25 +24,40 @@ const accuracy : nat = 1000000000000000000n; //1e+18
 type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
-type transfer_type is Transfer of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
+type transferType is Transfer of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
 
+type setAdminParams is address
+type setOwnerParams is address
 type mintParams is michelson_pair(address, "user", nat, "amount")
 type redeemParams is michelson_pair(address, "user", nat, "amount")
 type borrowParams is michelson_pair(address, "user", nat, "amount")
 type repayParams is michelson_pair(address, "user", nat, "amount")
 type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 type seizeParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+type updateControllerStateParams is  address
+
+type funcAction is 
+  | SetAdminParams of setAdminParams -> return
+  | SetOwnerParams of setOwnerParams -> return
+  | MintParams of mintParams -> return
+  | RedeemParams of redeemParams -> return
+  | BorrowParams of borrowParams -> return
+  | RepayParams of repayParams -> return
+  | LiquidateParams of liquidateParams -> return
+  | SeizeParams of seizeParams -> return
+  | UpdateControllerStateParams of updateControllerStateParams -> return
 
 type entryAction is
-  | SetAdmin of address
-  | SetOwner of address
-  | Mint of mintParams
-  | Redeem of redeemParams
-  | Borrow of borrowParams
-  | Repay of repayParams
-  | Liquidate of liquidateParams
-  | Seize of seizeParams
-  | UpdateControllerState of address
+  | SetFunc of funcAction
+  | ExecuteFunc of funcAction
+
+type fullStorage is
+  record [
+    s     :storage;
+    funcs :big_map(nat, funcAction);
+  ]
+
+type fullReturn is list (operation) * fullStorage
 
 function getBorrows(const addr : address; const s : storage) : borrows is
   block {
@@ -63,10 +78,10 @@ function getTokens(const addr : address; const s : storage) : nat is
   | None -> 0n
   end;
 
-function getTokenContract(const token_address : address) : contract(transfer_type) is 
-  case (Tezos.get_entrypoint_opt("%transfer", token_address) : option(contract(transfer_type))) of 
+function getTokenContract(const token_address : address) : contract(transferType) is 
+  case (Tezos.get_entrypoint_opt("%transfer", token_address) : option(contract(transferType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetContractToken") : contract(transfer_type))
+    | None -> (failwith("CantGetContractToken") : contract(transferType))
   end;
 
 [@inline] function mustBeOwner(const s : storage) : unit is
@@ -271,17 +286,17 @@ function updateControllerState(const user : address; var s : storage) : return i
     s.accountBorrows[user] := userBorrows;
   } with (noOperations, s)
 
-function main(const action : entryAction; var s : storage) : return is
-  block {
-    skip
-  } with case action of
-    | SetAdmin(params) -> setAdmin(params, s)
-    | SetOwner(params) -> setOwner(params, s)
-    | Mint(params) -> mint(params.0, params.1, s)
-    | Redeem(params) -> redeem(params.0, params.1, s)
-    | Borrow(params) -> borrow(params.0, params.1, s)
-    | Repay(params) -> repay(params.0, params.1, s)
-    | Liquidate(params) -> liquidate(params.0, params.1.0, params.1.1, s)
-    | Seize(params) -> seize(params.0, params.1.0, params.1.1, s)
-    | UpdateControllerState(params) -> updateControllerState(params, s)
-  end;
+// function main(const action : entryAction; var s : storage) : return is
+//   block {
+//     skip
+//   } with case action of
+//     | SetAdmin(params) -> setAdmin(params, s)
+//     | SetOwner(params) -> setOwner(params, s)
+//     | Mint(params) -> mint(params.0, params.1, s)
+//     | Redeem(params) -> redeem(params.0, params.1, s)
+//     | Borrow(params) -> borrow(params.0, params.1, s)
+//     | Repay(params) -> repay(params.0, params.1, s)
+//     | Liquidate(params) -> liquidate(params.0, params.1.0, params.1.1, s)
+//     | Seize(params) -> seize(params.0, params.1.0, params.1.1, s)
+//     | UpdateControllerState(params) -> updateControllerState(params, s)
+//   end;
