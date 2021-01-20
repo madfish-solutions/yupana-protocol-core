@@ -1,45 +1,4 @@
-(* Strict implimentation of the FA1.2 specification in PascaLIGO *)
-
-(* Define types *)
-type trusted is address;
-type amt is nat;
-
-type account is
-  record [
-    balance         : amt;
-    allowances      : map (trusted, amt);
-  ]
-
-(* contract storage *)
-type storage is
-  record [
-    totalSupply     : amt;
-    ledger          : big_map (address, account);
-  ]
-
-(* define return for readability *)
-type return is list (operation) * storage
-
-(* define noop for readability *)
-const noOperations : list (operation) = nil;
-
-(* Inputs *)
-type transferParams is michelson_pair(address, "from", michelson_pair(address, "to", amt, "value"), "")
-type approveParams is michelson_pair(trusted, "spender", amt, "value")
-type balanceParams is michelson_pair(address, "owner", contract(amt), "")
-type allowanceParams is michelson_pair(michelson_pair(address, "owner", trusted, "spender"), "", contract(amt), "")
-type totalSupplyParams is (unit * contract(amt))
-type withdrawParams is (nat * unit)
-
-(* Valid entry points *)
-type entryAction is
-  | Transfer of transferParams
-  | Approve of approveParams
-  | GetBalance of balanceParams
-  | GetAllowance of allowanceParams
-  | GetTotalSupply of totalSupplyParams
-  | Mint of unit
-  | Withdraw of withdrawParams
+#include "../partails/IXTZ.ligo"
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
