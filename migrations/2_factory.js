@@ -6,7 +6,7 @@ module.exports = function (deployer) {
   const storage = {
     token_list: new MichelsonMap(),
     admin: accounts[0],
-    owner: accounts[1],
+    owner: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",
   };
   deployer.deploy(Factory, storage);
 };

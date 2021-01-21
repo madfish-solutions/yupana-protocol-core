@@ -1,5 +1,5 @@
-type exchange_storage is record [
-  token_list          : big_map (address, address);
+type exchangeStorage is record [
+  tokenList           : big_map (address, address);
   owner               : address;
   admin               : address;
 ]
@@ -11,7 +11,7 @@ type borrows is
     allowances       :map (address, nat);
   ]
 
-type q_storage is
+type qStorage is
   record [
     owner           :address;
     admin           :address;
@@ -26,20 +26,23 @@ type q_storage is
     accountTokens   :big_map(address, nat);
   ]
 
-type create_dex_func is (option(key_hash) * tez * q_storage) -> (operation * address)
+[@inline] const noOperations : list (operation) = nil;
 
-type launch_exchange_params is record [
+type createContrFunc is (option(key_hash) * tez * qStorage) -> (operation * address)
+
+type launchExchangeParams is record [
   token : address;
 ]
 
-type full_factory_return is list(operation) * exchange_storage
+type fullFactoryReturn is list(operation) * exchangeStorage
 
-type exchange_action is 
-| LaunchExchange        of launch_exchange_params
+type exchangeAction is 
+| LaunchExchange        of launchExchangeParams
+| SetAdmin              of address
 
-type register_type is record [
+type registerType is record [
     token        :address;
     qToken       :address;
 ] 
 
-type iController is Register of register_type
+type iController is Register of registerType

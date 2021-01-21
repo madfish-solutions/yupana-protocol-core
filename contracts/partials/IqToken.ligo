@@ -24,7 +24,7 @@ type return is list (operation) * storage
 [@inline] const noOperations : list (operation) = nil;
 
 type transferParams is michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
-type transfer_type is TransferOuttside of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
+type transferType is TransferOuttside of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
 type approveParams is michelson_pair(address, "spender", nat, "value")
 type balanceParams is michelson_pair(address, "owner", contract(nat), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", address, "spender"), "", contract(nat), "")

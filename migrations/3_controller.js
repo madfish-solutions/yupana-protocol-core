@@ -4,8 +4,8 @@ const { MichelsonMap } = require("@taquito/michelson-encoder");
 
 module.exports = function (deployer) {
   const storage = {
-    factory: "KT1XVwgkhZH9B1Kz1nDJiwH23UekrimsjgQv",
-    admin: accounts[0],
+    factory: accounts[0],
+    admin: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",
     qTokens: [],
     pairs: new MichelsonMap(),
   };

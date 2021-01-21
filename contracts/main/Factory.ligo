@@ -1,31 +1,44 @@
 #include "../partials/IFactory.ligo"
 
-const create_dex : create_dex_func =
+const createContr : createContrFunc =
 [%Michelson ( {| { UNPPAIIR ;
                   CREATE_CONTRACT 
 #include "../main/qToken.tz"
                   ;
                     PAIR } |}
-           : create_dex_func)];
+           : createContrFunc)];
 
 
-function getControllerContract(const controller_address : address) : contract(iController) is 
-  case (Tezos.get_entrypoint_opt("%register", controller_address) : option(contract(iController))) of 
+[@inline] function mustBeOwner(const s : exchangeStorage) : unit is
+  block {
+    if Tezos.sender =/= s.owner then
+      failwith("NotOwner")
+    else skip;
+  } with (unit)
+
+function getControllerContract(const controllerAddress : address) : contract(iController) is 
+  case (Tezos.get_entrypoint_opt("%register", controllerAddress) : option(contract(iController))) of 
     Some(contr) -> contr
     | None -> (failwith("CantGetContractToken") : contract(iController))
   end;
 
-(* Create the pool contract for Tez-Token pair *)
-function launch_exchange (const self : address; const token : address; var s : exchange_storage) :  full_factory_return is
+function setAdmin(const newAdmin : address; var s : exchangeStorage) : fullFactoryReturn is
   block {
-    case s.token_list[token] of 
+    mustBeOwner(s);
+    s.admin := newAdmin;
+  } with (noOperations, s)
+
+(* Create the pool contract for Tez-Token pair *)
+function launchExchange (const self : address; const token : address; var s : exchangeStorage) :  fullFactoryReturn is
+  block {
+    case s.tokenList[token] of 
     Some(t) -> failwith("Simular token")
     | None -> skip
     end;
 
-    const storage : q_storage = record [
-        owner = Tezos.sender;
-        admin = Tezos.sender;
+    const storage : qStorage = record [
+        owner = s.owner;
+        admin = s.admin;
         token = token;
         lastUpdateTime = Tezos.now;
         totalBorrows = 0n;
@@ -36,16 +49,17 @@ function launch_exchange (const self : address; const token : address; var s : e
         accountBorrows = (big_map [] : big_map(address, borrows));
         accountTokens = (big_map [] : big_map(address, nat));
     ];
-    const res : (operation * address) = create_dex((None : option(key_hash)), 0mutez, storage);
+    const res : (operation * address) = createContr((None : option(key_hash)), 0mutez, storage);
 
-    s.token_list[token] := (res.1 : address);
+    s.tokenList[token] := (res.1 : address);
   } with (list[res.0; Tezos.transaction(
     Register(record[token = token; qToken = res.1]),
     0mutez,
     getControllerContract(s.admin)
     )], s)
 
-function main (const p : exchange_action; const s : exchange_storage) : full_factory_return is 
+function main (const p : exchangeAction; const s : exchangeStorage) : fullFactoryReturn is 
   case p of
-    | LaunchExchange(params)    -> launch_exchange(Tezos.self_address, params.token, s)
+    | LaunchExchange(params)    -> launchExchange(Tezos.self_address, params.token, s)
+    | SetAdmin(params)          -> setAdmin(params, s)
   end

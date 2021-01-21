@@ -109,10 +109,10 @@ function getTotalSupply (const contr : contract(nat); var s : storage) : return 
 //   | None -> 0n
 //   end;
 
-function getTokenContract(const token_address : address) : contract(transfer_type) is 
-  case (Tezos.get_entrypoint_opt("%transfer", token_address) : option(contract(transfer_type))) of 
+function getTokenContract(const tokenAddress : address) : contract(transferType) is 
+  case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetContractToken") : contract(transfer_type))
+    | None -> (failwith("CantGetContractToken") : contract(transferType))
   end;
 
 [@inline] function mustBeOwner(const s : storage) : unit is
