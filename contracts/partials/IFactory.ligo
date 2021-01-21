@@ -36,3 +36,10 @@ type full_factory_return is list(operation) * exchange_storage
 
 type exchange_action is 
 | LaunchExchange        of launch_exchange_params
+
+type register_type is record [
+    token        :address;
+    qToken       :address;
+] 
+
+type iController is Register of register_type

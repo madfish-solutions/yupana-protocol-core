@@ -1,4 +1,4 @@
-#include "../partails/IXTZ.ligo"
+#include "../partials/IXTZ.ligo"
 
 (* Helper function to get account *)
 function getAccount (const addr : address; const s : storage) : account is
