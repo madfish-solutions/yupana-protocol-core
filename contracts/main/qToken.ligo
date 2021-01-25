@@ -1,6 +1,41 @@
 #include "../partials/IqToken.ligo"
 
-function getBorrows(const addr : address; const s : storage) : borrows is
+[@inline] function middleToken (const p : tokenAction; const s : fullTokenStorage) :  fullReturn is
+block {
+    const idx : nat = case p of
+      | ITransfer(transferParams) -> 0n
+      | IApprove(approveParams) -> 1n
+      | IGetBalance(balanceParams) -> 2n 
+      | IGetAllowance(allowanceParams) -> 3n 
+      | IGetTotalSupply(totalSupplyParams) -> 4n 
+    end;
+  const res : return = case s.tokenLambdas[idx] of 
+    Some(f) -> f(p, s.storage)
+    | None -> (failwith("qToken/function-not-set") : return) 
+  end;
+  s.storage := res.1;
+} with (res.0, s)
+
+[@inline] function middleUse (const p : useAction; const this : address; const s : fullTokenStorage) : fullReturn is
+block {
+    const idx : nat = case p of
+      | SetAdmin(addr) -> 0n
+      | SetOwner(addr) -> 1n
+      | Mint(mintParams) -> 2n
+      | Redeem(redeemParams) -> 3n
+      | Borrow(borrowParams) -> 4n
+      | Repay(repayParams) -> 5n
+      | Liquidate(liquidateParams) -> 6n
+    end;
+  const res : return = case s.useLambdas[idx] of 
+    Some(f) -> f(p, s.storage, this) 
+    | None -> (failwith("qToken/function-not-set") : return) 
+  end;
+  s.storage := res.1;
+} with (res.0, s)
+
+
+function getBorrows(const addr : address; const s : tokenStorage) : borrows is
   block {
     var b : borrows :=
       record [
@@ -14,100 +49,102 @@ function getBorrows(const addr : address; const s : storage) : borrows is
     end;
   } with b
 
-function getTokens(const addr : address; const s : storage) : nat is
+function getTokens(const addr : address; const s : tokenStorage) : nat is
   case s.accountTokens[addr] of
     Some (value) -> value
   | None -> 0n
   end;
 
 (* Helper function to get allowance for an account *)
-function getAllowance (const borrw : borrows; const spender : address; const s : storage) : nat is
+function getAllowance (const borrw : borrows; const spender : address; const s : tokenStorage) : nat is
   case borrw.allowances[spender] of
     Some (nat) -> nat
   | None -> 0n
   end;
 
-(* Transfer token to another account *)
-function transfer (const from_ : address; const to_ : address; const value : nat; var s : storage) : return is
+function transfer (const p : tokenAction; const s : tokenStorage) : return is 
   block {
+    var operations : list(operation) := list[];
+      case p of
+      | ITransfer(args) -> {
+        const senderAccount : borrows = getBorrows(args.0, s);
+        const accountTokensFrom : nat = getTokens(args.0, s);
 
-    (* Retrieve sender account from storage *)
-    const senderAccount : borrows = getBorrows(from_, s);
-    const accountTokensFrom : nat = getTokens(from_, s);
+        (* Balance check *)
+        if accountTokensFrom < args.1.1 then
+          failwith("NotEnoughBalance")
+        else skip;
 
-    (* Balance check *)
-    if accountTokensFrom < value then
-      failwith("NotEnoughBalance")
-    else skip;
+        (* Check this address can spend the tokens *)
+        if args.0 =/= Tezos.sender then block {
+          const spenderAllowance : nat = getAllowance(senderAccount, Tezos.sender, s);
 
-    (* Check this address can spend the tokens *)
-    if from_ =/= Tezos.sender then block {
-      const spenderAllowance : nat = getAllowance(senderAccount, Tezos.sender, s);
+          if spenderAllowance < args.1.1 then
+            failwith("NotEnoughAllowance")
+          else skip;
 
-      if spenderAllowance < value then
-        failwith("NotEnoughAllowance")
-      else skip;
+          (* Decrease any allowances *)
+          senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - args.1.1);
+        } else skip;
 
-      (* Decrease any allowances *)
-      senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - value);
-    } else skip;
+        (* Update sender balance *)
+        accountTokensFrom := abs(accountTokensFrom - args.1.1);
 
-    (* Update sender balance *)
-    accountTokensFrom := abs(accountTokensFrom - value);
+        const accountTokensTo : nat = getTokens(args.1.0, s);    
+        (* Update destination balance *)
+        accountTokensTo := accountTokensTo + args.1.1;
+      }
+      | IApprove(approveParams) -> skip
+      | IGetBalance(balanceParams) -> skip
+      | IGetAllowance(allowanceParams) -> skip
+      | IGetTotalSupply(totalSupplyParams) -> skip
+    end
+  } with (operations, s)
 
-    const accountTokensTo : nat = getTokens(from_, s);    
-    (* Update destination balance *)
-    accountTokensTo := accountTokensTo + value;
-
-  } with (noOperations, s)
-
-(* Approve an nat to be spent by another address in the name of the sender *)
-function approve (const spender : address; const value : nat; var s : storage) : return is
+function getBalance (const p : tokenAction; const s : tokenStorage) : return is
   block {
+    var operations : list(operation) := list[];
+      case p of
+      | ITransfer(transferParams) -> skip
+      | IApprove(approveParams) -> skip
+      | IGetBalance(args) -> {
+        const accountTokens : nat = getTokens(args.0, s);
+        operations := list [transaction(accountTokens, 0tz, args.1)];
+      }
+      | IGetAllowance(allowanceParams) -> skip
+      | IGetTotalSupply(totalSupplyParams) -> skip
+    end
+  } with (operations, s)
 
-    (* Create or get sender account *)
-    var senderAccount : borrows := getBorrows(Tezos.sender, s);
-
-    (* Get current spender allowance *)
-    const spenderAllowance : nat = getAllowance(senderAccount, spender, s);
-
-    (* Prevent a corresponding attack vector *)
-    if spenderAllowance > 0n and value > 0n then
-      failwith("UnsafeAllowanceChange")
-    else skip;
-
-    (* Set spender allowance *)
-    senderAccount.allowances[spender] := value;
-
-    (* Update storage *)
-    s.accountBorrows[Tezos.sender] := senderAccount;
-
-  } with (noOperations, s)
-
-(* View function that forwards the balance of source to a contract *)
-function getBalance (const owner : address; const contr : contract(nat); var s : storage) : return is
+function getAllowance (const p : tokenAction; const s : tokenStorage) : return is
   block {
-    const accountTokens : nat = getTokens(owner, s);
-  } with (list [transaction(accountTokens, 0tz, contr)], s)
+    var operations : list(operation) := list[];
+      case p of
+      | ITransfer(transferParams) -> skip
+      | IApprove(approveParams) -> skip
+      | IGetBalance(balanceParams) -> skip
+      | IGetAllowance(args) -> {
+        const ownerAccount : borrows = getBorrows(args.0.0, s);
+        const spenderAllowance : nat = getAllowance(ownerAccount, args.0.1, s);
+        operations := list [transaction(spenderAllowance, 0tz, args.1)];
+      }
+      | IGetTotalSupply(totalSupplyParams) -> skip
+    end
+  } with (operations, s)
 
-(* View function that forwards the allowance nat of spender in the name of tokenOwner to a contract *)
-function getAllowance (const owner : address; const spender : address; const contr : contract(nat); var s : storage) : return is
+function getTotalSupply (const p : tokenAction; const s : tokenStorage) : return is
   block {
-    const ownerAccount : borrows = getBorrows(owner, s);
-    const spenderAllowance : nat = getAllowance(ownerAccount, spender, s);
-  } with (list [transaction(spenderAllowance, 0tz, contr)], s)
-
-(* View function that forwards the totalSupply to a contract *)
-function getTotalSupply (const contr : contract(nat); var s : storage) : return is
-  block {
-    skip
-  } with (list [transaction(s.totalSupply, 0tz, contr)], s)
-
-// function getTokens(const addr : address; const s : storage) : nat is
-//   case s.accountTokens[addr] of
-//     Some (value) -> value
-//   | None -> 0n
-//   end;
+    var operations : list(operation) := list[];
+      case p of
+      | ITransfer(transferParams) -> skip
+      | IApprove(approveParams) -> skip
+      | IGetBalance(balanceParams) -> skip
+      | IGetAllowance(allowanceParams) -> skip
+      | IGetTotalSupply(args) -> {
+        operations := list [transaction(s.totalSupply, 0tz, args.1)];
+      }
+    end
+  } with (operations, s)
 
 function getTokenContract(const tokenAddress : address) : contract(transferType) is 
   case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
@@ -115,33 +152,55 @@ function getTokenContract(const tokenAddress : address) : contract(transferType)
     | None -> (failwith("CantGetContractToken") : contract(transferType))
   end;
 
-[@inline] function mustBeOwner(const s : storage) : unit is
+[@inline] function mustBeOwner(const s : tokenStorage) : unit is
   block {
     if Tezos.sender =/= s.owner then
       failwith("NotOwner")
     else skip;
   } with (unit)
 
-[@inline] function mustBeAdmin(const s : storage) : unit is
+[@inline] function mustBeAdmin(const s : tokenStorage) : unit is
   block {
     if Tezos.sender =/= s.admin then
       failwith("NotAdmin")
     else skip;
   } with (unit)
 
-function setAdmin(const newAdmin : address; var s : storage) : return is
+function setAdmin (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeOwner(s);
-    s.admin := newAdmin;
-  } with (noOperations, s)
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(addr) -> {
+        mustBeOwner(s);
+        s.admin := addr;
+      }
+      | SetOwner(address) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+    end
+  } with (operations, s)
 
-function setOwner(const newOwner : address; var s : storage) : return is
+function setOwner (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeOwner(s);
-    s.owner := newOwner;
-  } with (noOperations, s)
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(address) -> skip
+      | SetOwner(addr) -> {
+        mustBeOwner(s);
+        s.owner := addr;
+      }
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+    end
+  } with (operations, s)
 
-function updateInterest(var s : storage) : storage is
+function updateInterest (var s : tokenStorage) : tokenStorage is
   block {
     const hundredPercent : nat = 10000000000000000n;
     const apr : nat = 250000000000000n; // 2.5% (0.025)
@@ -161,127 +220,204 @@ function updateInterest(var s : storage) : storage is
     s.borrowIndex := simpleInterestFactor * s.borrowIndex + s.borrowIndex;
   } with (s)
 
-// TODO FOR ALL add total liqudity
-// TODO FOR ALL add operations
-function mint(const user : address; const nat : nat; var s : storage) : return is
+
+function mint (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeAdmin(s);
-    s := updateInterest(s);
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(address) -> skip
+      | SetOwner(address) -> skip
+      | Mint(mintParams) -> {
+        mustBeAdmin(s);
+        s := updateInterest(s);
 
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const mintTokens : nat = nat / exchangeRate;
+        const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+        const mintTokens : nat = mintParams.amount / exchangeRate;
 
-    const accountTokens : nat = getTokens(user, s);
-    s.accountTokens[user] := accountTokens + mintTokens;
-    s.totalSupply := s.totalSupply + mintTokens;
-    s.totalLiquid := s.totalLiquid + nat;
-  } with (list [Tezos.transaction(TransferOuttside(user, (Tezos.self_address, nat)), 
-         0mutez, 
-         getTokenContract(s.token))], s)
+        const accountTokens : nat = getTokens(mintParams.user, s);
+        s.accountTokens[mintParams.user] := accountTokens + mintTokens;
+        s.totalSupply := s.totalSupply + mintTokens;
+        s.totalLiquid := s.totalLiquid + mintParams.amount;
 
-function redeem(const user : address; var nat : nat; var s : storage) : return is
+        operations := list [
+          Tezos.transaction(
+            TransferOuttside(mintParams.user, (this, mintParams.amount)), 
+            0mutez, 
+            getTokenContract(s.token)
+          )
+        ];
+      }
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function redeem (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeAdmin(s);
-    s := updateInterest(s);
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(address) -> skip
+      | SetOwner(address) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> {
+        mustBeAdmin(s);
+        s := updateInterest(s);
 
-    var burnTokens : nat := 0n;
-    const accountTokens : nat = getTokens(user, s);
-    var exchangeRate : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+        var burnTokens : nat := 0n;
+        const accountTokens : nat = getTokens(redeemParams.user, s);
+        var exchangeRate : nat := abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
 
-    if exchangeRate = 0n then
-      failwith("NotEnoughTokensToSendToUser")
-    else skip;
+        if exchangeRate = 0n then
+          failwith("NotEnoughTokensToSendToUser")
+        else skip;
 
-    if nat = 0n then
-      nat := accountTokens;
-    else skip;
-    burnTokens := nat / exchangeRate;
+        if redeemParams.amount = 0n then
+          redeemParams.amount := accountTokens;
+        else skip;
+        burnTokens := redeemParams.amount / exchangeRate;
 
-    
-    s.accountTokens[user] := abs(accountTokens - burnTokens);
-    s.totalSupply := abs(s.totalSupply - burnTokens);
-    s.totalLiquid := abs(s.totalLiquid - nat);
-  } with (list [Tezos.transaction(TransferOuttside(Tezos.self_address, (user, nat)), 
-         0mutez, 
-         getTokenContract(s.token))], s)
+        
+        s.accountTokens[redeemParams.user] := abs(accountTokens - burnTokens);
+        s.totalSupply := abs(s.totalSupply - burnTokens);
+        s.totalLiquid := abs(s.totalLiquid - redeemParams.amount);
 
-function borrow(const user : address; const nat : nat; var s : storage) : return is
+        operations := list [
+          Tezos.transaction(
+            TransferOuttside(this, (redeemParams.user, redeemParams.amount)),
+            0mutez, 
+            getTokenContract(s.token))
+        ]
+      }
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function borrow (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeAdmin(s);
-    if s.totalLiquid < nat then
-      failwith("AmountTooBig")
-    else skip;
-    s := updateInterest(s);
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(address) -> skip
+      | SetOwner(address) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> {
+        mustBeAdmin(s);
+        if s.totalLiquid < borrowParams.amount then
+          failwith("AmountTooBig")
+        else skip;
+        s := updateInterest(s);
 
-    var accountBorrows : borrows := getBorrows(user, s);
-    accountBorrows.amount := accountBorrows.amount + nat;
-    accountBorrows.lastBorrowIndex := s.borrowIndex;
+        var accountBorrows : borrows := getBorrows(borrowParams.user, s);
+        accountBorrows.amount := accountBorrows.amount + borrowParams.amount;
+        accountBorrows.lastBorrowIndex := s.borrowIndex;
 
-    s.accountBorrows[user] := accountBorrows;
-    s.totalBorrows := s.totalBorrows + nat;
-  } with (list [Tezos.transaction(TransferOuttside(Tezos.self_address, (Tezos.sender, nat)), 
-         0mutez, 
-         getTokenContract(s.token))], s)
+        s.accountBorrows[borrowParams.user] := accountBorrows;
+        s.totalBorrows := s.totalBorrows + borrowParams.amount;
 
-function repay(const user : address; const nat : nat; var s : storage) : return is
+        operations := list [
+          Tezos.transaction(
+            TransferOuttside(this, (Tezos.sender, borrowParams.amount)), 
+            0mutez, 
+            getTokenContract(s.token)
+          )
+        ]
+      }
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function repay (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeAdmin(s);
-    s := updateInterest(s);
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(address) -> skip
+      | SetOwner(address) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> {
+        mustBeAdmin(s);
+        s := updateInterest(s);
 
-    var accountBorrows : borrows := getBorrows(user, s);
-    accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
-    accountBorrows.amount := abs(accountBorrows.amount - nat);
-    accountBorrows.lastBorrowIndex := s.borrowIndex;
+        var accountBorrows : borrows := getBorrows(repayParams.user, s);
+        accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
+        accountBorrows.amount := abs(accountBorrows.amount - repayParams.amount);
+        accountBorrows.lastBorrowIndex := s.borrowIndex;
 
-    s.accountBorrows[user] := accountBorrows;
-    s.totalBorrows := abs(s.totalBorrows - nat);
-  } with (list [Tezos.transaction(TransferOuttside(Tezos.sender, (Tezos.self_address, nat)), 
-         0mutez, 
-         getTokenContract(s.token))], s)
+        s.accountBorrows[repayParams.user] := accountBorrows;
+        s.totalBorrows := abs(s.totalBorrows - repayParams.amount);
 
-function liquidate(const liquidator : address; const borrower : address; var nat : nat; var s : storage) : return is
+        operations := list [
+          Tezos.transaction(
+            TransferOuttside(Tezos.sender, (this, repayParams.amount)), 
+            0mutez, 
+            getTokenContract(s.token)
+          )
+        ]
+      }
+      | Liquidate(liquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function liquidate (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
-    mustBeAdmin(s);
-    s := updateInterest(s);
-    if liquidator = borrower then
-      failwith("BorrowerCannotBeLiquidator")
-    else skip;
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(address) -> skip
+      | SetOwner(address) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(args) -> {
+        mustBeAdmin(s);
+        s := updateInterest(s);
+        if args.0 = args.1.0 then
+          failwith("BorrowerCannotBeLiquidator")
+        else skip;
 
-    var debtorBorrows : borrows := getBorrows(borrower, s);
-    if nat = 0n then
-      nat := debtorBorrows.amount
-    else skip;
+        var debtorBorrows : borrows := getBorrows(args.1.0, s);
+        if args.1.1 = 0n then
+          args.1.1 := debtorBorrows.amount
+        else skip;
 
 
-    const hundredPercent : nat = 1000000000n;
-    const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
-    const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-    const seizeTokens : nat = nat * liquidationIncentive / hundredPercent / exchangeRate;
+        const hundredPercent : nat = 1000000000n;
+        const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
+        const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+        const seizeTokens : nat = args.1.1 * liquidationIncentive / hundredPercent / exchangeRate;
 
-    debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
-    debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
-    debtorBorrows.lastBorrowIndex := s.borrowIndex;
+        debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
+        debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
+        debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
-    s.accountBorrows[borrower] := debtorBorrows;
-    s.accountTokens[liquidator] := getTokens(liquidator, s) + seizeTokens;
-  } with (list [Tezos.transaction(TransferOuttside(Tezos.sender, (Tezos.self_address, nat)), 
-         0mutez,
-         getTokenContract(s.token))], s)
+        s.accountBorrows[args.1.0] := debtorBorrows;
+        s.accountTokens[args.0] := getTokens(args.0, s) + seizeTokens;
 
-function main(const action : entryAction; var s : storage) : return is
+        operations := list [
+          Tezos.transaction(
+            TransferOuttside(Tezos.sender, (this, args.1.1)), 
+            0mutez,
+            getTokenContract(s.token)
+          )
+        ]
+      }
+    end
+  } with (operations, s)
+
+function main (const p : entryAction; const s : fullTokenStorage) : fullReturn is
   block {
-    skip
-  } with case action of
-    | Transfer(params) -> transfer(params.0, params.1.0, params.1.1, s)
-    | Approve(params) -> approve(params.0, params.1, s)
-    | GetBalance(params) -> getBalance(params.0, params.1, s)
-    | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
-    | GetTotalSupply(params) -> getTotalSupply(params.1, s)
-    | SetAdmin(params) -> setAdmin(params, s)
-    | SetOwner(params) -> setOwner(params, s)
-    | Mint(params) -> mint(params.0, params.1, s)
-    | Redeem(params) -> redeem(params.0, params.1, s)
-    | Borrow(params) -> borrow(params.0, params.1, s)
-    | Repay(params) -> repay(params.0, params.1, s)
-    | Liquidate(params) -> liquidate(params.0, params.1.0, params.1.1, s)
-  end;
+     const this: address = Tezos.self_address; 
+  } with case p of
+      | Transfer(params)              -> middleToken(ITransfer(params), s)
+      | Approve(params)               -> middleToken(IApprove(params), s)
+      | GetBalance(params)            -> middleToken(IGetBalance(params), s)
+      | GetAllowance(params)          -> middleToken(IGetAllowance(params), s)
+      | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
+      | Use(params)                   -> middleUse(params, this, s)
+    end

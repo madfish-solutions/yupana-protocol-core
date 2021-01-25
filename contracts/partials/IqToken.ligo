@@ -5,7 +5,7 @@ type borrows is
     allowances       :map (address, nat);
   ]
 
-type storage is
+type tokenStorage is
   record [
     owner           :address;
     admin           :address;
@@ -20,7 +20,7 @@ type storage is
     accountTokens   :big_map(address, nat);
   ]
 
-type return is list (operation) * storage
+type return is list (operation) * tokenStorage
 [@inline] const noOperations : list (operation) = nil;
 
 type transferParams is michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
@@ -30,18 +30,33 @@ type balanceParams is michelson_pair(address, "owner", contract(nat), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", address, "spender"), "", contract(nat), "")
 type totalSupplyParams is (unit * contract(nat))
 
-type mintParams is michelson_pair(address, "user", nat, "amount")
-type redeemParams is michelson_pair(address, "user", nat, "amount")
-type borrowParams is michelson_pair(address, "user", nat, "amount")
-type repayParams is michelson_pair(address, "user", nat, "amount")
+type mintParams is 
+  record [
+    user           :address;
+    amount         :nat;
+  ]
+
+type redeemParams is 
+  record [
+    user           :address;
+    amount         :nat;
+  ]
+
+type borrowParams is 
+  record [
+    user           :address;
+    amount         :nat;
+  ]
+
+type repayParams is 
+  record [
+    user           :address;
+    amount         :nat;
+  ]
+
 type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 
-type entryAction is
-  | Transfer of transferParams
-  | Approve of approveParams
-  | GetBalance of balanceParams
-  | GetAllowance of allowanceParams
-  | GetTotalSupply of totalSupplyParams
+type useAction is
   | SetAdmin of address
   | SetOwner of address
   | Mint of mintParams
@@ -49,3 +64,30 @@ type entryAction is
   | Borrow of borrowParams
   | Repay of repayParams
   | Liquidate of liquidateParams
+
+type tokenAction is
+  | ITransfer of transferParams
+  | IApprove of approveParams
+  | IGetBalance of balanceParams
+  | IGetAllowance of allowanceParams
+  | IGetTotalSupply of totalSupplyParams
+
+type entryAction is
+  | Transfer of transferParams
+  | Approve of approveParams
+  | GetBalance of balanceParams
+  | GetAllowance of allowanceParams
+  | GetTotalSupply of totalSupplyParams
+  | Use of useAction
+
+
+type useFunc is (useAction * tokenStorage * address) -> return
+type tokenFunc is (tokenAction * tokenStorage) -> return
+
+type fullTokenStorage is record
+  storage          : tokenStorage; (* real token storage *)
+  tokenLambdas     : big_map(nat, tokenFunc); (* map with exchange-related functions code *)
+  useLambdas       : big_map(nat, useFunc); (* map with exchange-related functions code *)
+end
+
+type fullReturn is list (operation) * fullTokenStorage
