@@ -146,20 +146,20 @@ function getTotalSupply (const p : tokenAction; const s : tokenStorage) : return
     end
   } with (operations, s)
 
-function getTokenContract(const tokenAddress : address) : contract(transferType) is 
+function getTokenContract (const tokenAddress : address) : contract(transferType) is 
   case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
     Some(contr) -> contr
     | None -> (failwith("CantGetContractToken") : contract(transferType))
   end;
 
-[@inline] function mustBeOwner(const s : tokenStorage) : unit is
+[@inline] function mustBeOwner (const s : tokenStorage) : unit is
   block {
     if Tezos.sender =/= s.owner then
       failwith("NotOwner")
     else skip;
   } with (unit)
 
-[@inline] function mustBeAdmin(const s : tokenStorage) : unit is
+[@inline] function mustBeAdmin (const s : tokenStorage) : unit is
   block {
     if Tezos.sender =/= s.admin then
       failwith("NotAdmin")
