@@ -1,4 +1,3 @@
-const { accounts } = require("../scripts/sandbox/accounts");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 
 var qToken = artifacts.require("qToken");
