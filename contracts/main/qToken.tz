@@ -1,0 +1,323 @@
+{ parameter
+    (or (or (or (pair %approve (address %spender) (nat %value))
+                (pair %getAllowance (pair (address %owner) (address %spender)) (contract nat)))
+            (or (pair %getBalance (address %owner) (contract nat))
+                (pair %getTotalSupply unit (contract nat))))
+        (or (pair %transfer (address %from) (pair (address %to) (nat %value)))
+            (or %use
+               (or (or (pair %borrow (nat %amount) (address %user))
+                       (pair %liquidate (address %from) (pair (address %to) (nat %value))))
+                   (or (pair %mint (nat %amount) (address %user))
+                       (pair %redeem (nat %amount) (address %user))))
+               (or (or (pair %repay (nat %amount) (address %user)) (address %setAdmin))
+                   (address %setOwner))))) ;
+  storage
+    (pair (pair (pair %storage
+                   (pair (pair (pair (big_map %accountBorrows
+                                        address
+                                        (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
+                                     (big_map %accountTokens address nat))
+                               (pair (address %admin) (nat %borrowIndex)))
+                         (pair (pair (timestamp %lastUpdateTime) (address %owner))
+                               (pair (address %token) (nat %totalBorrows))))
+                   (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply)))
+                (big_map %tokenLambdas
+                   nat
+                   (lambda
+                      (pair (or (or (or (pair %iApprove (address %spender) (nat %value))
+                                        (pair %iGetAllowance (pair (address %owner) (address %spender)) (contract nat)))
+                                    (or (pair %iGetBalance (address %owner) (contract nat))
+                                        (pair %iGetTotalSupply unit (contract nat))))
+                                (pair %iTransfer (address %from) (pair (address %to) (nat %value))))
+                            (pair (pair (pair (pair (big_map %accountBorrows
+                                                       address
+                                                       (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
+                                                    (big_map %accountTokens address nat))
+                                              (pair (address %admin) (nat %borrowIndex)))
+                                        (pair (pair (timestamp %lastUpdateTime) (address %owner))
+                                              (pair (address %token) (nat %totalBorrows))))
+                                  (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))
+                      (pair (list operation)
+                            (pair (pair (pair (pair (big_map %accountBorrows
+                                                       address
+                                                       (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
+                                                    (big_map %accountTokens address nat))
+                                              (pair (address %admin) (nat %borrowIndex)))
+                                        (pair (pair (timestamp %lastUpdateTime) (address %owner))
+                                              (pair (address %token) (nat %totalBorrows))))
+                                  (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply)))))))
+          (big_map %useLambdas
+             nat
+             (lambda
+                (pair (pair (or (or (or (pair %borrow (nat %amount) (address %user))
+                                        (pair %liquidate (address %from) (pair (address %to) (nat %value))))
+                                    (or (pair %mint (nat %amount) (address %user))
+                                        (pair %redeem (nat %amount) (address %user))))
+                                (or (or (pair %repay (nat %amount) (address %user)) (address %setAdmin))
+                                    (address %setOwner)))
+                            (pair (pair (pair (pair (big_map %accountBorrows
+                                                       address
+                                                       (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
+                                                    (big_map %accountTokens address nat))
+                                              (pair (address %admin) (nat %borrowIndex)))
+                                        (pair (pair (timestamp %lastUpdateTime) (address %owner))
+                                              (pair (address %token) (nat %totalBorrows))))
+                                  (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))
+                      address)
+                (pair (list operation)
+                      (pair (pair (pair (pair (big_map %accountBorrows
+                                                 address
+                                                 (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
+                                              (big_map %accountTokens address nat))
+                                        (pair (address %admin) (nat %borrowIndex)))
+                                  (pair (pair (timestamp %lastUpdateTime) (address %owner))
+                                        (pair (address %token) (nat %totalBorrows))))
+                            (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))))) ;
+  code { DUP ;
+         CDR ;
+         SELF ;
+         ADDRESS ;
+         DIG 2 ;
+         CAR ;
+         IF_LEFT
+           { SWAP ;
+             DROP ;
+             IF_LEFT
+               { IF_LEFT
+                   { LEFT (pair (pair address address) (contract nat)) ;
+                     LEFT (or (pair address (contract nat)) (pair unit (contract nat))) ;
+                     LEFT (pair address (pair address nat)) ;
+                     SWAP ;
+                     DUP ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     IF_LEFT
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
+                           { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 4 } } }
+                       { DROP ; PUSH nat 0 } ;
+                     GET ;
+                     IF_NONE
+                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     CDR ;
+                     DIG 2 ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     CDR ;
+                     PAIR ;
+                     PAIR ;
+                     SWAP ;
+                     CAR ;
+                     PAIR }
+                   { RIGHT (pair address nat) ;
+                     LEFT (or (pair address (contract nat)) (pair unit (contract nat))) ;
+                     LEFT (pair address (pair address nat)) ;
+                     SWAP ;
+                     DUP ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     IF_LEFT
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
+                           { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 4 } } }
+                       { DROP ; PUSH nat 0 } ;
+                     GET ;
+                     IF_NONE
+                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     CDR ;
+                     DIG 2 ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     CDR ;
+                     PAIR ;
+                     PAIR ;
+                     SWAP ;
+                     CAR ;
+                     PAIR } }
+               { IF_LEFT
+                   { LEFT (pair unit (contract nat)) ;
+                     RIGHT (or (pair address nat) (pair (pair address address) (contract nat))) ;
+                     LEFT (pair address (pair address nat)) ;
+                     SWAP ;
+                     DUP ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     IF_LEFT
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
+                           { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 4 } } }
+                       { DROP ; PUSH nat 0 } ;
+                     GET ;
+                     IF_NONE
+                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     CDR ;
+                     DIG 2 ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     CDR ;
+                     PAIR ;
+                     PAIR ;
+                     SWAP ;
+                     CAR ;
+                     PAIR }
+                   { RIGHT (pair address (contract nat)) ;
+                     RIGHT (or (pair address nat) (pair (pair address address) (contract nat))) ;
+                     LEFT (pair address (pair address nat)) ;
+                     SWAP ;
+                     DUP ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     IF_LEFT
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
+                           { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 4 } } }
+                       { DROP ; PUSH nat 0 } ;
+                     GET ;
+                     IF_NONE
+                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                     SWAP ;
+                     DUP ;
+                     DUG 2 ;
+                     CDR ;
+                     DIG 2 ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     CDR ;
+                     PAIR ;
+                     PAIR ;
+                     SWAP ;
+                     CAR ;
+                     PAIR } } }
+           { IF_LEFT
+               { SWAP ;
+                 DROP ;
+                 RIGHT
+                   (or (or (pair address nat) (pair (pair address address) (contract nat)))
+                       (or (pair address (contract nat)) (pair unit (contract nat)))) ;
+                 SWAP ;
+                 DUP ;
+                 CAR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 IF_LEFT
+                   { IF_LEFT
+                       { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
+                       { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 4 } } }
+                   { DROP ; PUSH nat 0 } ;
+                 GET ;
+                 IF_NONE
+                   { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                   { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 DIG 2 ;
+                 CAR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 PAIR ;
+                 PAIR ;
+                 SWAP ;
+                 CAR ;
+                 PAIR }
+               { PAIR ;
+                 PAIR ;
+                 DUP ;
+                 CAR ;
+                 CAR ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 DUP ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 IF_LEFT
+                   { IF_LEFT
+                       { IF_LEFT { DROP ; PUSH nat 4 } { DROP ; PUSH nat 6 } }
+                       { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 3 } } }
+                   { IF_LEFT
+                       { IF_LEFT { DROP ; PUSH nat 5 } { DROP ; PUSH nat 0 } }
+                       { DROP ; PUSH nat 1 } } ;
+                 GET ;
+                 IF_NONE
+                   { SWAP ;
+                     DROP ;
+                     SWAP ;
+                     DROP ;
+                     PUSH string "qToken/function-not-set" ;
+                     FAILWITH }
+                   { DIG 3 ;
+                     CAR ;
+                     CDR ;
+                     DIG 2 ;
+                     DUP ;
+                     DUG 3 ;
+                     CAR ;
+                     CAR ;
+                     DIG 4 ;
+                     PAIR ;
+                     PAIR ;
+                     EXEC } ;
+                 SWAP ;
+                 DUP ;
+                 DUG 2 ;
+                 CDR ;
+                 DIG 2 ;
+                 CAR ;
+                 CDR ;
+                 DIG 2 ;
+                 DUP ;
+                 DUG 3 ;
+                 CDR ;
+                 PAIR ;
+                 PAIR ;
+                 SWAP ;
+                 CAR ;
+                 PAIR } } } }
+

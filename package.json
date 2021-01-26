@@ -3,10 +3,12 @@
   "version": "2.0.0",
   "description": "Tezos Example Box =================",
   "dependencies": {
-    "@taquito/taquito": "^7.0.1-beta.0",
-    "bignumber.js": "^9.0.0",
     "@taquito/michelson-encoder": "latest",
-    "@taquito/signer": "latest"
+    "@taquito/signer": "latest",
+    "@taquito/taquito": "^6.3.4-beta.0",
+    "commander": "^7.0.0",
+    "dotenv": "^8.2.0",
+    "ganache-cli": "^6.11.0-tezos.0"
   },
   "devDependencies": {
     "mocha": "^8.1.1",
@@ -14,7 +16,7 @@
   },
   "scripts": {
     "start-sandbox": "ganache-cli --flavor tezos --seed alice",
-    "migrate": "truffle migrate"
+    "compile-dex": "node scripts/cli.js build-dex --no-json -o contracts"
   },
   "repository": {
     "type": "git",
