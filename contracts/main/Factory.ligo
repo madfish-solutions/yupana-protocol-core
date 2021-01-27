@@ -68,7 +68,7 @@ function launchExchange (const token : address; var s : factoryStorage) : fullFa
 
     const res : (operation * address) = createContr((None : option(key_hash)), 0mutez, fullStorage);
 
-    s.tokenList[token] := (res.1 : address);
+    s.tokenList[token] := (res.1);
   } with (list[res.0; Tezos.transaction(
     Register(record[token = token; qToken = res.1]),
     0mutez,
