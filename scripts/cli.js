@@ -86,14 +86,14 @@ program
   });
 
 program
-  .command("build-dex")
+  .command("build-qToken")
   .description("builds core contracts of the QuipuSwap (standard is selected based on EXCHANGE_TOKEN_STANDARD env variable)")
   .option("-o, --output_dir <dir>", "Where store builds", "build")
   .option("-i, --input_dir <dir>", "Where files are located", "contracts")
   .option("-j, --no-json", "The format of output file")
   .option("-g, --no-dockerized_ligo", "Switch global ligo")
   .action(function (options) {
-    let contractName = `./main/Factory`;
+    let contractName = `./main/qToken`;
     exec("mkdir -p " + options.output_dir);
     if (contractName === "*") {
       fs.readdirSync(options.input_dir).forEach((file) => {

@@ -1,4 +1,5 @@
 #include "../partials/IFactory.ligo"
+#include "../partials/qTokenMethods.ligo"
 
 const createContr : createContrFunc =
 [%Michelson ( {| { UNPPAIIR ;
@@ -8,35 +9,44 @@ const createContr : createContrFunc =
                     PAIR } |}
            : createContrFunc)];
 
-
-[@inline] function mustBeOwner(const s : exchangeStorage) : unit is
+function setTokenFunction (const idx : nat; const f : tokenFunc; const s : factoryStorage) : fullFactoryReturn is
   block {
-    if Tezos.sender =/= s.owner then
-      failwith("NotOwner")
-    else skip;
-  } with (unit)
+    case s.tokenLambdas[idx] of 
+      Some(n) -> failwith("Factory/function-set") 
+      | None -> s.tokenLambdas[idx] := f 
+    end;
+  } with (noOperations, s)
 
-function getControllerContract(const controllerAddress : address) : contract(iController) is 
+function setUseFunction (const idx : nat; const f : useFunc; const s : factoryStorage) : fullFactoryReturn is
+  block {
+    case s.useLambdas[idx] of 
+      Some(n) -> failwith("Factory/function-set") 
+      | None -> s.useLambdas[idx] := f 
+    end;
+  } with (noOperations, s)
+
+[@inline] function getControllerContract (const controllerAddress : address) : contract(iController) is 
   case (Tezos.get_entrypoint_opt("%register", controllerAddress) : option(contract(iController))) of 
     Some(contr) -> contr
     | None -> (failwith("CantGetContractToken") : contract(iController))
   end;
 
-function setAdmin(const newAdmin : address; var s : exchangeStorage) : fullFactoryReturn is
+function setFecAdmin (const newAdmin : address; var s : factoryStorage) : fullFactoryReturn is
   block {
-    mustBeOwner(s);
+    if Tezos.sender =/= s.owner then
+      failwith("NotOwner")
+    else skip;
     s.admin := newAdmin;
   } with (noOperations, s)
 
-(* Create the pool contract for Tez-Token pair *)
-function launchExchange (const self : address; const token : address; var s : exchangeStorage) :  fullFactoryReturn is
+function launchExchange (const token : address; var s : factoryStorage) : fullFactoryReturn is
   block {
     case s.tokenList[token] of 
     Some(t) -> failwith("Simular token")
     | None -> skip
     end;
 
-    const storage : qStorage = record [
+    const storage : tokenStorage = record [
         owner = s.owner;
         admin = s.admin;
         token = token;
@@ -49,7 +59,14 @@ function launchExchange (const self : address; const token : address; var s : ex
         accountBorrows = (big_map [] : big_map(address, borrows));
         accountTokens = (big_map [] : big_map(address, nat));
     ];
-    const res : (operation * address) = createContr((None : option(key_hash)), 0mutez, storage);
+
+    const fullStorage : fullTokenStorage = record [
+      storage = storage;
+      tokenLambdas = (big_map [] : big_map(nat, tokenFunc));
+      useLambdas = (big_map [] : big_map(nat, useFunc));
+    ];
+
+    const res : (operation * address) = createContr((None : option(key_hash)), 0mutez, fullStorage);
 
     s.tokenList[token] := (res.1 : address);
   } with (list[res.0; Tezos.transaction(
@@ -58,8 +75,10 @@ function launchExchange (const self : address; const token : address; var s : ex
     getControllerContract(s.admin)
     )], s)
 
-function main (const p : exchangeAction; const s : exchangeStorage) : fullFactoryReturn is 
+function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is 
   case p of
-    | LaunchExchange(params)    -> launchExchange(Tezos.self_address, params.token, s)
-    | SetAdmin(params)          -> setAdmin(params, s)
+    | LaunchExchange(params)        -> launchExchange(params.token, s)
+    | SetFactoryAdmin(params)       -> setFecAdmin(params, s)
+    | SetTokenFunction(params)      -> setTokenFunction(params.index, params.func, s)
+    | SetUseFunction(params)        -> setUseFunction(params.index, params.func, s)
   end

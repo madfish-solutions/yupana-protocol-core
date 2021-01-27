@@ -5,8 +5,10 @@ const { MichelsonMap } = require("@taquito/michelson-encoder");
 module.exports = function (deployer) {
   const storage = {
     tokenList: new MichelsonMap(),
-    admin: accounts[0],
     owner: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",
+    admin: accounts[0],
+    tokenLambdas: new MichelsonMap(),
+    useLambdas: new MichelsonMap(),
   };
   deployer.deploy(Factory, storage);
 };
