@@ -1,12 +1,10 @@
-type borrows is
-  record [
+type borrows is record [
     amount           :nat;
     lastBorrowIndex  :nat;
     allowances       :map (address, nat);
-  ]
+]
 
-type tokenStorage is
-  record [
+type tokenStorage is record [
     owner           :address;
     admin           :address;
     token           :address;
@@ -18,7 +16,7 @@ type tokenStorage is
     borrowIndex     :nat;
     accountBorrows  :big_map(address, borrows);
     accountTokens   :big_map(address, nat);
-  ]
+]
 
 type return is list (operation) * tokenStorage
 [@inline] const noOperations : list (operation) = nil;
@@ -29,32 +27,27 @@ type approveParams is michelson_pair(address, "spender", nat, "value")
 type balanceParams is michelson_pair(address, "owner", contract(nat), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", address, "spender"), "", contract(nat), "")
 type totalSupplyParams is (unit * contract(nat))
-
-type mintParams is 
-  record [
-    user           :address;
-    amount         :nat;
-  ]
-
-type redeemParams is 
-  record [
-    user           :address;
-    amount         :nat;
-  ]
-
-type borrowParams is 
-  record [
-    user           :address;
-    amount         :nat;
-  ]
-
-type repayParams is 
-  record [
-    user           :address;
-    amount         :nat;
-  ]
-
 type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+
+type mintParams is record [
+    user           :address;
+    amount         :nat;
+]
+
+type redeemParams is record [
+    user           :address;
+    amount         :nat;
+]
+
+type borrowParams is record [
+    user           :address;
+    amount         :nat;
+]
+
+type repayParams is record [
+    user           :address;
+    amount         :nat;
+]
 
 type useAction is
   | SetAdmin of address
@@ -80,14 +73,13 @@ type entryAction is
   | GetTotalSupply of totalSupplyParams
   | Use of useAction
 
-
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return
 
 type fullTokenStorage is record
-  storage          : tokenStorage; (* real token storage *)
-  tokenLambdas     : big_map(nat, tokenFunc); (* map with exchange-related functions code *)
-  useLambdas       : big_map(nat, useFunc); (* map with exchange-related functions code *)
+  storage          : tokenStorage;
+  tokenLambdas     : big_map(nat, tokenFunc);
+  useLambdas       : big_map(nat, useFunc);
 end
 
 type fullReturn is list (operation) * fullTokenStorage
