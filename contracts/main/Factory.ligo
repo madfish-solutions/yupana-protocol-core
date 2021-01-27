@@ -31,7 +31,7 @@ function setUseFunction (const idx : nat; const f : useFunc; const s : factorySt
     | None -> (failwith("CantGetContractToken") : contract(iController))
   end;
 
-function setFecAdmin (const newAdmin : address; var s : factoryStorage) : fullFactoryReturn is
+function setFactoryAdmin (const newAdmin : address; var s : factoryStorage) : fullFactoryReturn is
   block {
     if Tezos.sender =/= s.owner then
       failwith("NotOwner")
@@ -78,7 +78,7 @@ function launchExchange (const token : address; var s : factoryStorage) : fullFa
 function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is 
   case p of
     | LaunchExchange(params)        -> launchExchange(params.token, s)
-    | SetFactoryAdmin(params)       -> setFecAdmin(params, s)
+    | SetFactoryAdmin(params)       -> setFactoryAdmin(params, s)
     | SetTokenFunction(params)      -> setTokenFunction(params.index, params.func, s)
     | SetUseFunction(params)        -> setUseFunction(params.index, params.func, s)
   end
