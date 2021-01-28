@@ -28,10 +28,10 @@ function register(const token : address; const qToken : address; var s : storage
   } with (noOperations, s)
 
 
-function main(const action : entryAction; var s : storage) : return is
-    block {
-        skip
-    } with case action of
-        | SetFactory(params) -> setFactory(params, s)
-        | Register(params) -> register(params.token, params.qToken, s)
-    end;
+// function main(const action : entryAction; var s : storage) : return is
+//     block {
+//         skip
+//     } with case action of
+//         | SetFactory(params) -> setFactory(params, s)
+//         | Register(params) -> register(params.token, params.qToken, s)
+//     end;

@@ -76,10 +76,10 @@ type entryAction is
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return
 
-type fullTokenStorage is record
+type fullTokenStorage is record [
   storage          : tokenStorage;
   tokenLambdas     : big_map(nat, tokenFunc);
   useLambdas       : big_map(nat, useFunc);
-end
+]
 
 type fullReturn is list (operation) * fullTokenStorage
