@@ -426,7 +426,7 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
 
 function main (const p : entryAction; const s : fullTokenStorage) : fullReturn is
   block {
-     const this: address = Tezos.self_address; 
+     const this: address = Tezos.self_address;
   } with case p of
       | Transfer(params)              -> middleToken(ITransfer(params), s)
       | Approve(params)               -> middleToken(IApprove(params), s)
