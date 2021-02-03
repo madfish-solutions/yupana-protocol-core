@@ -1,5 +1,12 @@
 #include "../partials/IController.ligo"
 
+function setFactory (const newFecAddress: address; const s : fullControllerStorage) : fullReturn is
+  block {
+    if (Tezos.sender = s.storage.admin) then
+      s.storage.factory := newFecAddress;
+    else skip;
+  } with (noOperations, s)
+
 function setUseAction (const idx : nat; const f : useFunc; const s : fullControllerStorage) : fullReturn is
   block {
     case s.useLambdas[idx] of 
@@ -17,22 +24,22 @@ function setUseAction (const idx : nat; const f : useFunc; const s : fullControl
       | UpdateQToken(updateQTokenParams) -> 3n 
       | EnterMarket(addr) -> 4n 
       | ExitMarket(addr) -> 5n
-      | GetUserLiquidity(getUserLiquidityParams) -> 6n
-      | SafeMint(safeMintParams) -> 7n
-      | SafeRedeem(safeRedeemParams) -> 8n
-      | RedeemMiddle(redeemMiddleParams) -> 9n
-      | EnsuredRedeem(ensuredRedeemParams) -> 10n
-      | SafeBorrow(safeBorrowParams) -> 11n
-      | BorrowMiddle(borrowMiddleParams) -> 12n
-      | EnsuredBorrow(ensuredBorrowParams) -> 13n
-      | SafeRepay(safeRepayParams) -> 14n
-      | SafeLiquidate(safeLiquidateParams) -> 15n
-      | LiquidateMiddle(liquidateMiddleParams) -> 16n
-      | EnsuredLiquidate(ensuredLiquidateParams) -> 17n
+      // | GetUserLiquidity(getUserLiquidityParams) -> 6n
+      // | SafeMint(safeMintParams) -> 7n
+      // | SafeRedeem(safeRedeemParams) -> 8n
+      // | RedeemMiddle(redeemMiddleParams) -> 9n
+      // | EnsuredRedeem(ensuredRedeemParams) -> 10n
+      // | SafeBorrow(safeBorrowParams) -> 11n
+      // | BorrowMiddle(borrowMiddleParams) -> 12n
+      // | EnsuredBorrow(ensuredBorrowParams) -> 13n
+      // | SafeRepay(safeRepayParams) -> 14n
+      // | SafeLiquidate(safeLiquidateParams) -> 15n
+      // | LiquidateMiddle(liquidateMiddleParams) -> 16n
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> 17n
     end;
 
     const res : return = case s.useLambdas[idx] of 
-      Some(f) -> f(p, s.storage, this)
+      Some(f) -> f(p, this, s.storage)
       | None -> (failwith("Controller/function-not-set") : return) 
     end;
     s.storage := res.1;
@@ -98,18 +105,18 @@ function updatePrice (const p : useAction; const this : address; var s : control
       | UpdateQToken(updateQTokenParams) -> skip 
       | EnterMarket(addr) -> skip
       | ExitMarket(addr) -> skip
-      | GetUserLiquidity(getUserLiquidityParams) -> skip
-      | SafeMint(safeMintParams) -> skip
-      | SafeRedeem(safeRedeemParams) -> skip
-      | RedeemMiddle(redeemMiddleParams) -> skip
-      | EnsuredRedeem(ensuredRedeemParams) -> skip
-      | SafeBorrow(safeBorrowParams) -> skip
-      | BorrowMiddle(borrowMiddleParams) -> skip
-      | EnsuredBorrow(ensuredBorrowParams) -> skip
-      | SafeRepay(safeRepayParams) -> skip
-      | SafeLiquidate(safeLiquidateParams) -> skip
-      | LiquidateMiddle(liquidateMiddleParams) -> skip
-      | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+      // | GetUserLiquidity(getUserLiquidityParams) -> skip
+      // | SafeMint(safeMintParams) -> skip
+      // | SafeRedeem(safeRedeemParams) -> skip
+      // | RedeemMiddle(redeemMiddleParams) -> skip
+      // | EnsuredRedeem(ensuredRedeemParams) -> skip
+      // | SafeBorrow(safeBorrowParams) -> skip
+      // | BorrowMiddle(borrowMiddleParams) -> skip
+      // | EnsuredBorrow(ensuredBorrowParams) -> skip
+      // | SafeRepay(safeRepayParams) -> skip
+      // | SafeLiquidate(safeLiquidateParams) -> skip
+      // | LiquidateMiddle(liquidateMiddleParams) -> skip
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
   } with (operations, s)
 
@@ -131,18 +138,18 @@ function setOracle (const p : useAction; const this : address; var s : controlle
       | UpdateQToken(updateQTokenParams) -> skip 
       | EnterMarket(addr) -> skip
       | ExitMarket(addr) -> skip
-      | GetUserLiquidity(getUserLiquidityParams) -> skip
-      | SafeMint(safeMintParams) -> skip
-      | SafeRedeem(safeRedeemParams) -> skip
-      | RedeemMiddle(redeemMiddleParams) -> skip
-      | EnsuredRedeem(ensuredRedeemParams) -> skip
-      | SafeBorrow(safeBorrowParams) -> skip
-      | BorrowMiddle(borrowMiddleParams) -> skip
-      | EnsuredBorrow(ensuredBorrowParams) -> skip
-      | SafeRepay(safeRepayParams) -> skip
-      | SafeLiquidate(safeLiquidateParams) -> skip
-      | LiquidateMiddle(liquidateMiddleParams) -> skip
-      | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+      // | GetUserLiquidity(getUserLiquidityParams) -> skip
+      // | SafeMint(safeMintParams) -> skip
+      // | SafeRedeem(safeRedeemParams) -> skip
+      // | RedeemMiddle(redeemMiddleParams) -> skip
+      // | EnsuredRedeem(ensuredRedeemParams) -> skip
+      // | SafeBorrow(safeBorrowParams) -> skip
+      // | BorrowMiddle(borrowMiddleParams) -> skip
+      // | EnsuredBorrow(ensuredBorrowParams) -> skip
+      // | SafeRepay(safeRepayParams) -> skip
+      // | SafeLiquidate(safeLiquidateParams) -> skip
+      // | LiquidateMiddle(liquidateMiddleParams) -> skip
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
   } with (operations, s)
 
@@ -153,7 +160,7 @@ function setOracle (const p : useAction; const this : address; var s : controlle
         | UpdatePrice(updateParams) -> skip
         | SetOracle(setOracleParams) -> skip
         | Register(registerParams) -> {
-          if this =/= s.factory then
+          if Tezos.sender =/= s.factory then
             failwith("NotFactory")
           else skip;
 
@@ -165,18 +172,18 @@ function setOracle (const p : useAction; const this : address; var s : controlle
         | UpdateQToken(updateQTokenParams) -> skip 
         | EnterMarket(addr) -> skip
         | ExitMarket(addr) -> skip
-        | GetUserLiquidity(getUserLiquidityParams) -> skip
-        | SafeMint(safeMintParams) -> skip
-        | SafeRedeem(safeRedeemParams) -> skip
-        | RedeemMiddle(redeemMiddleParams) -> skip
-        | EnsuredRedeem(ensuredRedeemParams) -> skip
-        | SafeBorrow(safeBorrowParams) -> skip
-        | BorrowMiddle(borrowMiddleParams) -> skip
-        | EnsuredBorrow(ensuredBorrowParams) -> skip
-        | SafeRepay(safeRepayParams) -> skip
-        | SafeLiquidate(safeLiquidateParams) -> skip
-        | LiquidateMiddle(liquidateMiddleParams) -> skip
-        | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+        // | GetUserLiquidity(getUserLiquidityParams) -> skip
+        // | SafeMint(safeMintParams) -> skip
+        // | SafeRedeem(safeRedeemParams) -> skip
+        // | RedeemMiddle(redeemMiddleParams) -> skip
+        // | EnsuredRedeem(ensuredRedeemParams) -> skip
+        // | SafeBorrow(safeBorrowParams) -> skip
+        // | BorrowMiddle(borrowMiddleParams) -> skip
+        // | EnsuredBorrow(ensuredBorrowParams) -> skip
+        // | SafeRepay(safeRepayParams) -> skip
+        // | SafeLiquidate(safeLiquidateParams) -> skip
+        // | LiquidateMiddle(liquidateMiddleParams) -> skip
+        // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
       end
     } with (operations, s)
 
@@ -199,18 +206,18 @@ function updateQToken (const p : useAction; const this : address; var s : contro
       } 
       | EnterMarket(addr) -> skip
       | ExitMarket(addr) -> skip
-      | GetUserLiquidity(getUserLiquidityParams) -> skip
-      | SafeMint(safeMintParams) -> skip
-      | SafeRedeem(safeRedeemParams) -> skip
-      | RedeemMiddle(redeemMiddleParams) -> skip
-      | EnsuredRedeem(ensuredRedeemParams) -> skip
-      | SafeBorrow(safeBorrowParams) -> skip
-      | BorrowMiddle(borrowMiddleParams) -> skip
-      | EnsuredBorrow(ensuredBorrowParams) -> skip
-      | SafeRepay(safeRepayParams) -> skip
-      | SafeLiquidate(safeLiquidateParams) -> skip
-      | LiquidateMiddle(liquidateMiddleParams) -> skip
-      | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+      // | GetUserLiquidity(getUserLiquidityParams) -> skip
+      // | SafeMint(safeMintParams) -> skip
+      // | SafeRedeem(safeRedeemParams) -> skip
+      // | RedeemMiddle(redeemMiddleParams) -> skip
+      // | EnsuredRedeem(ensuredRedeemParams) -> skip
+      // | SafeBorrow(safeBorrowParams) -> skip
+      // | BorrowMiddle(borrowMiddleParams) -> skip
+      // | EnsuredBorrow(ensuredBorrowParams) -> skip
+      // | SafeRepay(safeRepayParams) -> skip
+      // | SafeLiquidate(safeLiquidateParams) -> skip
+      // | LiquidateMiddle(liquidateMiddleParams) -> skip
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
   } with (operations, s)
 
@@ -234,18 +241,18 @@ function enterMarket (const p : useAction; const this : address; var s : control
         s.accountMembership[this] := addr
       }
       | ExitMarket(addr) -> skip
-      | GetUserLiquidity(getUserLiquidityParams) -> skip
-      | SafeMint(safeMintParams) -> skip
-      | SafeRedeem(safeRedeemParams) -> skip
-      | RedeemMiddle(redeemMiddleParams) -> skip
-      | EnsuredRedeem(ensuredRedeemParams) -> skip
-      | SafeBorrow(safeBorrowParams) -> skip
-      | BorrowMiddle(borrowMiddleParams) -> skip
-      | EnsuredBorrow(ensuredBorrowParams) -> skip
-      | SafeRepay(safeRepayParams) -> skip
-      | SafeLiquidate(safeLiquidateParams) -> skip
-      | LiquidateMiddle(liquidateMiddleParams) -> skip
-      | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+      // | GetUserLiquidity(getUserLiquidityParams) -> skip
+      // | SafeMint(safeMintParams) -> skip
+      // | SafeRedeem(safeRedeemParams) -> skip
+      // | RedeemMiddle(redeemMiddleParams) -> skip
+      // | EnsuredRedeem(ensuredRedeemParams) -> skip
+      // | SafeBorrow(safeBorrowParams) -> skip
+      // | BorrowMiddle(borrowMiddleParams) -> skip
+      // | EnsuredBorrow(ensuredBorrowParams) -> skip
+      // | SafeRepay(safeRepayParams) -> skip
+      // | SafeLiquidate(safeLiquidateParams) -> skip
+      // | LiquidateMiddle(liquidateMiddleParams) -> skip
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
   } with (operations, s)
 
@@ -272,18 +279,18 @@ function exitMarket (const p : useAction; const this : address; var s : controll
         
         remove this from map s.accountMembership
       }
-      | GetUserLiquidity(getUserLiquidityParams) -> skip
-      | SafeMint(safeMintParams) -> skip
-      | SafeRedeem(safeRedeemParams) -> skip
-      | RedeemMiddle(redeemMiddleParams) -> skip
-      | EnsuredRedeem(ensuredRedeemParams) -> skip
-      | SafeBorrow(safeBorrowParams) -> skip
-      | BorrowMiddle(borrowMiddleParams) -> skip
-      | EnsuredBorrow(ensuredBorrowParams) -> skip
-      | SafeRepay(safeRepayParams) -> skip
-      | SafeLiquidate(safeLiquidateParams) -> skip
-      | LiquidateMiddle(liquidateMiddleParams) -> skip
-      | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+      // | GetUserLiquidity(getUserLiquidityParams) -> skip
+      // | SafeMint(safeMintParams) -> skip
+      // | SafeRedeem(safeRedeemParams) -> skip
+      // | RedeemMiddle(redeemMiddleParams) -> skip
+      // | EnsuredRedeem(ensuredRedeemParams) -> skip
+      // | SafeBorrow(safeBorrowParams) -> skip
+      // | BorrowMiddle(borrowMiddleParams) -> skip
+      // | EnsuredBorrow(ensuredBorrowParams) -> skip
+      // | SafeRepay(safeRepayParams) -> skip
+      // | SafeLiquidate(safeLiquidateParams) -> skip
+      // | LiquidateMiddle(liquidateMiddleParams) -> skip
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
   } with (operations, s)
 
@@ -293,4 +300,5 @@ function main (const p : entryAction; const s : fullControllerStorage) : fullRet
   } with case p of
       | Use(params)                   -> middleController(params, this, s)
       | SetUseAction(params)          -> setUseAction(params.index, params.func, s)
+      | SetFactory(params)            -> setFactory(params, s)
     end

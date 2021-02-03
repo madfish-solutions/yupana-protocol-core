@@ -52,7 +52,35 @@ let useFunctions = [
   },
 ];
 
+let useControllerFunctions = [
+  {
+    index: 0,
+    name: "updatePrice",
+  },
+  {
+    index: 1,
+    name: "setOracle",
+  },
+  {
+    index: 2,
+    name: "register",
+  },
+  {
+    index: 3,
+    name: "updateQToken",
+  },
+  {
+    index: 4,
+    name: "enterMarket",
+  },
+  {
+    index: 5,
+    name: "exitMarket",
+  },
+];
+
 module.exports.functions = {
   token: tokenFunctions,
   use: useFunctions,
+  useController: useControllerFunctions,
 };

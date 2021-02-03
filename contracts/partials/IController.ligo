@@ -120,22 +120,22 @@ type useAction is
   | UpdateQToken of updateQTokenParams
   | EnterMarket of address
   | ExitMarket of address
-  | GetUserLiquidity of getUserLiquidityParams
-  | SafeMint of safeMintParams
-  | SafeRedeem of safeRedeemParams
-  | RedeemMiddle of redeemMiddleParams
-  | EnsuredRedeem of ensuredRedeemParams
-  | SafeBorrow of safeBorrowParams
-  | BorrowMiddle of borrowMiddleParams
-  | EnsuredBorrow of ensuredBorrowParams
-  | SafeRepay of safeRepayParams
-  | SafeLiquidate of safeLiquidateParams
-  | LiquidateMiddle of liquidateMiddleParams
-  | EnsuredLiquidate of ensuredLiquidateParams
+  // | GetUserLiquidity of getUserLiquidityParams
+  // | SafeMint of safeMintParams
+  // | SafeRedeem of safeRedeemParams
+  // | RedeemMiddle of redeemMiddleParams
+  // | EnsuredRedeem of ensuredRedeemParams
+  // | SafeBorrow of safeBorrowParams
+  // | BorrowMiddle of borrowMiddleParams
+  // | EnsuredBorrow of ensuredBorrowParams
+  // | SafeRepay of safeRepayParams
+  // | SafeLiquidate of safeLiquidateParams
+  // | LiquidateMiddle of liquidateMiddleParams
+  // | EnsuredLiquidate of ensuredLiquidateParams
 
 [@inline] const noOperations : list (operation) = nil
 type return is list (operation) * controllerStorage
-type useFunc is (useAction * controllerStorage * address) -> return
+type useFunc is (useAction  * address * controllerStorage) -> return
 
 type setUseParams is record [
   index  : nat;
@@ -152,3 +152,4 @@ type fullReturn is list (operation) * fullControllerStorage
 type entryAction is 
   | Use of useAction
   | SetUseAction of setUseParams
+  | SetFactory of address

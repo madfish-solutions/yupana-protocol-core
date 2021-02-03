@@ -1,10 +1,10 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-const { accounts } = require("../scripts/sandbox/accounts");
 const { functions } = require("../storage/Functions");
 const { execSync } = require("child_process");
 const Factory = artifacts.require("Factory");
 
-var qToken = artifacts.require("qToken");
+const XTZ = artifacts.require("XTZ");
+const Controller = artifacts.require("Controller");
 
 function getLigo(isDockerizedLigo) {
   let path = "ligo";
@@ -27,27 +27,29 @@ function getLigo(isDockerizedLigo) {
   return path;
 }
 
-module.exports = async function (deployer) {
+module.exports = async function (deployer, network) {
   const factoryInstance = await Factory.deployed();
-  const storage = {
-    owner: accounts[0],
-    admin: accounts[0],
-    token: accounts[0],
-    lastUpdateTime: "2000-01-01T10:10:10.000Z",
-    totalBorrows: "0",
-    totalLiquid: "0",
-    totalSupply: "0",
-    totalReserves: "0",
-    borrowIndex: "0",
-    accountBorrows: MichelsonMap.fromLiteral({}),
-    accountTokens: MichelsonMap.fromLiteral({}),
-  };
+  const ControllerInstance = await Controller.deployed();
+  await ControllerInstance.setFactory(factoryInstance.address);
+  // const storage = {
+  //   owner: accounts[0],
+  //   admin: accounts[0],
+  //   token: accounts[0],
+  //   lastUpdateTime: "2000-01-01T10:10:10.000Z",
+  //   totalBorrows: "0",
+  //   totalLiquid: "0",
+  //   totalSupply: "0",
+  //   totalReserves: "0",
+  //   borrowIndex: "0",
+  //   accountBorrows: MichelsonMap.fromLiteral({}),
+  //   accountTokens: MichelsonMap.fromLiteral({}),
+  // };
 
-  const fullStorage = {
-    storage: storage,
-    tokenLambdas: MichelsonMap.fromLiteral({}),
-    useLambdas: MichelsonMap.fromLiteral({}),
-  };
+  // const fullStorage = {
+  //   storage: storage,
+  //   tokenLambdas: MichelsonMap.fromLiteral({}),
+  //   useLambdas: MichelsonMap.fromLiteral({}),
+  // };
 
   let ligo = getLigo(true);
 
@@ -82,5 +84,17 @@ module.exports = async function (deployer) {
     await operation.confirmation();
   }
 
-  await deployer.deploy(qToken, fullStorage);
+  var XTZInstance = null;
+  if (network == "development") {
+    const xtzStorage = {
+      totalSupply: 0,
+      ledger: MichelsonMap.fromLiteral({}),
+    }
+    await deployer.deploy(XTZ, xtzStorage);
+    XTZInstance = await XTZ.deployed();
+  }
+  else {
+    XTZInstance = {address : "TESTNET_ADDRESS"}
+  }
+  await factoryInstance.launchFactory(XTZInstance.address);
 };

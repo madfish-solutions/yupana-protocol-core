@@ -39,7 +39,7 @@ function setFactoryAdmin (const newAdmin : address; var s : factoryStorage) : fu
     s.admin := newAdmin;
   } with (noOperations, s)
 
-function launchExchange (const token : address; var s : factoryStorage) : fullFactoryReturn is
+function launchToken (const token : address; var s : factoryStorage) : fullFactoryReturn is
   block {
     case s.tokenList[token] of 
     Some(t) -> failwith("Simular token")
@@ -77,7 +77,7 @@ function launchExchange (const token : address; var s : factoryStorage) : fullFa
 
 function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is 
   case p of
-    | LaunchExchange(params)        -> launchExchange(params.token, s)
+    | LaunchToken(params)        -> launchToken(params.token, s)
     | SetFactoryAdmin(params)       -> setFactoryAdmin(params, s)
     | SetTokenFunction(params)      -> setTokenFunction(params.index, params.func, s)
     | SetUseFunction(params)        -> setUseFunction(params.index, params.func, s)

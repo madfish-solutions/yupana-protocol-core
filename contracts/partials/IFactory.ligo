@@ -10,7 +10,7 @@ type factoryStorage is record [
 
 type createContrFunc is (option(key_hash) * tez * fullTokenStorage) -> (operation * address)
 
-type launchExchangeParams is record [
+type launchTokenParams is record [
   token : address;
 ]
 
@@ -33,7 +33,7 @@ type iController is Register of registerType
 type fullFactoryReturn is list(operation) * factoryStorage
 
 type factoryAction is 
-| LaunchExchange        of launchExchangeParams
+| LaunchToken        of launchTokenParams
 | SetFactoryAdmin       of address
 | SetTokenFunction      of setTokenParams
 | SetUseFunction        of setUseParams
