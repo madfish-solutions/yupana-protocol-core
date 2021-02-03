@@ -153,39 +153,39 @@ function setOracle (const p : useAction; const this : address; var s : controlle
     end
   } with (operations, s)
 
-  function register (const p : useAction; const this : address; var s : controllerStorage) : return is
-    block {
-      var operations : list(operation) := list[];
-        case p of
-        | UpdatePrice(updateParams) -> skip
-        | SetOracle(setOracleParams) -> skip
-        | Register(registerParams) -> {
-          if Tezos.sender =/= s.factory then
-            failwith("NotFactory")
-          else skip;
+function register (const p : useAction; const this : address; var s : controllerStorage) : return is
+  block {
+    var operations : list(operation) := list[];
+      case p of
+      | UpdatePrice(updateParams) -> skip
+      | SetOracle(setOracleParams) -> skip
+      | Register(registerParams) -> {
+        if Tezos.sender =/= s.factory then
+          failwith("NotFactory")
+        else skip;
 
-          mustNotContainsQTokens(registerParams.qToken, s);
+        mustNotContainsQTokens(registerParams.qToken, s);
 
-          s.qTokens := Set.add(registerParams.qToken, s.qTokens);
-          s.pairs[registerParams.token] := registerParams.qToken;
-        }
-        | UpdateQToken(updateQTokenParams) -> skip 
-        | EnterMarket(addr) -> skip
-        | ExitMarket(addr) -> skip
-        // | GetUserLiquidity(getUserLiquidityParams) -> skip
-        // | SafeMint(safeMintParams) -> skip
-        // | SafeRedeem(safeRedeemParams) -> skip
-        // | RedeemMiddle(redeemMiddleParams) -> skip
-        // | EnsuredRedeem(ensuredRedeemParams) -> skip
-        // | SafeBorrow(safeBorrowParams) -> skip
-        // | BorrowMiddle(borrowMiddleParams) -> skip
-        // | EnsuredBorrow(ensuredBorrowParams) -> skip
-        // | SafeRepay(safeRepayParams) -> skip
-        // | SafeLiquidate(safeLiquidateParams) -> skip
-        // | LiquidateMiddle(liquidateMiddleParams) -> skip
-        // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-      end
-    } with (operations, s)
+        s.qTokens := Set.add(registerParams.qToken, s.qTokens);
+        s.pairs[registerParams.token] := registerParams.qToken;
+      }
+      | UpdateQToken(updateQTokenParams) -> skip 
+      | EnterMarket(addr) -> skip
+      | ExitMarket(addr) -> skip
+      // | GetUserLiquidity(getUserLiquidityParams) -> skip
+      // | SafeMint(safeMintParams) -> skip
+      // | SafeRedeem(safeRedeemParams) -> skip
+      // | RedeemMiddle(redeemMiddleParams) -> skip
+      // | EnsuredRedeem(ensuredRedeemParams) -> skip
+      // | SafeBorrow(safeBorrowParams) -> skip
+      // | BorrowMiddle(borrowMiddleParams) -> skip
+      // | EnsuredBorrow(ensuredBorrowParams) -> skip
+      // | SafeRepay(safeRepayParams) -> skip
+      // | SafeLiquidate(safeLiquidateParams) -> skip
+      // | LiquidateMiddle(liquidateMiddleParams) -> skip
+      // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    end
+  } with (operations, s)
 
 function updateQToken (const p : useAction; const this : address; var s : controllerStorage) : return is
   block {
@@ -220,7 +220,6 @@ function updateQToken (const p : useAction; const this : address; var s : contro
       // | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
   } with (operations, s)
-
 
 function enterMarket (const p : useAction; const this : address; var s : controllerStorage) : return is
   block {
