@@ -27,11 +27,11 @@ type setOracleParams is record [
 ]
 
 type registerParams is record [
-  token                 : address;
   qToken                : address;
+  token                 : address;
 ]
 
-type updateQTokenParams is record [
+type updateQTokenParams is [@layout:comb] record [
   user                  : address;
   balance               : nat;
   borrow                : nat;

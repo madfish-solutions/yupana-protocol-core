@@ -25,7 +25,7 @@ function getLigo(isDockerizedLigo) {
   return path;
 }
 
-module.exports = async function (deployer) {
+module.exports = async function (deployer, network) {
   const controllerStorage = {
     factory: accounts[0],
     admin: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",

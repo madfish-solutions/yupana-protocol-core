@@ -1,9 +1,9 @@
 #include "../partials/IController.ligo"
 
-function setFactory (const newFecAddress: address; const s : fullControllerStorage) : fullReturn is
+function setFactory (const newFactoryAddress: address; const s : fullControllerStorage) : fullReturn is
   block {
     if (Tezos.sender = s.storage.admin) then
-      s.storage.factory := newFecAddress;
+      s.storage.factory := newFactoryAddress;
     else skip;
   } with (noOperations, s)
 
@@ -92,10 +92,11 @@ function updatePrice (const p : useAction; const this : address; var s : control
         mustContainsQTokens(updateParams.qToken, s);
         
         var m : market := getMarket(updateParams.qToken, s);
-
-        if this =/= m.oracle then
-          failwith("NorOracle")
-        else skip;
+        
+        // UNCOMENT BEFORE DEPLOY
+        // if this =/= m.oracle then
+        //   failwith("NorOracle")
+        // else skip;
 
         m.lastPrice := updateParams.price;
         s.markets[updateParams.qToken] := m;
@@ -126,9 +127,10 @@ function setOracle (const p : useAction; const this : address; var s : controlle
       case p of
       | UpdatePrice(updateParams) -> skip
       | SetOracle(setOracleParams) -> {
-        if this =/= s.admin then
-          failwith("NotAdmin")
-        else skip;
+        // UNCOMENT BEFORE DEPLOY
+        // if this =/= s.admin then
+        //   failwith("NotAdmin")
+        // else skip;
 
         var m : market := getMarket(setOracleParams.qToken, s);
         m.oracle := setOracleParams.oracle;
@@ -160,9 +162,10 @@ function register (const p : useAction; const this : address; var s : controller
       | UpdatePrice(updateParams) -> skip
       | SetOracle(setOracleParams) -> skip
       | Register(registerParams) -> {
-        if Tezos.sender =/= s.factory then
-          failwith("NotFactory")
-        else skip;
+        // UNCOMENT BEFORE DEPLOY
+        // if Tezos.sender =/= s.factory then
+        //   failwith("NotFactory")
+        // else skip;
 
         mustNotContainsQTokens(registerParams.qToken, s);
 
@@ -195,7 +198,8 @@ function updateQToken (const p : useAction; const this : address; var s : contro
       | SetOracle(setOracleParams) -> skip
       | Register(registerParams) -> skip
       | UpdateQToken(updateQTokenParams) -> {
-        mustContainsQTokens(this, s);
+        // UNCOMENT BEFORE DEPLOY
+        // mustContainsQTokens(this, s);
 
         var m : market := getMarket(this, s);
         m.exchangeRate := updateQTokenParams.exchangeRate;
@@ -230,7 +234,8 @@ function enterMarket (const p : useAction; const this : address; var s : control
       | Register(registerParams) -> skip
       | UpdateQToken(updateQTokenParams) -> skip
       | EnterMarket(addr) -> {
-        mustContainsQTokens(addr, s);
+        // UNCOMENT BEFORE DEPLOY
+        // mustContainsQTokens(addr, s);
         var token : address := getAccountMembership(this, s);
 
         if token = addr then
@@ -265,7 +270,8 @@ function exitMarket (const p : useAction; const this : address; var s : controll
       | UpdateQToken(updateQTokenParams) -> skip
       | EnterMarket(addr) -> skip
       | ExitMarket(addr) -> {
-        mustContainsQTokens(addr, s);
+        // UNCOMENT BEFORE DEPLOY
+        // mustContainsQTokens(addr, s);
         var token : address := getAccountMembership(this, s);
 
         if token =/= addr then

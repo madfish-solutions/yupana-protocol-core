@@ -28,6 +28,7 @@ function getLigo(isDockerizedLigo) {
 }
 
 module.exports = async function (deployer, network) {
+  if (network == "development") return;
   const factoryInstance = await Factory.deployed();
   const ControllerInstance = await Controller.deployed();
   await ControllerInstance.setFactory(factoryInstance.address);
@@ -89,12 +90,11 @@ module.exports = async function (deployer, network) {
     const xtzStorage = {
       totalSupply: 0,
       ledger: MichelsonMap.fromLiteral({}),
-    }
+    };
     await deployer.deploy(XTZ, xtzStorage);
     XTZInstance = await XTZ.deployed();
+  } else {
+    XTZInstance = { address: "TESTNET_ADDRESS" };
   }
-  else {
-    XTZInstance = {address : "TESTNET_ADDRESS"}
-  }
-  await factoryInstance.launchFactory(XTZInstance.address);
+  await factoryInstance.launchToken(XTZInstance.address);
 };

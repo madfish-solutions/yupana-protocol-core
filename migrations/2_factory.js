@@ -2,7 +2,9 @@ const { MichelsonMap } = require("@taquito/michelson-encoder");
 const Factory = artifacts.require("Factory");
 const Controller = artifacts.require("Controller");
 
-module.exports = async function (deployer) {
+module.exports = async function (deployer, network) {
+  if (network == "development") return;
+
   const ControllerInstance = await Controller.deployed();
   const storage = {
     tokenList: new MichelsonMap(),
