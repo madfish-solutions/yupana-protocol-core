@@ -85,6 +85,50 @@ let useControllerFunctions = [
     index: 5,
     name: "exitMarket",
   },
+  {
+    index: 6,
+    name: "safeMint",
+  },
+  {
+    index: 7,
+    name: "safeRedeem",
+  },
+  {
+    index: 8,
+    name: "redeemMiddle",
+  },
+  {
+    index: 9,
+    name: "ensuredRedeem",
+  },
+  {
+    index: 10,
+    name: "safeBorrow",
+  },
+  {
+    index: 11,
+    name: "borrowMiddle",
+  },
+  {
+    index: 12,
+    name: "ensuredBorrow",
+  },
+  {
+    index: 13,
+    name: "safeRepay",
+  },
+  {
+    index: 14,
+    name: "safeLiquidate",
+  },
+  {
+    index: 15,
+    name: "liquidateMiddle",
+  },
+  {
+    index: 16,
+    name: "ensuredLiquidate",
+  }
 ];
 
 module.exports.functions = {

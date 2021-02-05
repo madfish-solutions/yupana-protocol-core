@@ -28,7 +28,7 @@ function getLigo(isDockerizedLigo) {
 }
 
 module.exports = async function (deployer, network) {
-  if (network == "development") return;
+  // if (network == "development") return;
   const factoryInstance = await Factory.deployed();
   const ControllerInstance = await Controller.deployed();
   await ControllerInstance.setFactory(factoryInstance.address);

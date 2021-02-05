@@ -39,7 +39,7 @@ module.exports = async function (deployer, network) {
 
   const fullControllerStorage = {
     storage: controllerStorage,
-    useLambdas: MichelsonMap.fromLiteral({}),
+    useControllerLambdas: MichelsonMap.fromLiteral({}),
   };
 
   await deployer.deploy(Controller, fullControllerStorage);

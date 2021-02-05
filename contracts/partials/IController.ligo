@@ -1,3 +1,5 @@
+#include "./IqToken.ligo"
+
 type market is record [
   collateralFactor      : nat;
   lastPrice             : nat;
@@ -55,11 +57,6 @@ type safeMintParams is record [
   amount                : nat;
 ]
 
-type mintType is record [
-  user              : address;
-  amount            : nat;
-]
-
 type safeRedeemParams is record [
   qToken                : address;
   amount                : nat;
@@ -96,6 +93,16 @@ type borrowMiddleParams is record [
   borrowAmount          : nat;
 ]
 
+type borrowParams is record [
+  user           : address;
+  amount         : nat;
+]
+
+type repayParams is record [
+  user           : address;
+  amount         : nat;
+]
+
 type ensuredBorrowParams is record [
   user                  : address;
   qToken                : address;
@@ -116,19 +123,27 @@ type safeLiquidateParams is record [
 
 type liquidateMiddleParams is record [
   user                  : address;
+  borrower              : address;
   qToken                : address;
   redeemTokens          : nat;
   borrowAmount          : nat;
+]
+
+type liquidateType is record [
+  liquidator            : address;
+  borrower              : address;
+  amount                : nat;
 ]
 
 type ensuredLiquidateParams is record [
   user                  : address;
+  borrower              : address;
   qToken                : address;
   redeemTokens          : nat;
   borrowAmount          : nat;
 ]
 
-type useAction is 
+type useControllerAction is 
   | UpdatePrice of updateParams
   | SetOracle of setOracleParams
   | Register of registerParams
@@ -137,35 +152,35 @@ type useAction is
   | ExitMarket of address
   | SafeMint of safeMintParams
   | SafeRedeem of safeRedeemParams
-  // | RedeemMiddle of redeemMiddleParams
-  // | EnsuredRedeem of ensuredRedeemParams
-  // | SafeBorrow of safeBorrowParams
-  // | BorrowMiddle of borrowMiddleParams
-  // | EnsuredBorrow of ensuredBorrowParams
-  // | SafeRepay of safeRepayParams
-  // | SafeLiquidate of safeLiquidateParams
-  // | LiquidateMiddle of liquidateMiddleParams
-  // | EnsuredLiquidate of ensuredLiquidateParams
+  | RedeemMiddle of redeemMiddleParams
+  | EnsuredRedeem of ensuredRedeemParams
+  | SafeBorrow of safeBorrowParams
+  | BorrowMiddle of borrowMiddleParams
+  | EnsuredBorrow of ensuredBorrowParams
+  | SafeRepay of safeRepayParams
+  | SafeLiquidate of safeLiquidateParams
+  | LiquidateMiddle of liquidateMiddleParams
+  | EnsuredLiquidate of ensuredLiquidateParams
 
 [@inline] const noOperations : list (operation) = nil
 type return is list (operation) * controllerStorage
-type useFunc is (useAction  * address * controllerStorage) -> return
-
-type updateControllerStateType is UpdateControllerState of address
+type useControllerFunc is (useControllerAction  * address * controllerStorage) -> return
+const accuracy : nat = 1000000000000000000n; //1e+18
+type updateControllerStateType is QUpdateControllerState of address
 
 type setUseParams is record [
   index  : nat;
-  func   : useFunc;
+  func   : useControllerFunc;
 ]
 
 type fullControllerStorage is record [
   storage     : controllerStorage;
-  useLambdas  : big_map(nat, useFunc);
+  useControllerLambdas  : big_map(nat, useControllerFunc);
 ]
 
 type fullReturn is list (operation) * fullControllerStorage
 
 type entryAction is 
-  | Use of useAction
+  | UseController of useControllerAction
   | SetUseAction of setUseParams
   | SetFactory of address

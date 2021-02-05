@@ -3,7 +3,7 @@ const Factory = artifacts.require("Factory");
 const Controller = artifacts.require("Controller");
 
 module.exports = async function (deployer, network) {
-  if (network == "development") return;
+  // if (network == "development") return;
 
   const ControllerInstance = await Controller.deployed();
   const storage = {
