@@ -77,7 +77,7 @@ function launchToken (const token : address; var s : factoryStorage) : fullFacto
 
 function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is 
   case p of
-    | LaunchToken(params)        -> launchToken(params.token, s)
+    | LaunchToken(params)           -> launchToken(params.token, s)
     | SetFactoryAdmin(params)       -> setFactoryAdmin(params, s)
     | SetTokenFunction(params)      -> setTokenFunction(params.index, params.func, s)
     | SetUseFunction(params)        -> setUseFunction(params.index, params.func, s)

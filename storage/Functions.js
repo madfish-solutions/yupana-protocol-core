@@ -50,6 +50,14 @@ let useFunctions = [
     index: 6,
     name: "liquidate",
   },
+  {
+    index: 7,
+    name: "seize",
+  },
+  {
+    index: 8,
+    name: "updateControllerState",
+  }
 ];
 
 let useControllerFunctions = [

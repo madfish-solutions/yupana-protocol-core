@@ -5,12 +5,14 @@
                 (pair %getTotalSupply unit (contract nat))))
         (or (pair %transfer (address %from) (pair (address %to) (nat %value)))
             (or %use
-               (or (or (pair %borrow (nat %amount) (address %user))
-                       (pair %liquidate (address %from) (pair (address %to) (nat %value))))
-                   (or (pair %mint (nat %amount) (address %user))
-                       (pair %redeem (nat %amount) (address %user))))
-               (or (or (pair %repay (nat %amount) (address %user)) (address %setAdmin))
-                   (address %setOwner))))) ;
+               (or (or (or (pair %borrow (nat %amount) (address %user))
+                           (pair %liquidate (address %from) (pair (address %to) (nat %value))))
+                       (or (pair %mint (nat %amount) (address %user))
+                           (pair %redeem (nat %amount) (address %user))))
+                   (or (or (pair %repay (nat %amount) (address %user))
+                           (pair %seize (pair (nat %amount) (address %borrower)) (address %liquidator)))
+                       (or (address %setAdmin) (address %setOwner))))
+               (address %updateControllerState)))) ;
   storage
     (pair (pair (pair %storage
                    (pair (pair (pair (big_map %accountBorrows
@@ -49,12 +51,14 @@
           (big_map %useLambdas
              nat
              (lambda
-                (pair (pair (or (or (or (pair %borrow (nat %amount) (address %user))
-                                        (pair %liquidate (address %from) (pair (address %to) (nat %value))))
-                                    (or (pair %mint (nat %amount) (address %user))
-                                        (pair %redeem (nat %amount) (address %user))))
-                                (or (or (pair %repay (nat %amount) (address %user)) (address %setAdmin))
-                                    (address %setOwner)))
+                (pair (pair (or (or (or (or (pair %borrow (nat %amount) (address %user))
+                                            (pair %liquidate (address %from) (pair (address %to) (nat %value))))
+                                        (or (pair %mint (nat %amount) (address %user))
+                                            (pair %redeem (nat %amount) (address %user))))
+                                    (or (or (pair %repay (nat %amount) (address %user))
+                                            (pair %seize (pair (nat %amount) (address %borrower)) (address %liquidator)))
+                                        (or (address %setAdmin) (address %setOwner))))
+                                (address %updateControllerState))
                             (pair (pair (pair (pair (big_map %accountBorrows
                                                        address
                                                        (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
@@ -279,11 +283,13 @@
                  DUG 3 ;
                  IF_LEFT
                    { IF_LEFT
-                       { IF_LEFT { DROP ; PUSH nat 4 } { DROP ; PUSH nat 6 } }
-                       { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 3 } } }
-                   { IF_LEFT
-                       { IF_LEFT { DROP ; PUSH nat 5 } { DROP ; PUSH nat 0 } }
-                       { DROP ; PUSH nat 1 } } ;
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 4 } { DROP ; PUSH nat 6 } }
+                           { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 3 } } }
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 5 } { DROP ; PUSH nat 7 } }
+                           { IF_LEFT { DROP ; PUSH nat 0 } { DROP ; PUSH nat 1 } } } }
+                   { DROP ; PUSH nat 8 } ;
                  GET ;
                  IF_NONE
                    { SWAP ;

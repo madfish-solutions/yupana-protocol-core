@@ -30,23 +30,29 @@ type totalSupplyParams is (unit * contract(nat))
 type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 
 type mintParams is record [
-    user           :address;
-    amount         :nat;
+  user           : address;
+  amount         : nat;
 ]
 
 type redeemParams is record [
-    user           :address;
-    amount         :nat;
+  user           : address;
+  amount         : nat;
 ]
 
 type borrowParams is record [
-    user           :address;
-    amount         :nat;
+  user           : address;
+  amount         : nat;
 ]
 
 type repayParams is record [
-    user           :address;
-    amount         :nat;
+  user           : address;
+  amount         : nat;
+]
+
+type seizeParams is record [
+  liquidator     : address;
+  borrower       : address;
+  amount         : nat;
 ]
 
 type useAction is
@@ -57,6 +63,8 @@ type useAction is
   | Borrow of borrowParams
   | Repay of repayParams
   | Liquidate of liquidateParams
+  | Seize of seizeParams
+  | UpdateControllerState of address
 
 type tokenAction is
   | ITransfer of transferParams

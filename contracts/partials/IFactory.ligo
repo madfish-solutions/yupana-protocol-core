@@ -33,7 +33,7 @@ type iController is Register of registerType
 type fullFactoryReturn is list(operation) * factoryStorage
 
 type factoryAction is 
-| LaunchToken        of launchTokenParams
+| LaunchToken           of launchTokenParams
 | SetFactoryAdmin       of address
 | SetTokenFunction      of setTokenParams
 | SetUseFunction        of setUseParams

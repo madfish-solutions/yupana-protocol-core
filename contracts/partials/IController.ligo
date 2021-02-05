@@ -45,14 +45,24 @@ type getUserLiquidityParams is record [
   borrowAmount          : nat;
 ]
 
+type getUserLiquidityReturn is record [
+  surplus               : nat;
+  shortfail             : nat;
+]
+
 type safeMintParams is record [
-  amount                : nat;
   qToken                : address;
+  amount                : nat;
+]
+
+type mintType is record [
+  user              : address;
+  amount            : nat;
 ]
 
 type safeRedeemParams is record [
-  amount                : nat;
   qToken                : address;
+  amount                : nat;
 ]
 
 type redeemMiddleParams is record [
@@ -60,6 +70,11 @@ type redeemMiddleParams is record [
   qToken                : address;
   redeemTokens          : nat;
   borrowAmount          : nat;
+]
+
+type redeemType is record [
+  user                  : address;
+  amount                : nat;
 ]
 
 type ensuredRedeemParams is record [
@@ -70,8 +85,8 @@ type ensuredRedeemParams is record [
 ]
 
 type safeBorrowParams is record [
-  amount                : nat;
   qToken                : address;
+  amount                : nat;
 ]
 
 type borrowMiddleParams is record [
@@ -89,8 +104,8 @@ type ensuredBorrowParams is record [
 ]
 
 type safeRepayParams is record [
-  amount                : nat;
   qToken                : address;
+  amount                : nat;
 ]
 
 type safeLiquidateParams is record [
@@ -120,9 +135,8 @@ type useAction is
   | UpdateQToken of updateQTokenParams
   | EnterMarket of address
   | ExitMarket of address
-  // | GetUserLiquidity of getUserLiquidityParams
-  // | SafeMint of safeMintParams
-  // | SafeRedeem of safeRedeemParams
+  | SafeMint of safeMintParams
+  | SafeRedeem of safeRedeemParams
   // | RedeemMiddle of redeemMiddleParams
   // | EnsuredRedeem of ensuredRedeemParams
   // | SafeBorrow of safeBorrowParams
@@ -136,6 +150,8 @@ type useAction is
 [@inline] const noOperations : list (operation) = nil
 type return is list (operation) * controllerStorage
 type useFunc is (useAction  * address * controllerStorage) -> return
+
+type updateControllerStateType is UpdateControllerState of address
 
 type setUseParams is record [
   index  : nat;

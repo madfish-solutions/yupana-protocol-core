@@ -26,6 +26,8 @@ block {
       | Borrow(borrowParams) -> 4n
       | Repay(repayParams) -> 5n
       | Liquidate(liquidateParams) -> 6n
+      | Seize(seizeParams) -> 7n
+      | UpdateControllerState(addr) -> 8n
     end;
   const res : return = case s.useLambdas[idx] of 
     Some(f) -> f(p, s.storage, this) 
@@ -189,12 +191,14 @@ function setAdmin (const p : useAction; const s : tokenStorage; const this: addr
         mustBeOwner(s);
         s.admin := addr;
       }
-      | SetOwner(address) -> skip
+      | SetOwner(addr) -> skip
       | Mint(mintParams) -> skip
       | Redeem(redeemParams) -> skip
       | Borrow(borrowParams) -> skip
       | Repay(repayParams) -> skip
       | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
     end
   } with (operations, s)
 
@@ -202,7 +206,7 @@ function setOwner (const p : useAction; const s : tokenStorage; const this: addr
   block {
     var operations : list(operation) := list[];
       case p of
-      | SetAdmin(address) -> skip
+      | SetAdmin(addr) -> skip
       | SetOwner(addr) -> {
         mustBeOwner(s);
         s.owner := addr;
@@ -212,6 +216,8 @@ function setOwner (const p : useAction; const s : tokenStorage; const this: addr
       | Borrow(borrowParams) -> skip
       | Repay(repayParams) -> skip
       | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
     end
   } with (operations, s)
 
@@ -239,8 +245,8 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
   block {
     var operations : list(operation) := list[];
       case p of
-      | SetAdmin(address) -> skip
-      | SetOwner(address) -> skip
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
       | Mint(mintParams) -> {
         mustBeAdmin(s);
         s := updateInterest(s);
@@ -265,6 +271,8 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
       | Borrow(borrowParams) -> skip
       | Repay(repayParams) -> skip
       | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
     end
   } with (operations, s)
 
@@ -272,8 +280,8 @@ function redeem (const p : useAction; const s : tokenStorage; const this: addres
   block {
     var operations : list(operation) := list[];
       case p of
-      | SetAdmin(address) -> skip
-      | SetOwner(address) -> skip
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
       | Mint(mintParams) -> skip
       | Redeem(redeemParams) -> {
         mustBeAdmin(s);
@@ -301,12 +309,15 @@ function redeem (const p : useAction; const s : tokenStorage; const this: addres
           Tezos.transaction(
             TransferOuttside(this, (redeemParams.user, redeemParams.amount)),
             0mutez, 
-            getTokenContract(s.token))
+            getTokenContract(s.token)
+          )
         ]
       }
       | Borrow(borrowParams) -> skip
       | Repay(repayParams) -> skip
       | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
     end
   } with (operations, s)
 
@@ -314,8 +325,8 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
   block {
     var operations : list(operation) := list[];
       case p of
-      | SetAdmin(address) -> skip
-      | SetOwner(address) -> skip
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
       | Mint(mintParams) -> skip
       | Redeem(redeemParams) -> skip
       | Borrow(borrowParams) -> {
@@ -342,6 +353,8 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
       }
       | Repay(repayParams) -> skip
       | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
     end
   } with (operations, s)
 
@@ -349,8 +362,8 @@ function repay (const p : useAction; const s : tokenStorage; const this: address
   block {
     var operations : list(operation) := list[];
       case p of
-      | SetAdmin(address) -> skip
-      | SetOwner(address) -> skip
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
       | Mint(mintParams) -> skip
       | Redeem(redeemParams) -> skip
       | Borrow(borrowParams) -> skip
@@ -375,6 +388,8 @@ function repay (const p : useAction; const s : tokenStorage; const this: address
         ]
       }
       | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
     end
   } with (operations, s)
 
@@ -382,8 +397,8 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
   block {
     var operations : list(operation) := list[];
       case p of
-      | SetAdmin(address) -> skip
-      | SetOwner(address) -> skip
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
       | Mint(mintParams) -> skip
       | Redeem(redeemParams) -> skip
       | Borrow(borrowParams) -> skip
@@ -421,7 +436,63 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
           )
         ]
       }
-    end
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> skip
+      end
+  } with (operations, s)
+
+function seize (const p : useAction; const s : tokenStorage; const this: address) : return is
+  block {
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> {
+        mustBeAdmin(s);
+
+        const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * 1000000000000000000n / s.totalSupply;
+        const seizeTokensFloat : nat = seizeParams.amount * 1000000000000000000n * 1000000000000000000n / exchangeRateFloat;
+
+        const borrowerTokensFloat : nat = getTokens(seizeParams.borrower, s);
+        if borrowerTokensFloat < seizeTokensFloat then
+          failwith("NotEnoughTokens")
+        else skip;
+
+        s.accountTokens[seizeParams.borrower] := abs(borrowerTokensFloat  - seizeTokensFloat);
+        s.accountTokens[seizeParams.liquidator] := getTokens(seizeParams.liquidator, s) + seizeTokensFloat;
+      }
+      | UpdateControllerState(addr) -> skip
+      end
+  } with (operations, s)
+
+function updateControllerState (const p : useAction; const s : tokenStorage; const this: address) : return is
+  block {
+    var operations : list(operation) := list[];
+      case p of
+      | SetAdmin(addr) -> skip
+      | SetOwner(addr) -> skip
+      | Mint(mintParams) -> skip
+      | Redeem(redeemParams) -> skip
+      | Borrow(borrowParams) -> skip
+      | Repay(repayParams) -> skip
+      | Liquidate(liquidateParams) -> skip
+      | Seize(seizeParams) -> skip
+      | UpdateControllerState(addr) -> {
+        mustBeAdmin(s);
+        s := updateInterest(s);
+
+        var userBorrows : borrows := getBorrows(addr, s);
+        userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
+        userBorrows.lastBorrowIndex := s.borrowIndex;
+
+        s.accountBorrows[addr] := userBorrows;
+      }
+      end
   } with (operations, s)
 
 function main (const p : entryAction; const s : fullTokenStorage) : fullReturn is
