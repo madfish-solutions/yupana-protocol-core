@@ -3,3 +3,4 @@ build
 package-lock.json
 .idea
 r
+.DS_Store
