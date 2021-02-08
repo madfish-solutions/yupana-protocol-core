@@ -7,6 +7,11 @@ type market is record [
   exchangeRate          : nat;
 ]
 
+type membershipParams is record [
+  borrowerToken         : address;
+  collateralToken       : address;
+]
+
 type controllerStorage is record [
   factory               : address;
   admin                 : address;
@@ -15,7 +20,7 @@ type controllerStorage is record [
   accountBorrows        : big_map((address * address), nat);
   accountTokens         : big_map((address * address), nat);
   markets               : big_map(address, market);
-  accountMembership     : big_map(address, address);
+  accountMembership     : big_map(address, membershipParams);
 ]
 
 type updateParams is record [
@@ -148,8 +153,8 @@ type useControllerAction is
   | SetOracle of setOracleParams
   | Register of registerParams
   | UpdateQToken of updateQTokenParams
-  | EnterMarket of address
-  | ExitMarket of address
+  | EnterMarket of membershipParams
+  | ExitMarket of membershipParams
   | SafeMint of safeMintParams
   | SafeRedeem of safeRedeemParams
   | RedeemMiddle of redeemMiddleParams

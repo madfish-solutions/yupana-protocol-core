@@ -83,6 +83,7 @@ type entryAction is
 
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return
+const accuracy : nat = 1000000000000000000n; //1e+18
 
 type fullTokenStorage is record [
   storage          : tokenStorage;
