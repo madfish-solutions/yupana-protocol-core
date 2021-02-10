@@ -28,10 +28,15 @@ function getLigo(isDockerizedLigo) {
 }
 
 module.exports = async function (deployer, network) {
-  // if (network == "development") return;
-  const factoryInstance = await Factory.deployed();
-  const ControllerInstance = await Controller.deployed();
-  await ControllerInstance.setFactory(factoryInstance.address);
+  if (network == "development") return;
+  tezos.setProvider({
+    config: {
+      confirmationPollingTimeoutSecond: 500,
+    },
+  });
+  // const factoryInstance = await Factory.deployed();
+  // const ControllerInstance = await Controller.deployed();
+  // await ControllerInstance.setFactory(factoryInstance.address);
   // const storage = {
   //   owner: accounts[0],
   //   admin: accounts[0],
@@ -52,49 +57,48 @@ module.exports = async function (deployer, network) {
   //   useLambdas: MichelsonMap.fromLiteral({}),
   // };
 
-  let ligo = getLigo(true);
+  // let ligo = getLigo(true);
 
-  for (tokenFunction of functions.token) {
-    const stdout = execSync(
-      `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetTokenFunction(record index =${tokenFunction.index}n; func =${tokenFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
-    );
-    const operation = await tezos.contract.transfer({
-      to: factoryInstance.address,
-      amount: 0,
-      parameter: {
-        entrypoint: "setTokenFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
-      },
-    });
-    await operation.confirmation();
-  }
-  for (useFunction of functions.use) {
-    const stdout = execSync(
-      `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetUseFunction(record index =${useFunction.index}n; func = ${useFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
-    );
-    const operation = await tezos.contract.transfer({
-      to: factoryInstance.address,
-      amount: 0,
-      parameter: {
-        entrypoint: "setUseFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
-      },
-    });
-    await operation.confirmation();
-  }
+  // for (tokenFunction of functions.token) {
+  //   const stdout = execSync(
+  //     `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetTokenFunction(record index =${tokenFunction.index}n; func =${tokenFunction.name}; end)'`,
+  //     { maxBuffer: 1024 * 500 }
+  //   );
+  //   const operation = await tezos.contract.transfer({
+  //     to: factoryInstance.address,
+  //     amount: 0,
+  //     parameter: {
+  //       entrypoint: "setTokenFunction",
+  //       value: JSON.parse(stdout.toString()).args[0].args[0],
+  //     },
+  //   });
+  //   await operation.confirmation();
+  // }
+  // for (useFunction of functions.use) {
+  //   const stdout = execSync(
+  //     `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetUseFunction(record index =${useFunction.index}n; func = ${useFunction.name}; end)'`,
+  //     { maxBuffer: 1024 * 500 }
+  //   );
+  //   const operation = await tezos.contract.transfer({
+  //     to: factoryInstance.address,
+  //     amount: 0,
+  //     parameter: {
+  //       entrypoint: "setUseFunction",
+  //       value: JSON.parse(stdout.toString()).args[0].args[0],
+  //     },
+  //   });
+  //   await operation.confirmation();
+  // }
 
   var XTZInstance = null;
-  if (network == "development") {
-    const xtzStorage = {
-      totalSupply: 0,
-      ledger: MichelsonMap.fromLiteral({}),
-    };
-    await deployer.deploy(XTZ, xtzStorage);
-    XTZInstance = await XTZ.deployed();
-  } else {
-    XTZInstance = { address: "TESTNET_ADDRESS" };
-  }
-  await factoryInstance.launchToken(XTZInstance.address);
+  // if (network == "development") {
+  const xtzStorage = {
+    totalSupply: 0,
+    ledger: MichelsonMap.fromLiteral({}),
+  };
+  await deployer.deploy(XTZ, xtzStorage);
+  XTZInstance = await XTZ.deployed();
+  // }
+
+  // await factoryInstance.launchToken(XTZInstance.address);
 };

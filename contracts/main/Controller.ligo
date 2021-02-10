@@ -244,7 +244,7 @@ function setOracle (const p : useControllerAction; const this : address; var s :
     case p of
     | UpdatePrice(updateParams) -> skip
     | SetOracle(setOracleParams) -> {
-      if this =/= s.admin then
+      if Tezos.sender =/= s.admin then
         failwith("NotAdmin")
       else skip;
 
@@ -353,6 +353,9 @@ function enterMarket (const p : useControllerAction; const this : address; var s
       if tokens.collateralToken = membershipParams.collateralToken then
         failwith("AlreadyEnter")
       else skip;
+
+      tokens.collateralToken := membershipParams.collateralToken;
+      tokens.borrowerToken := membershipParams.collateralToken;
 
       s.accountMembership[Tezos.sender] := tokens
     }
@@ -599,26 +602,32 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
 
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-      if tokens.collateralToken =/= safeBorrowParams.qToken then skip;
-      else block {
-        operations := list [
-          Tezos.transaction(
-            QUpdateControllerState(Tezos.sender), 
-            0mutez, 
-            getUpdateControllerStateEntrypoint(tokens.collateralToken)
-          );
-          Tezos.transaction(
-            record [
-              user         = Tezos.sender;
-              qToken       = safeBorrowParams.qToken;
-              redeemTokens = safeBorrowParams.amount;
-              borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s);
-            ],
-            0mutez, 
-            getBorrowMiddleEntrypoint(this)
-          )
-        ];
-      };
+      if tokens.collateralToken = safeBorrowParams.qToken then
+        failwith("AlreadyEnteredToMarket")
+      else skip;
+
+      tokens.collateralToken := safeBorrowParams.qToken;
+      tokens.borrowerToken := safeBorrowParams.borrowerToken;
+
+      s.accountMembership[Tezos.sender] := tokens;
+
+      operations := list [
+        Tezos.transaction(
+          QUpdateControllerState(Tezos.sender), 
+          0mutez, 
+          getUpdateControllerStateEntrypoint(safeBorrowParams.qToken)
+        );
+        Tezos.transaction(
+          record [
+            user         = Tezos.sender;
+            qToken       = safeBorrowParams.qToken;
+            redeemTokens = safeBorrowParams.amount;
+            borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s);
+          ],
+          0mutez, 
+          getBorrowMiddleEntrypoint(this)
+        )
+      ];
     }
     | BorrowMiddle(borrowMiddleParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip

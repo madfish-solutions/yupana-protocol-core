@@ -1,70 +1,46 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-const truffleAssert = require("truffle-assertions");
+const { InMemorySigner } = require("@taquito/signer");
 
-const { accounts } = require("../scripts/sandbox/accounts");
-const { revertDefaultSigner } = require("./helpers/signerSeter");
-const { setSigner } = require("./helpers/signerSeter");
+// const { accounts } = require("../scripts/sandbox/accounts");
 
 const Factory = artifacts.require("Factory");
 const XTZ = artifacts.require("XTZ");
-const TestController = artifacts.require("TestController");
+const Controller = artifacts.require("Controller");
+
+let cInstance;
+let fInstance;
+let XTZInstance;
 
 contract("Factory", async () => {
-  const DEFAULT = accounts[0];
-  // const RECEIVER = accounts[1];
-  // const LIQUIDATOR = accounts[3];
-
-  let storage;
-  let fInstance;
-  let tokenInstance;
-  let cInstance;
-
   before("setup", async () => {
-    let storage2 = {
-      factory: "KT1XVwgkhZH9B1Kz1nDJiwH23UekrimsjgQv",
-      admin: DEFAULT,
-      qTokens: [],
-      pairs: new MichelsonMap(),
-    };
-
-    storage = {
-      token_list: new MichelsonMap(),
-      admin: "KT1GngWEfK2YRjfFGQqriVVDvEzcgzHvkc7D",
-      owner: accounts[1],
-    };
-    // fInstance = await Factory.deployed();
-    fInstance = await Factory.new(storage);
-    cInstance = await TestController.new(storage2);
+    cInstance = await Controller.deployed();
+    fInstance = await Factory.deployed();
   });
 
   beforeEach("setup", async () => {
-    const tokenStorage = {
-      totalSupply: 100000,
-      ledger: MichelsonMap.fromLiteral({
-        [DEFAULT]: {
-          balance: 100000,
-          allowances: new MichelsonMap(),
-        },
-      }),
-    };
-    tokenInstance = await XTZ.new(tokenStorage);
-    await revertDefaultSigner();
+    let XTZStorage = {
+      totalSupply  : 0,
+      ledger       : new MichelsonMap()
+    }
+    XTZInstance = await XTZ.new(XTZStorage);
   });
 
   describe("launch_exchange", async () => {
-    it("set a new qToken", async () => {
-      console.log(tokenInstance.address);
-      await fInstance.main(tokenInstance.address);
-
-      const fStorage = await fInstance.storage();
-      const value = await fStorage.token_list.get(tokenInstance.address);
-      console.log(value);
-
+    it("set Factory address", async () => {
+      tezos.setProvider({signer: await InMemorySigner.fromSecretKey("edsk3QoqBuvdamxouPhin7swCvkQNgq4jP5KZPbwWNnwdZpSpJiEbq")});
+      
+      cInstance.setFactory(fInstance.address);
       const cStorage = await cInstance.storage();
-      const value2 = await cStorage.qTokens;
-      console.log(value2);
+      const value = cStorage.factory;
+      console.log("NewFactory: ", value);
+    });
 
-      assert.notStrictEqual(value, undefined);
+    it("set a new qToken", async () => {
+      fInstance.launchToken(XTZInstance.address);
+      
+      const fStorage = await fInstance.storage();
+      const value = await fStorage.tokenList.get(XTZInstance.address);
+      console.log(value);
     });
   });
 });

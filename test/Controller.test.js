@@ -2,32 +2,28 @@ const { MichelsonMap } = require("@taquito/michelson-encoder");
 const truffleAssert = require("truffle-assertions");
 
 const { accounts } = require("../scripts/sandbox/accounts");
-const { revertDefaultSigner } = require("./helpers/signerSeter");
-const { setSigner } = require("./helpers/signerSeter");
 
 const Controller = artifacts.require("Controller");
 
 let cInstance;
 
 contract("Controller", async () => {
-  const ADMIN = accounts[0];
-
   beforeEach("setup", async () => {
-    const controllerStorage = {
-      factory: "KT1XVwgkhZH9B1Kz1nDJiwH23UekrimsjgQv",
-      admin: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",
-      qTokens: [],
-      pairs: new MichelsonMap(),
-      accountBorrows: new MichelsonMap(),
-      accountTokens: new MichelsonMap(),
-      markets: new MichelsonMap(),
-      accountMembership: new MichelsonMap(),
-    };
+    // const controllerStorage = {
+    //   factory: "KT1XVwgkhZH9B1Kz1nDJiwH23UekrimsjgQv",
+    //   admin: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",
+    //   qTokens: [],
+    //   pairs: new MichelsonMap(),
+    //   accountBorrows: new MichelsonMap(),
+    //   accountTokens: new MichelsonMap(),
+    //   markets: new MichelsonMap(),
+    //   accountMembership: new MichelsonMap(),
+    // };
 
-    const fullControllerStorage = {
-      storage: controllerStorage,
-      useLambdas: MichelsonMap.fromLiteral({}),
-    };
+    // const fullControllerStorage = {
+    //   storage: controllerStorage,
+    //   useLambdas: MichelsonMap.fromLiteral({}),
+    // };
 
     cInstance = await Controller.deployed();
   });
@@ -36,7 +32,7 @@ contract("Controller", async () => {
     it("set new oracle", async () => {
       const qToken = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
       const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-      await cInstance.use("setOracle", oracle, qToken);
+      await cInstance.useController("setOracle", oracle, qToken);
     });
   });
 
@@ -44,7 +40,7 @@ contract("Controller", async () => {
     it("register new contracts", async () => {
       const token = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
       const qToken = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
-      await cInstance.use("register", qToken, token);
+      await cInstance.useController("register", qToken, token);
 
       const cStorage = await cInstance.storage();
       const value = cStorage.storage.qTokens;
@@ -57,7 +53,7 @@ contract("Controller", async () => {
     it("upd price", async () => {
       const qToken = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
       const price = 100;
-      await cInstance.use("updatePrice", price, qToken);
+      await cInstance.useController("updatePrice", price, qToken);
     });
   });
 
@@ -67,21 +63,40 @@ contract("Controller", async () => {
       const balance = 120;
       const borrow = 50;
       const exchangeRate = 10;
-      await cInstance.use("updateQToken", user, balance, borrow, exchangeRate);
+      await cInstance.useController("updateQToken", user, balance, borrow, exchangeRate);
     });
   });
 
   describe("enterMarket", async () => {
     it("add to accountMembership", async () => {
-      const token = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-      await cInstance.use("enterMarket", token);
+      const tokens = {
+        borrowerToken: "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt",
+        collateralToken: "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67"
+      }
+      const borrowerToken = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
+      const collateralToken = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
+
+      await cInstance.useController("enterMarket", borrowerToken, collateralToken);
     });
   });
 
   describe("exitMarket", async () => {
     it("remove to accountMembership", async () => {
-      const token = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-      await cInstance.use("exitMarket", token);
+      const tokens = {
+        borrowerToken: "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt",
+        collateralToken: "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67"
+      }
+      const borrowerToken = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
+      const collateralToken = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
+      await cInstance.useController("exitMarket", borrowerToken, collateralToken);
+    });
+  });
+
+  describe("safeMint", async () => {
+    it("safe Mint", async () => {
+      const token = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
+      const amt = 10;
+      await cInstance.useController("safeMint", amt, token);
     });
   });
 });

@@ -417,8 +417,10 @@ function seize (const p : useAction; const s : tokenStorage; const this: address
       | Seize(seizeParams) -> {
         mustBeAdmin(s);
 
-        const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * 1000000000000000000n / s.totalSupply;
-        const seizeTokensFloat : nat = seizeParams.amount * 1000000000000000000n * 1000000000000000000n / exchangeRateFloat;
+        const accuracy : nat = 1000000000000000000n; //1e+18
+
+        const exchangeRateFloat : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
+        const seizeTokensFloat : nat = seizeParams.amount * accuracy * accuracy / exchangeRateFloat;
 
         const borrowerTokensFloat : nat = getTokens(seizeParams.borrower, s);
         if borrowerTokensFloat < seizeTokensFloat then

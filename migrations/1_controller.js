@@ -26,9 +26,14 @@ function getLigo(isDockerizedLigo) {
 }
 
 module.exports = async function (deployer, network) {
+  tezos.setProvider({
+    config: {
+      confirmationPollingTimeoutSecond: 500,
+    },
+  });
   const controllerStorage = {
     factory: accounts[0],
-    admin: "tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk",
+    admin: accounts[0],
     qTokens: [],
     pairs: new MichelsonMap(),
     accountBorrows: new MichelsonMap(),

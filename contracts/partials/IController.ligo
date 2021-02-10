@@ -89,6 +89,7 @@ type ensuredRedeemParams is record [
 type safeBorrowParams is record [
   qToken                : address;
   amount                : nat;
+  borrowerToken         : address;
 ]
 
 type borrowMiddleParams is record [
