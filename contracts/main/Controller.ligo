@@ -4,7 +4,7 @@ function setFactory (const newFactoryAddress: address; const s : fullControllerS
   block {
     if (Tezos.sender = s.storage.admin) then
       s.storage.factory := newFactoryAddress;
-    else skip;
+    else failwith("YouNotAdmin");
   } with (noOperations, s)
 
 function setUseAction (const idx : nat; const f : useControllerFunc; const s : fullControllerStorage) : fullReturn is
@@ -57,42 +57,35 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     else skip;
   } with (unit)
 
-(* qToken getter methods started*)
-[@inline] function getMintEntrypoint(const tokenAddress : address) : contract(mintParams) is
-  case (Tezos.get_entrypoint_opt("%mint", tokenAddress) : option(contract(mintParams))) of 
+[@inline] function getUseEntrypoint(const tokenAddress : address) : contract(useParam) is
+  case (Tezos.get_entrypoint_opt("%use", tokenAddress) : option(contract(useParam))) of 
     Some(contr) -> contr
-    | None -> (failwith("CantGetMintEntrypoint") : contract(mintParams))
+    | None -> (failwith("CantGetUseEntrypoint") : contract(useParam))
   end;
 
-[@inline] function getRedeemEntrypoint(const tokenAddress : address) : contract(redeemType) is
-  case (Tezos.get_entrypoint_opt("%redeem", tokenAddress) : option(contract(redeemType))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetRedeemEntrypoint") : contract(redeemType))
-  end;
+// [@inline] function getRedeemEntrypoint(const tokenAddress : address) : contract(useParam) is
+//   case (Tezos.get_entrypoint_opt("%use", tokenAddress) : option(contract(useParam))) of 
+//     Some(contr) -> contr
+//     | None -> (failwith("CantGetRedeemEntrypoint") : contract(useParam))
+//   end;
 
-[@inline] function getBorrowEntrypoint(const tokenAddress : address) : contract(borrowParams) is
-  case (Tezos.get_entrypoint_opt("%borrow", tokenAddress) : option(contract(borrowParams))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetBorrowEntrypoint") : contract(borrowParams))
-  end;
+// [@inline] function getBorrowEntrypoint(const tokenAddress : address) : contract(useParam) is
+//   case (Tezos.get_entrypoint_opt("%use", tokenAddress) : option(contract(useParam))) of 
+//     Some(contr) -> contr
+//     | None -> (failwith("CantGetBorrowEntrypoint") : contract(useParam))
+//   end;
 
-[@inline] function getRepayEntrypoint(const tokenAddress : address) : contract(repayParams) is
-  case (Tezos.get_entrypoint_opt("%repay", tokenAddress) : option(contract(repayParams))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetRepayEntrypoint") : contract(repayParams))
-  end;
+// [@inline] function getRepayEntrypoint(const tokenAddress : address) : contract(repayParams) is
+//   case (Tezos.get_entrypoint_opt("%repay", tokenAddress) : option(contract(repayParams))) of 
+//     Some(contr) -> contr
+//     | None -> (failwith("CantGetRepayEntrypoint") : contract(repayParams))
+//   end;
 
-[@inline] function getRepayEntrypoint(const tokenAddress : address) : contract(repayParams) is
-  case (Tezos.get_entrypoint_opt("%repay", tokenAddress) : option(contract(repayParams))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetRepayEntrypoint") : contract(repayParams))
-  end;
-
-[@inline] function getLiquidateEntrypoint(const tokenAddress : address) : contract(liquidateType) is
-  case (Tezos.get_entrypoint_opt("%liquidate", tokenAddress) : option(contract(liquidateType))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidateType))
-  end;
+// [@inline] function getLiquidateEntrypoint(const tokenAddress : address) : contract(liquidateType) is
+//   case (Tezos.get_entrypoint_opt("%liquidate", tokenAddress) : option(contract(liquidateType))) of 
+//     Some(contr) -> contr
+//     | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidateType))
+//   end;
 (* qToken getter methods ended*)
 
 [@inline] function getRedeemMiddleEntrypoint(const tokenAddress : address) : contract(redeemMiddleParams) is
@@ -423,12 +416,13 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
       mustContainsQTokens(safeMintParams.qToken, s);
 
       operations := list [
-        Tezos.transaction(record [
+        Tezos.transaction(
+          Mint(record [
             user    = Tezos.sender;
             amount  = safeMintParams.amount;
-          ],
+          ]),
           0mutez,
-          getMintEntrypoint(safeMintParams.qToken)
+          getUseEntrypoint(safeMintParams.qToken)
         )
       ];
     }
@@ -482,12 +476,12 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
       }
       else operations := list [
         Tezos.transaction(
-          record [
+          Redeem(record [
             user = Tezos.sender;
             amount  = safeRedeemParams.amount;
-          ], 
+          ]), 
           0mutez, 
-          getRedeemEntrypoint(safeRedeemParams.qToken)
+          getUseEntrypoint(safeRedeemParams.qToken)
         )
       ];
     }
@@ -564,12 +558,12 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
 
       operations := list [
         Tezos.transaction(
-          record [
+          Redeem(record [
             user    = ensuredRedeemParams.user;
             amount  = ensuredRedeemParams.redeemTokens;
-          ], 
+          ]), 
           0mutez,
-          getRedeemEntrypoint(ensuredRedeemParams.qToken)
+          getUseEntrypoint(ensuredRedeemParams.qToken)
         )
       ];
     }
@@ -708,12 +702,12 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
 
       operations := list [
         Tezos.transaction(
-          record [
+          Borrow(record [
             user   = ensuredBorrowParams.user;
             amount = ensuredBorrowParams.borrowAmount;
-          ],
+          ]),
           0mutez, 
-          getBorrowEntrypoint(ensuredBorrowParams.qToken)
+          getUseEntrypoint(ensuredBorrowParams.qToken)
         )
       ];
     }
@@ -746,12 +740,12 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
 
       operations := list [
         Tezos.transaction(
-          record [
+          Repay(record [
             user    = Tezos.sender;
             amount  = safeRepayParams.amount;
-          ],
+          ]),
           0mutez, 
-          getRepayEntrypoint(safeRepayParams.qToken)
+          getUseEntrypoint(safeRepayParams.qToken)
         )
       ];
     }
@@ -884,13 +878,13 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
 
       operations := list [
         Tezos.transaction(
-          record [
+          Liquidate(record [
             liquidator     = ensuredLiquidateParams.user;
             borrower       = ensuredLiquidateParams.borrower;
             amount         = ensuredLiquidateParams.redeemTokens;
-          ], 
+          ]), 
           0mutez, 
-          getLiquidateEntrypoint(ensuredLiquidateParams.qToken)
+          getUseEntrypoint(ensuredLiquidateParams.qToken)
         )
       ];
     }

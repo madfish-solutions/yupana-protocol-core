@@ -1,21 +1,21 @@
 type borrows is record [
-    amount           :nat;
-    lastBorrowIndex  :nat;
-    allowances       :map (address, nat);
+    amount           : nat;
+    lastBorrowIndex  : nat;
+    allowances       : map (address, nat);
 ]
 
 type tokenStorage is record [
-    owner           :address;
-    admin           :address;
-    token           :address;
-    lastUpdateTime  :timestamp;
-    totalBorrows    :nat;
-    totalLiquid     :nat;
-    totalSupply     :nat;
-    totalReserves   :nat;
-    borrowIndex     :nat;
-    accountBorrows  :big_map(address, borrows);
-    accountTokens   :big_map(address, nat);
+    owner           : address;
+    admin           : address;
+    token           : address;
+    lastUpdateTime  : timestamp;
+    totalBorrows    : nat;
+    totalLiquid     : nat;
+    totalSupply     : nat;
+    totalReserves   : nat;
+    borrowIndex     : nat;
+    accountBorrows  : big_map(address, borrows);
+    accountTokens   : big_map(address, nat);
 ]
 
 type return is list (operation) * tokenStorage
@@ -27,32 +27,38 @@ type approveParams is michelson_pair(address, "spender", nat, "value")
 type balanceParams is michelson_pair(address, "owner", contract(nat), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", address, "spender"), "", contract(nat), "")
 type totalSupplyParams is (unit * contract(nat))
-type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+// type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
+
+type liquidateParams is record [
+  liquidator       : address;
+  borrower         : address;
+  amount           : nat;
+]
 
 type mintParams is record [
-  user           : address;
-  amount         : nat;
+  user             : address;
+  amount           : nat;
 ]
 
 type redeemParams is record [
-  user           : address;
-  amount         : nat;
+  user             : address;
+  amount           : nat;
 ]
 
 type borrowParams is record [
-  user           : address;
-  amount         : nat;
+  user             : address;
+  amount           : nat;
 ]
 
 type repayParams is record [
-  user           : address;
-  amount         : nat;
+  user             : address;
+  amount           : nat;
 ]
 
 type seizeParams is record [
-  liquidator     : address;
-  borrower       : address;
-  amount         : nat;
+  liquidator       : address;
+  borrower         : address;
+  amount           : nat;
 ]
 
 type useAction is
@@ -85,10 +91,12 @@ type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return
 const accuracy : nat = 1000000000000000000n; //1e+18
 
+type useParam is useAction
+
 type fullTokenStorage is record [
-  storage          : tokenStorage;
-  tokenLambdas     : big_map(nat, tokenFunc);
-  useLambdas       : big_map(nat, useFunc);
+  storage            : tokenStorage;
+  tokenLambdas       : big_map(nat, tokenFunc);
+  useLambdas         : big_map(nat, useFunc);
 ]
 
 type fullReturn is list (operation) * fullTokenStorage

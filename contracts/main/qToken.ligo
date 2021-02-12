@@ -11,7 +11,7 @@ block {
     end;
   const res : return = case s.tokenLambdas[idx] of 
     Some(f) -> f(p, s.storage)
-    | None -> (failwith("qToken/function-not-set") : return) 
+    | None -> (failwith("qToken/middleToken/function-not-set") : return) 
   end;
   s.storage := res.1;
 } with (res.0, s)
@@ -30,8 +30,8 @@ block {
       | UpdateControllerState(addr) -> 8n
     end;
   const res : return = case s.useLambdas[idx] of 
-    Some(f) -> f(p, s.storage, this) 
-    | None -> (failwith("qToken/function-not-set") : return) 
+    Some(f) -> f(p, s.storage, this)
+    | None -> (failwith("qToken/middleUse/function-not-set") : return)
   end;
   s.storage := res.1;
 } with (res.0, s)
@@ -403,34 +403,34 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
       | Redeem(redeemParams) -> skip
       | Borrow(borrowParams) -> skip
       | Repay(repayParams) -> skip
-      | Liquidate(args) -> {
+      | Liquidate(liquidateParams) -> {
         mustBeAdmin(s);
         s := updateInterest(s);
-        if args.0 = args.1.0 then
+        if liquidateParams.liquidator = liquidateParams.borrower then
           failwith("BorrowerCannotBeLiquidator")
         else skip;
 
-        var debtorBorrows : borrows := getBorrows(args.1.0, s);
-        if args.1.1 = 0n then
-          args.1.1 := debtorBorrows.amount
+        var debtorBorrows : borrows := getBorrows(liquidateParams.borrower, s);
+        if liquidateParams.amount = 0n then
+          liquidateParams.amount := debtorBorrows.amount
         else skip;
 
 
         const hundredPercent : nat = 1000000000n;
         const liquidationIncentive : nat = 1050000000n;// 1050000000 105% (1.05)
         const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-        const seizeTokens : nat = args.1.1 * liquidationIncentive / hundredPercent / exchangeRate;
+        const seizeTokens : nat = liquidateParams.amount * liquidationIncentive / hundredPercent / exchangeRate;
 
         debtorBorrows.amount := debtorBorrows.amount * s.borrowIndex / debtorBorrows.lastBorrowIndex;
         debtorBorrows.amount := abs(debtorBorrows.amount - seizeTokens);
         debtorBorrows.lastBorrowIndex := s.borrowIndex;
 
-        s.accountBorrows[args.1.0] := debtorBorrows;
-        s.accountTokens[args.0] := getTokens(args.0, s) + seizeTokens;
+        s.accountBorrows[liquidateParams.borrower] := debtorBorrows;
+        s.accountTokens[liquidateParams.liquidator] := getTokens(liquidateParams.liquidator, s) + seizeTokens;
 
         operations := list [
           Tezos.transaction(
-            TransferOuttside(Tezos.sender, (this, args.1.1)), 
+            TransferOuttside(Tezos.sender, (this, liquidateParams.amount)), 
             0mutez,
             getTokenContract(s.token)
           )

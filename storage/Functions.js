@@ -134,5 +134,5 @@ let useControllerFunctions = [
 module.exports.functions = {
   token: tokenFunctions,
   use: useFunctions,
-  useController: useControllerFunctions,
+  useController: useControllerFunctions
 };

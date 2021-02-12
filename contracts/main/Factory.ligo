@@ -12,7 +12,7 @@ const createContr : createContrFunc =
 function setTokenFunction (const idx : nat; const f : tokenFunc; const s : factoryStorage) : fullFactoryReturn is
   block {
     case s.tokenLambdas[idx] of 
-      Some(n) -> failwith("Factory/function-set") 
+      Some(n) -> failwith("Factory/function-set")
       | None -> s.tokenLambdas[idx] := f 
     end;
   } with (noOperations, s)
@@ -21,7 +21,7 @@ function setUseFunction (const idx : nat; const f : useFunc; const s : factorySt
   block {
     case s.useLambdas[idx] of 
       Some(n) -> failwith("Factory/function-set") 
-      | None -> s.useLambdas[idx] := f 
+      | None -> s.useLambdas[idx] := f
     end;
   } with (noOperations, s)
 

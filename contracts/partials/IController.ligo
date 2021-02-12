@@ -100,13 +100,13 @@ type borrowMiddleParams is record [
 ]
 
 type borrowParams is record [
-  user           : address;
-  amount         : nat;
+  user                  : address;
+  amount                : nat;
 ]
 
 type repayParams is record [
-  user           : address;
-  amount         : nat;
+  user                  : address;
+  amount                : nat;
 ]
 
 type ensuredBorrowParams is record [
@@ -175,12 +175,12 @@ const accuracy : nat = 1000000000000000000n; //1e+18
 type updateControllerStateType is QUpdateControllerState of address
 
 type setUseParams is record [
-  index  : nat;
-  func   : useControllerFunc;
+  index                 : nat;
+  func                  : useControllerFunc;
 ]
 
 type fullControllerStorage is record [
-  storage     : controllerStorage;
+  storage               : controllerStorage;
   useControllerLambdas  : big_map(nat, useControllerFunc);
 ]
 

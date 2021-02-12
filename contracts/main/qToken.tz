@@ -6,7 +6,7 @@
         (or (pair %transfer (address %from) (pair (address %to) (nat %value)))
             (or %use
                (or (or (or (pair %borrow (nat %amount) (address %user))
-                           (pair %liquidate (address %from) (pair (address %to) (nat %value))))
+                           (pair %liquidate (pair (nat %amount) (address %borrower)) (address %liquidator)))
                        (or (pair %mint (nat %amount) (address %user))
                            (pair %redeem (nat %amount) (address %user))))
                    (or (or (pair %repay (nat %amount) (address %user))
@@ -52,7 +52,7 @@
              nat
              (lambda
                 (pair (pair (or (or (or (or (pair %borrow (nat %amount) (address %user))
-                                            (pair %liquidate (address %from) (pair (address %to) (nat %value))))
+                                            (pair %liquidate (pair (nat %amount) (address %borrower)) (address %liquidator)))
                                         (or (pair %mint (nat %amount) (address %user))
                                             (pair %redeem (nat %amount) (address %user))))
                                     (or (or (pair %repay (nat %amount) (address %user))
@@ -105,7 +105,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
                        { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -140,7 +140,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
                        { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -176,7 +176,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
                        { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -211,7 +211,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                       { SWAP ; DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
                        { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -249,7 +249,7 @@
                    { DROP ; PUSH nat 0 } ;
                  GET ;
                  IF_NONE
-                   { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
+                   { SWAP ; DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
                    { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;
@@ -296,7 +296,7 @@
                      DROP ;
                      SWAP ;
                      DROP ;
-                     PUSH string "qToken/function-not-set" ;
+                     PUSH string "qToken/middleUse/function-not-set" ;
                      FAILWITH }
                    { DIG 3 ;
                      CAR ;
