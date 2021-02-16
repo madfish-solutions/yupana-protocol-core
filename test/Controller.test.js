@@ -82,6 +82,8 @@ contract("Controller", async () => {
       // qStorage = await qTokenAddress.storage();
       const amount = 142;
       await cInstance.useController("safeMint", amount, qTokenAddress);
+      // const MintStorage = await cInstance.storage();
+      // console.log();
       // console.log(qStorage);
     });
   });

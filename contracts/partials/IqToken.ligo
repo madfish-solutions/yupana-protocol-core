@@ -61,6 +61,140 @@ type seizeParams is record [
   amount           : nat;
 ]
 
+// CONTROLLER PARAMS START
+type membershipParams is record [
+  borrowerToken         : address;
+  collateralToken       : address;
+]
+
+
+type updateParams is record [
+  qToken                : address;
+  price                 : nat;
+]
+
+type setOracleParams is record [
+  qToken                : address;
+  oracle                : address;
+]
+
+type registerParams is record [
+  qToken                : address;
+  token                 : address;
+]
+
+type updateQTokenParams is [@layout:comb] record [
+  user                  : address;
+  balance               : nat;
+  borrow                : nat;
+  exchangeRate          : nat;
+]
+
+type getUserLiquidityParams is record [
+  user                  : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat;
+]
+
+type getUserLiquidityReturn is record [
+  surplus               : nat;
+  shortfail             : nat;
+]
+
+type safeMintParams is record [
+  qToken                : address;
+  amount                : nat;
+]
+
+type safeRedeemParams is record [
+  qToken                : address;
+  amount                : nat;
+]
+
+type redeemMiddleParams is record [
+  user                  : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat;
+]
+
+type redeemType is record [
+  user                  : address;
+  amount                : nat;
+]
+
+type ensuredRedeemParams is record [
+  user                  : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat;
+]
+
+type safeBorrowParams is record [
+  qToken                : address;
+  amount                : nat;
+  borrowerToken         : address;
+]
+
+type borrowMiddleParams is record [
+  user                  : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat;
+]
+
+type borrowParams is record [
+  user                  : address;
+  amount                : nat;
+]
+
+type repayParams is record [
+  user                  : address;
+  amount                : nat;
+]
+
+type ensuredBorrowParams is record [
+  user                  : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat; 
+]
+
+type safeRepayParams is record [
+  qToken                : address;
+  amount                : nat;
+]
+
+type safeLiquidateParams is record [
+  borrower              : address;
+  amount                : nat;
+  qToken                : address;
+]
+
+type liquidateMiddleParams is record [
+  user                  : address;
+  borrower              : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat;
+]
+
+type liquidateType is record [
+  liquidator            : address;
+  borrower              : address;
+  amount                : nat;
+]
+
+type ensuredLiquidateParams is record [
+  user                  : address;
+  borrower              : address;
+  qToken                : address;
+  redeemTokens          : nat;
+  borrowAmount          : nat;
+]
+// CONTROLLERS PARAMS END
+
 type useAction is
   | SetAdmin of address
   | SetOwner of address
@@ -87,11 +221,30 @@ type entryAction is
   | GetTotalSupply of totalSupplyParams
   | Use of useAction
 
+type useControllerAction is 
+  | UpdatePrice of updateParams
+  | SetOracle of setOracleParams
+  | Register of registerParams
+  | UpdateQToken of updateQTokenParams
+  | ExitMarket of membershipParams
+  | SafeMint of safeMintParams
+  | SafeRedeem of safeRedeemParams
+  | RedeemMiddle of redeemMiddleParams
+  | EnsuredRedeem of ensuredRedeemParams
+  | SafeBorrow of safeBorrowParams
+  | BorrowMiddle of borrowMiddleParams
+  | EnsuredBorrow of ensuredBorrowParams
+  | SafeRepay of safeRepayParams
+  | SafeLiquidate of safeLiquidateParams
+  | LiquidateMiddle of liquidateMiddleParams
+  | EnsuredLiquidate of ensuredLiquidateParams
+
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return
 const accuracy : nat = 1000000000000000000n; //1e+18
 
 type useParam is useAction
+type useControllerParam is useControllerAction
 
 type fullTokenStorage is record [
   storage            : tokenStorage;

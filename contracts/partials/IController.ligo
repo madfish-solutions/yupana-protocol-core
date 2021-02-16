@@ -7,10 +7,10 @@ type market is record [
   exchangeRate          : nat;
 ]
 
-type membershipParams is record [
-  borrowerToken         : address;
-  collateralToken       : address;
-]
+// type membershipParams is record [
+//   borrowerToken         : address;
+//   collateralToken       : address;
+// ]
 
 type controllerStorage is record [
   factory               : address;
@@ -23,150 +23,131 @@ type controllerStorage is record [
   accountMembership     : big_map(address, membershipParams);
 ]
 
-type updateParams is record [
-  qToken                : address;
-  price                 : nat;
-]
+// type updateParams is record [
+//   qToken                : address;
+//   price                 : nat;
+// ]
 
-type setOracleParams is record [
-  qToken                : address;
-  oracle                : address;
-]
+// type setOracleParams is record [
+//   qToken                : address;
+//   oracle                : address;
+// ]
 
-type registerParams is record [
-  qToken                : address;
-  token                 : address;
-]
+// type registerParams is record [
+//   qToken                : address;
+//   token                 : address;
+// ]
 
-type updateQTokenParams is [@layout:comb] record [
-  user                  : address;
-  balance               : nat;
-  borrow                : nat;
-  exchangeRate          : nat;
-]
+// type updateQTokenParams is [@layout:comb] record [
+//   user                  : address;
+//   balance               : nat;
+//   borrow                : nat;
+//   exchangeRate          : nat;
+// ]
 
-type getUserLiquidityParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
+// type getUserLiquidityParams is record [
+//   user                  : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat;
+// ]
 
-type getUserLiquidityReturn is record [
-  surplus               : nat;
-  shortfail             : nat;
-]
+// type getUserLiquidityReturn is record [
+//   surplus               : nat;
+//   shortfail             : nat;
+// ]
 
-type safeMintParams is record [
-  qToken                : address;
-  amount                : nat;
-]
+// type safeMintParams is record [
+//   qToken                : address;
+//   amount                : nat;
+// ]
 
-type safeRedeemParams is record [
-  qToken                : address;
-  amount                : nat;
-]
+// type safeRedeemParams is record [
+//   qToken                : address;
+//   amount                : nat;
+// ]
 
-type redeemMiddleParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
+// type redeemMiddleParams is record [
+//   user                  : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat;
+// ]
 
-type redeemType is record [
-  user                  : address;
-  amount                : nat;
-]
+// type redeemType is record [
+//   user                  : address;
+//   amount                : nat;
+// ]
 
-type ensuredRedeemParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
+// type ensuredRedeemParams is record [
+//   user                  : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat;
+// ]
 
-type safeBorrowParams is record [
-  qToken                : address;
-  amount                : nat;
-  borrowerToken         : address;
-]
+// type safeBorrowParams is record [
+//   qToken                : address;
+//   amount                : nat;
+//   borrowerToken         : address;
+// ]
 
-type borrowMiddleParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
+// type borrowMiddleParams is record [
+//   user                  : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat;
+// ]
 
-type borrowParams is record [
-  user                  : address;
-  amount                : nat;
-]
+// type borrowParams is record [
+//   user                  : address;
+//   amount                : nat;
+// ]
 
-type repayParams is record [
-  user                  : address;
-  amount                : nat;
-]
+// type repayParams is record [
+//   user                  : address;
+//   amount                : nat;
+// ]
 
-type ensuredBorrowParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat; 
-]
+// type ensuredBorrowParams is record [
+//   user                  : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat; 
+// ]
 
-type safeRepayParams is record [
-  qToken                : address;
-  amount                : nat;
-]
+// type safeRepayParams is record [
+//   qToken                : address;
+//   amount                : nat;
+// ]
 
-type safeLiquidateParams is record [
-  borrower              : address;
-  amount                : nat;
-  qToken                : address;
-]
+// type safeLiquidateParams is record [
+//   borrower              : address;
+//   amount                : nat;
+//   qToken                : address;
+// ]
 
-type liquidateMiddleParams is record [
-  user                  : address;
-  borrower              : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
+// type liquidateMiddleParams is record [
+//   user                  : address;
+//   borrower              : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat;
+// ]
 
-type liquidateType is record [
-  liquidator            : address;
-  borrower              : address;
-  amount                : nat;
-]
+// type liquidateType is record [
+//   liquidator            : address;
+//   borrower              : address;
+//   amount                : nat;
+// ]
 
-type ensuredLiquidateParams is record [
-  user                  : address;
-  borrower              : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
-
-type useControllerAction is 
-  | UpdatePrice of updateParams
-  | SetOracle of setOracleParams
-  | Register of registerParams
-  | UpdateQToken of updateQTokenParams
-  | EnterMarket of membershipParams
-  | ExitMarket of membershipParams
-  | SafeMint of safeMintParams
-  | SafeRedeem of safeRedeemParams
-  | RedeemMiddle of redeemMiddleParams
-  | EnsuredRedeem of ensuredRedeemParams
-  | SafeBorrow of safeBorrowParams
-  | BorrowMiddle of borrowMiddleParams
-  | EnsuredBorrow of ensuredBorrowParams
-  | SafeRepay of safeRepayParams
-  | SafeLiquidate of safeLiquidateParams
-  | LiquidateMiddle of liquidateMiddleParams
-  | EnsuredLiquidate of ensuredLiquidateParams
+// type ensuredLiquidateParams is record [
+//   user                  : address;
+//   borrower              : address;
+//   qToken                : address;
+//   redeemTokens          : nat;
+//   borrowAmount          : nat;
+// ]
 
 [@inline] const noOperations : list (operation) = nil
 type return is list (operation) * controllerStorage

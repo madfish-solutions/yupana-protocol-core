@@ -169,6 +169,18 @@ function getTokenContract (const tokenAddress : address) : contract(transferType
     | None -> (failwith("CantGetContractToken") : contract(transferType))
   end;
 
+function getUpdateQToken (const tokenAddress : address) : contract(useControllerParam) is 
+  case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetContractController") : contract(useControllerParam))
+  end;
+
+[@inline] function getSeizeEntrypiont (const tokenAddress : address) : contract(seizeParams) is
+  case (Tezos.get_entrypoint_opt("%seize", tokenAddress) : option(contract(seizeParams))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetSeizeEntrypiont") : contract(seizeParams))
+  end;
+
 [@inline] function mustBeOwner (const s : tokenStorage) : unit is
   block {
     if Tezos.sender =/= s.owner then
@@ -253,7 +265,7 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
 
         const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
         const mintTokens : nat = mintParams.amount / exchangeRate;
-
+        
         const accountTokens : nat = getTokens(mintParams.user, s);
         s.accountTokens[mintParams.user] := accountTokens + mintTokens;
         s.totalSupply := s.totalSupply + mintTokens;
@@ -433,8 +445,17 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
             TransferOuttside(Tezos.sender, (this, liquidateParams.amount)), 
             0mutez,
             getTokenContract(s.token)
+          );
+          Tezos.transaction(
+            record [
+              liquidator = liquidateParams.liquidator;
+              borrower   = liquidateParams.borrower;
+              amount     = liquidateParams.amount;
+            ],
+            0mutez,
+            getSeizeEntrypiont(this)
           )
-        ]
+        ];
       }
       | Seize(seizeParams) -> skip
       | UpdateControllerState(addr) -> skip
@@ -487,10 +508,26 @@ function updateControllerState (const p : useAction; const s : tokenStorage; con
         s := updateInterest(s);
 
         var userBorrows : borrows := getBorrows(addr, s);
+        const accountTokens : nat = getTokens(addr, s);
+        const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+
         userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
         userBorrows.lastBorrowIndex := s.borrowIndex;
 
         s.accountBorrows[addr] := userBorrows;
+
+        operations := list [
+          Tezos.transaction(
+            UpdateQToken(record [
+              user          = addr;
+              balance       = accountTokens;
+              borrow        = userBorrows.amount;
+              exchangeRate  = exchangeRate;
+            ]),
+            0mutez,
+            getUpdateQToken(Tezos.sender)
+          )
+        ];
       }
       end
   } with (operations, s)

@@ -29,7 +29,7 @@ type registerType is record [
     qToken       :address;
 ]
 
-type iController is Register of registerType
+type iController is QRegister of registerType
 type fullFactoryReturn is list(operation) * factoryStorage
 
 type factoryAction is 

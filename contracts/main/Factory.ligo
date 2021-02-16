@@ -62,18 +62,21 @@ function launchToken (const token : address; var s : factoryStorage) : fullFacto
 
     const fullStorage : fullTokenStorage = record [
       storage = storage;
-      tokenLambdas = (big_map [] : big_map(nat, tokenFunc));
-      useLambdas = (big_map [] : big_map(nat, useFunc));
+      tokenLambdas = s.tokenLambdas;
+      useLambdas = s.useLambdas;
     ];
 
     const res : (operation * address) = createContr((None : option(key_hash)), 0mutez, fullStorage);
 
     s.tokenList[token] := (res.1);
-  } with (list[res.0; Tezos.transaction(
-    Register(record[token = token; qToken = res.1]),
-    0mutez,
-    getControllerContract(s.admin)
-    )], s)
+  } with (list[
+      res.0; 
+      Tezos.transaction(
+        QRegister(record[token = token; qToken = res.1]),
+        0mutez,
+        getControllerContract(s.admin)
+      )
+    ], s)
 
 function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is 
   case p of
