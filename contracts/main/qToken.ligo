@@ -36,7 +36,7 @@ block {
   s.storage := res.1;
 } with (res.0, s)
 
-function getBorrows (const addr : address; const s : tokenStorage) : borrows is
+[@inline] function getBorrows (const addr : address; const s : tokenStorage) : borrows is
   block {
     var b : borrows :=
       record [
@@ -50,11 +50,43 @@ function getBorrows (const addr : address; const s : tokenStorage) : borrows is
     end;
   } with b
 
-function getTokens (const addr : address; const s : tokenStorage) : nat is
+[@inline] function getTokens (const addr : address; const s : tokenStorage) : nat is
   case s.accountTokens[addr] of
     Some (value) -> value
   | None -> 0n
   end;
+
+[@inline] function getTokenContract (const tokenAddress : address) : contract(transferType) is 
+  case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetContractToken") : contract(transferType))
+  end;
+
+[@inline] function getUpdateQToken (const tokenAddress : address) : contract(useControllerParam) is 
+  case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetContractController") : contract(useControllerParam))
+  end;
+
+[@inline] function getSeizeEntrypiont (const tokenAddress : address) : contract(seizeParams) is
+  case (Tezos.get_entrypoint_opt("%seize", tokenAddress) : option(contract(seizeParams))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetSeizeEntrypiont") : contract(seizeParams))
+  end;
+
+[@inline] function mustBeOwner (const s : tokenStorage) : unit is
+  block {
+    if Tezos.sender =/= s.owner then
+      failwith("NotOwner")
+    else skip;
+  } with (unit)
+
+[@inline] function mustBeAdmin (const s : tokenStorage) : unit is
+  block {
+    if Tezos.sender =/= s.admin then
+      failwith("NotAdmin")
+    else skip;
+  } with (unit)
 
 function getAllowance (const borrw : borrows; const spender : address; const s : tokenStorage) : nat is
   case borrw.allowances[spender] of
@@ -163,38 +195,6 @@ function getTotalSupply (const p : tokenAction; const s : tokenStorage) : return
     end
   } with (operations, s)
 
-function getTokenContract (const tokenAddress : address) : contract(transferType) is 
-  case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetContractToken") : contract(transferType))
-  end;
-
-function getUpdateQToken (const tokenAddress : address) : contract(useControllerParam) is 
-  case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetContractController") : contract(useControllerParam))
-  end;
-
-[@inline] function getSeizeEntrypiont (const tokenAddress : address) : contract(seizeParams) is
-  case (Tezos.get_entrypoint_opt("%seize", tokenAddress) : option(contract(seizeParams))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetSeizeEntrypiont") : contract(seizeParams))
-  end;
-
-[@inline] function mustBeOwner (const s : tokenStorage) : unit is
-  block {
-    if Tezos.sender =/= s.owner then
-      failwith("NotOwner")
-    else skip;
-  } with (unit)
-
-[@inline] function mustBeAdmin (const s : tokenStorage) : unit is
-  block {
-    if Tezos.sender =/= s.admin then
-      failwith("NotAdmin")
-    else skip;
-  } with (unit)
-
 function setAdmin (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
     var operations : list(operation) := list[];
@@ -233,7 +233,7 @@ function setOwner (const p : useAction; const s : tokenStorage; const this: addr
     end
   } with (operations, s)
 
-function updateInterest (var s : tokenStorage) : tokenStorage is
+[@inline] function updateInterest (var s : tokenStorage) : tokenStorage is
   block {
     const hundredPercent : nat = 10000000000000000n;
     const apr : nat = 250000000000000n; // 2.5% (0.025)

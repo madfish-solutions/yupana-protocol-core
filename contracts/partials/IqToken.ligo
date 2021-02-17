@@ -27,7 +27,6 @@ type approveParams is michelson_pair(address, "spender", nat, "value")
 type balanceParams is michelson_pair(address, "owner", contract(nat), "")
 type allowanceParams is michelson_pair(michelson_pair(address, "owner", address, "spender"), "", contract(nat), "")
 type totalSupplyParams is (unit * contract(nat))
-// type liquidateParams is michelson_pair(address, "liquidator", michelson_pair(address, "borrower", nat, "amount"), "")
 
 type liquidateParams is record [
   liquidator       : address;
