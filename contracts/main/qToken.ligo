@@ -99,8 +99,12 @@ function transfer (const p : tokenAction; const s : tokenStorage) : return is
     var operations : list(operation) := list[];
       case p of
       | ITransfer(args) -> {
-        const senderAccount : borrows = getBorrows(args.0, s);
+        if args.0 = args.1.0 then
+          failwith("InvalidSelfToSelfTransfer")
+        else skip;
+
         const accountTokensFrom : nat = getTokens(args.0, s);
+        const senderAccount : borrows = getBorrows(args.0, s);
 
         if accountTokensFrom < args.1.1 then
           failwith("NotEnoughBalance")
@@ -261,23 +265,29 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
       | SetOwner(addr) -> skip
       | Mint(mintParams) -> {
         mustBeAdmin(s);
-        s := updateInterest(s);
-
-        const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-        const mintTokens : nat = mintParams.amount / exchangeRate;
         
+        var mintTokens : nat := mintParams.amount;
+        
+        if s.totalSupply =/= 0n then block {
+          s := updateInterest(s);
+
+          const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+          mintTokens := mintParams.amount / exchangeRate;
+        }
+        else skip;
+
         const accountTokens : nat = getTokens(mintParams.user, s);
         s.accountTokens[mintParams.user] := accountTokens + mintTokens;
         s.totalSupply := s.totalSupply + mintTokens;
         s.totalLiquid := s.totalLiquid + mintParams.amount;
 
-        operations := list [
-          Tezos.transaction(
-            TransferOuttside(mintParams.user, (this, mintParams.amount)), 
-            0mutez, 
-            getTokenContract(s.token)
-          )
-        ];
+        // operations := list [
+        //   Tezos.transaction(
+        //     TransferOuttside(mintParams.user, (this, mintParams.amount)), 
+        //     0mutez, 
+        //     getTokenContract(s.token)
+        //   )
+        // ];
       }
       | Redeem(redeemParams) -> skip
       | Borrow(borrowParams) -> skip

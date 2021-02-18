@@ -79,54 +79,50 @@ let useControllerFunctions = [
   },
   {
     index: 4,
-    name: "enterMarket",
-  },
-  {
-    index: 5,
     name: "exitMarket",
   },
   {
-    index: 6,
+    index: 5,
     name: "safeMint",
   },
   {
-    index: 7,
+    index: 6,
     name: "safeRedeem",
   },
   {
-    index: 8,
+    index: 7,
     name: "redeemMiddle",
   },
   {
-    index: 9,
+    index: 8,
     name: "ensuredRedeem",
   },
   {
-    index: 10,
+    index: 9,
     name: "safeBorrow",
   },
   {
-    index: 11,
+    index: 10,
     name: "borrowMiddle",
   },
   {
-    index: 12,
+    index: 11,
     name: "ensuredBorrow",
   },
   {
-    index: 13,
+    index: 12,
     name: "safeRepay",
   },
   {
-    index: 14,
+    index: 13,
     name: "safeLiquidate",
   },
   {
-    index: 15,
+    index: 14,
     name: "liquidateMiddle",
   },
   {
-    index: 16,
+    index: 15,
     name: "ensuredLiquidate",
   }
 ];
