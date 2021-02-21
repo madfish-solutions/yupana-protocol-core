@@ -482,8 +482,11 @@ function updateControllerState (const p : useAction; const s : tokenStorage; con
         var userBorrows : borrows := getBorrows(addr, s);
         const accountTokens : nat = getTokens(addr, s);
         const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
+        
+        if userBorrows.lastBorrowIndex =/= 0n then
+          userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
+        else skip;
 
-        userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
         userBorrows.lastBorrowIndex := s.borrowIndex;
 
         s.accountBorrows[addr] := userBorrows;

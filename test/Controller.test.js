@@ -78,9 +78,32 @@ contract("Controller", async () => {
 
   describe("safeMint", async () => {
     it("Safe Mint for qToken", async () => {
-      const amount = 142;
+      var amount = 142;
       await cInstance.useController("safeMint", amount, qTokenAddress);
+
+      console.log("Safe Borrow");
+
+      amount = 10;
+      let XTZStorage = {
+        totalSupply: 0,
+        ledger: new MichelsonMap(),
+      };
+      XTZInstance = await XTZ.new(XTZStorage);
+      console.log("Created FA1.2 token:", XTZInstance.address);
+  
+      await fInstance.launchToken(XTZInstance.address);
+  
+      const fStorage = await fInstance.storage();
+      qTokenAddress2 = await fStorage.tokenList.get(XTZInstance.address);
+      console.log("New qToken2:", qTokenAddress2);
+
+      await cInstance.useController("safeBorrow", qTokenAddress, amount, qTokenAddress2);
     });
+
+    // it("Safe Borrow for qToken", async () => {
+
+    // });
+
   });
 
   // describe("register", async () => {

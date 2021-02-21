@@ -596,7 +596,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
 
       operations := list [
         Tezos.transaction(
-          QUpdateControllerState(Tezos.sender), 
+          QUpdateControllerState(Tezos.sender),
           0mutez, 
           getUpdateControllerStateEntrypoint(safeBorrowParams.qToken)
         );
