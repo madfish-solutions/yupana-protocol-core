@@ -291,7 +291,7 @@ function redeem (const p : useAction; const s : tokenStorage; const this: addres
 
         operations := list [
           Tezos.transaction(
-            TransferOuttside(this, (redeemParams.user, redeemParams.amount)),
+            TransferOuttside(redeemParams.user, (this, redeemParams.amount)),
             0mutez, 
             getTokenContract(s.token)
           )

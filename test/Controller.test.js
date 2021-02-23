@@ -13,6 +13,9 @@ let fInstance;
 let XTZInstance;
 let qTokenAddress;
 
+var fa = [];
+var qTokens = [];
+
 contract("Controller", async () => {
   before("setup", async () => {
     cInstance = await Controller.deployed();
@@ -34,12 +37,14 @@ contract("Controller", async () => {
       ledger: new MichelsonMap(),
     };
     XTZInstance = await XTZ.new(XTZStorage);
+    fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
 
     await fInstance.launchToken(XTZInstance.address);
 
     const fStorage = await fInstance.storage();
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
+    qTokens.push(qTokenAddress);
     console.log("New qToken:", qTokenAddress);
   });
 
@@ -80,30 +85,21 @@ contract("Controller", async () => {
     it("Safe Mint for qToken", async () => {
       var amount = 142;
       await cInstance.useController("safeMint", amount, qTokenAddress);
-
-      console.log("Safe Borrow");
-
-      amount = 10;
-      let XTZStorage = {
-        totalSupply: 0,
-        ledger: new MichelsonMap(),
-      };
-      XTZInstance = await XTZ.new(XTZStorage);
-      console.log("Created FA1.2 token:", XTZInstance.address);
-  
-      await fInstance.launchToken(XTZInstance.address);
-  
-      const fStorage = await fInstance.storage();
-      qTokenAddress2 = await fStorage.tokenList.get(XTZInstance.address);
-      console.log("New qToken2:", qTokenAddress2);
-
-      await cInstance.useController("safeBorrow", qTokenAddress, amount, qTokenAddress2);
     });
+  });
+  
+  describe("safeBorrow", async () => {
+    it("Safe Borrow", async () => {
+      var amount = 10;
+      await cInstance.useController("safeBorrow", qTokens[qTokens.length -2], amount, qTokens[qTokens.length - 1]);
+    });
+  });
 
-    // it("Safe Borrow for qToken", async () => {
-
-    // });
-
+  describe("safeReddem", async () => {
+    it("Safe Reddem", async () => {
+      var amount = 200;
+      await cInstance.useController("safeRedeem", amount, qTokens[qTokens.length -3]);
+    });
   });
 
   // describe("register", async () => {

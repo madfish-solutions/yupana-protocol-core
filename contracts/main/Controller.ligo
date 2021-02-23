@@ -62,31 +62,6 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     | None -> (failwith("CantGetUseEntrypoint") : contract(useParam))
   end;
 
-// [@inline] function getRedeemEntrypoint(const tokenAddress : address) : contract(useParam) is
-//   case (Tezos.get_entrypoint_opt("%use", tokenAddress) : option(contract(useParam))) of 
-//     Some(contr) -> contr
-//     | None -> (failwith("CantGetRedeemEntrypoint") : contract(useParam))
-//   end;
-
-// [@inline] function getBorrowEntrypoint(const tokenAddress : address) : contract(useParam) is
-//   case (Tezos.get_entrypoint_opt("%use", tokenAddress) : option(contract(useParam))) of 
-//     Some(contr) -> contr
-//     | None -> (failwith("CantGetBorrowEntrypoint") : contract(useParam))
-//   end;
-
-// [@inline] function getRepayEntrypoint(const tokenAddress : address) : contract(repayParams) is
-//   case (Tezos.get_entrypoint_opt("%repay", tokenAddress) : option(contract(repayParams))) of 
-//     Some(contr) -> contr
-//     | None -> (failwith("CantGetRepayEntrypoint") : contract(repayParams))
-//   end;
-
-// [@inline] function getLiquidateEntrypoint(const tokenAddress : address) : contract(liquidateType) is
-//   case (Tezos.get_entrypoint_opt("%liquidate", tokenAddress) : option(contract(liquidateType))) of 
-//     Some(contr) -> contr
-//     | None -> (failwith("CantGetLiquidateEntrypoint") : contract(liquidateType))
-//   end;
-(* qToken getter methods ended*)
-
 [@inline] function getRedeemMiddleEntrypoint(const tokenAddress : address) : contract(redeemMiddleParams) is
   case (Tezos.get_entrypoint_opt("%redeemMiddle", tokenAddress) : option(contract(redeemMiddleParams))) of 
     Some(contr) -> contr
@@ -324,44 +299,6 @@ function updateQToken (const p : useControllerAction; const this : address; var 
     end
   } with (operations, s)
 
-// function enterMarket (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
-//   block {
-//     var operations : list(operation) := list[];
-//     case p of
-//     | UpdatePrice(updateParams) -> skip
-//     | SetOracle(setOracleParams) -> skip
-//     | Register(registerParams) -> skip
-//     | UpdateQToken(updateQTokenParams) -> skip
-//     | EnterMarket(membershipParams) -> {
-//       mustContainsQTokens(membershipParams.borrowerToken, s);
-//       mustContainsQTokens(membershipParams.collateralToken, s);
-  
-//       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
-
-//       if tokens.collateralToken = membershipParams.collateralToken then
-//         failwith("AlreadyEnter")
-//       else skip;
-
-//       tokens.collateralToken := membershipParams.collateralToken;
-//       tokens.borrowerToken := membershipParams.collateralToken;
-
-//       s.accountMembership[Tezos.sender] := tokens
-//     }
-//     | ExitMarket(membershipParams) -> skip
-//     | SafeMint(safeMintParams) -> skip
-//     | SafeRedeem(safeRedeemParams) -> skip
-//     | RedeemMiddle(redeemMiddleParams) -> skip
-//     | EnsuredRedeem(ensuredRedeemParams) -> skip
-//     | SafeBorrow(safeBorrowParams) -> skip
-//     | BorrowMiddle(borrowMiddleParams) -> skip
-//     | EnsuredBorrow(ensuredBorrowParams) -> skip
-//     | SafeRepay(safeRepayParams) -> skip
-//     | SafeLiquidate(safeLiquidateParams) -> skip
-//     | LiquidateMiddle(liquidateMiddleParams) -> skip
-//     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-//     end
-//   } with (operations, s)
-
 function exitMarket (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
   block {
     var operations : list(operation) := list[];
@@ -514,7 +451,7 @@ function redeemMiddle (const p : useControllerAction; const this : address; var 
             borrowAmount = redeemMiddleParams.borrowAmount;
           ],
           0mutez, 
-          getEnsuredRedeemEntrypoint(redeemMiddleParams.qToken)
+          getEnsuredRedeemEntrypoint(this)
         )
       ];
     }
@@ -544,6 +481,12 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
     | EnsuredRedeem(ensuredRedeemParams) -> {
       if Tezos.sender =/= this then
         failwith("NotSelfAddress")
+      else skip;
+
+      const response = getUserLiquidity(ensuredRedeemParams.user, ensuredRedeemParams.qToken, ensuredRedeemParams.redeemTokens, ensuredRedeemParams.borrowAmount, s);
+      
+      if response.shortfail =/= 0n then
+        failwith("ShortfailNotZero")
       else skip;
 
       operations := list [
