@@ -394,7 +394,10 @@ function repay (const p : useAction; const s : tokenStorage; const this: address
         s := updateInterest(s);
 
         var accountBorrows : borrows := getBorrows(repayParams.user, s);
-        accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
+        if accountBorrows.lastBorrowIndex =/= 0n then
+          accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
+        else skip;
+
         accountBorrows.amount := abs(accountBorrows.amount - repayParams.amount);
         accountBorrows.lastBorrowIndex := s.borrowIndex;
 

@@ -130,7 +130,7 @@ type ensuredRedeemParams is record [
   borrowAmount          : nat;
 ]
 
-type safeBorrowParams is [@layout:comb]  record [
+type safeBorrowParams is [@layout:comb] record [
   qToken                : address;
   amount                : nat;
   borrowerToken         : address;
@@ -165,7 +165,7 @@ type safeRepayParams is record [
   amount                : nat;
 ]
 
-type safeLiquidateParams is record [
+type safeLiquidateParams is [@layout:comb] record [
   borrower              : address;
   amount                : nat;
   qToken                : address;

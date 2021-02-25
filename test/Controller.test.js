@@ -102,6 +102,26 @@ contract("Controller", async () => {
     });
   });
 
+  describe("safeRepay", async () => {
+    it("Safe Repay", async () => {
+      var amount = 20;
+      await cInstance.useController("safeRepay", amount, qTokens[qTokens.length -4]);
+    });
+  });
+
+  describe("safeLiquidate", async () => {
+    it("Safe Liquidate", async () => {
+      var borrower = "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg";
+      var amount = 20;
+
+      const cStorage = await cInstance.storage();
+      const value = await cStorage.storage.accountBorrows;
+      
+      console.log(value);
+      await cInstance.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length -5]);
+    });
+  });
+
   // describe("register", async () => {
   //   it("register new contracts", async () => {
   //     const token = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";

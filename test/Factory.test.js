@@ -27,7 +27,7 @@ contract("Factory", async () => {
     console.log("Created FA1.2 token:", XTZInstance.address);
   });
 
-  describe("launch_exchange", async () => {
+  describe("launchToken", async () => {
     it("set Factory address", async () => {
       tezos.setProvider({
         signer: await InMemorySigner.fromSecretKey(
