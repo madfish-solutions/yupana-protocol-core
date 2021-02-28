@@ -7,6 +7,8 @@ const { accountsMap } = require("../scripts/sandbox/accounts");
 const Controller = artifacts.require("Controller");
 const XTZ = artifacts.require("XTZ");
 const Factory = artifacts.require("Factory");
+const qT = artifacts.require("qToken");
+
 
 let cInstance;
 let fInstance;
@@ -48,29 +50,6 @@ contract("Controller", async () => {
     console.log("New qToken:", qTokenAddress);
   });
 
-  // describe("setNewQToken", async () => {
-    // it("set Factory address", async () => {
-    //   tezos.setProvider({
-    //     signer: await InMemorySigner.fromSecretKey(
-    //       accountsMap.get(accounts[0])
-    //     ),
-    //   });
-
-    //   await cInstance.setFactory(fInstance.address);
-    //   const cStorage = await cInstance.storage();
-    //   const value = cStorage.storage.factory;
-    //   console.log("NewFactory: ", value);
-    // });
-
-    // it("set a new qToken", async () => {
-    //   await fInstance.launchToken(XTZInstance.address);
-
-    //   const fStorage = await fInstance.storage();
-    //   const value = await fStorage.tokenList.get(XTZInstance.address);
-    //   console.log("NewToken:", value);
-    // });
-  // });
-
   describe("setOracle", async () => {
     it("set new oracle", async () => {
       const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
@@ -83,8 +62,16 @@ contract("Controller", async () => {
 
   describe("safeMint", async () => {
     it("Safe Mint for qToken", async () => {
+      tezos.setProvider({
+        signer: await InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])),
+      });
+
       var amount = 142;
       await cInstance.useController("safeMint", amount, qTokenAddress);
+
+      let token = await qT.at(qTokenAddress);
+      let res = await token.storage();
+      console.log(await res.storage.accountTokens.get(accounts[0]));
     });
   });
   
@@ -92,35 +79,40 @@ contract("Controller", async () => {
     it("Safe Borrow", async () => {
       var amount = 10;
       await cInstance.useController("safeBorrow", qTokens[qTokens.length -2], amount, qTokens[qTokens.length - 1]);
+
+      let token = await qT.at(qTokens[qTokens.length -2]);
+      let res = await token.storage();
+      console.log(res);
+      console.log(await res.storage.accountBorrows.get(accounts[0]));
     });
   });
 
-  describe("safeReddem", async () => {
-    it("Safe Reddem", async () => {
-      var amount = 200;
-      await cInstance.useController("safeRedeem", amount, qTokens[qTokens.length -3]);
-    });
-  });
+  // describe("safeReddem", async () => {
+  //   it("Safe Reddem", async () => {
+  //     var amount = 200;
+  //     await cInstance.useController("safeRedeem", amount, qTokens[qTokens.length -3]);
+  //   });
+  // });
 
-  describe("safeRepay", async () => {
-    it("Safe Repay", async () => {
-      var amount = 20;
-      await cInstance.useController("safeRepay", amount, qTokens[qTokens.length -4]);
-    });
-  });
+  // describe("safeRepay", async () => {
+  //   it("Safe Repay", async () => {
+  //     var amount = 20;
+  //     await cInstance.useController("safeRepay", amount, qTokens[qTokens.length -4]);
+  //   });
+  // });
 
-  describe("safeLiquidate", async () => {
-    it("Safe Liquidate", async () => {
-      var borrower = "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg";
-      var amount = 20;
+  // describe("safeLiquidate", async () => {
+  //   it("Safe Liquidate", async () => {
+  //     var borrower = "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg";
+  //     var amount = 20;
 
-      const cStorage = await cInstance.storage();
-      const value = await cStorage.storage.accountBorrows;
+  //     const cStorage = await cInstance.storage();
+  //     const value = await cStorage.storage.accountBorrows;
       
-      console.log(value);
-      await cInstance.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length -5]);
-    });
-  });
+  //     console.log(value);
+  //     await cInstance.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length -5]);
+  //   });
+  // });
 
   // describe("register", async () => {
   //   it("register new contracts", async () => {

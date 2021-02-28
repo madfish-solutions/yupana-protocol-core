@@ -327,13 +327,13 @@ function redeem (const p : useAction; const s : tokenStorage; const this: addres
         s.totalSupply := abs(s.totalSupply - burnTokens);
         s.totalLiquid := abs(s.totalLiquid - redeemParams.amount);
 
-        operations := list [
-          Tezos.transaction(
-            TransferOuttside(redeemParams.user, (this, redeemParams.amount)),
-            0mutez, 
-            getTokenContract(s.token)
-          )
-        ]
+        // operations := list [
+        //   Tezos.transaction(
+        //     TransferOuttside(redeemParams.user, (this, redeemParams.amount)),
+        //     0mutez, 
+        //     getTokenContract(s.token)
+        //   )
+        // ]
       }
       | Borrow(borrowParams) -> skip
       | Repay(repayParams) -> skip
@@ -365,13 +365,13 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
         s.accountBorrows[borrowParams.user] := accountBorrows;
         s.totalBorrows := s.totalBorrows + borrowParams.amount;
 
-        operations := list [
-          Tezos.transaction(
-            TransferOuttside(this, (Tezos.sender, borrowParams.amount)), 
-            0mutez, 
-            getTokenContract(s.token)
-          )
-        ]
+        // operations := list [
+        //   Tezos.transaction(
+        //     TransferOuttside(this, (Tezos.sender, borrowParams.amount)), 
+        //     0mutez, 
+        //     getTokenContract(s.token)
+        //   )
+        // ]
       }
       | Repay(repayParams) -> skip
       | Liquidate(liquidateParams) -> skip
@@ -404,13 +404,13 @@ function repay (const p : useAction; const s : tokenStorage; const this: address
         s.accountBorrows[repayParams.user] := accountBorrows;
         s.totalBorrows := abs(s.totalBorrows - repayParams.amount);
 
-        operations := list [
-          Tezos.transaction(
-            TransferOuttside(Tezos.sender, (this, repayParams.amount)), 
-            0mutez, 
-            getTokenContract(s.token)
-          )
-        ]
+        // operations := list [
+        //   Tezos.transaction(
+        //     TransferOuttside(Tezos.sender, (this, repayParams.amount)), 
+        //     0mutez, 
+        //     getTokenContract(s.token)
+        //   )
+        // ]
       }
       | Liquidate(liquidateParams) -> skip
       | Seize(seizeParams) -> skip
@@ -453,12 +453,12 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
         s.accountBorrows[liquidateParams.borrower] := debtorBorrows;
         s.accountTokens[liquidateParams.liquidator] := getTokens(liquidateParams.liquidator, s) + seizeTokens;
 
+          // Tezos.transaction(
+          //   TransferOuttside(Tezos.sender, (this, liquidateParams.amount)), 
+          //   0mutez,
+          //   getTokenContract(s.token)
+          // );
         operations := list [
-          Tezos.transaction(
-            TransferOuttside(Tezos.sender, (this, liquidateParams.amount)), 
-            0mutez,
-            getTokenContract(s.token)
-          );
           Tezos.transaction(
             record [
               liquidator = liquidateParams.liquidator;
