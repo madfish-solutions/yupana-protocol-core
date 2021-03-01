@@ -34,11 +34,44 @@ contract("Controller", async () => {
   });
 
   beforeEach("setup", async () => {
+
+    // const DEFAULT = accounts[0];
+    // const SENDER = accounts[1];
+
+    // const defaultsBalance = 1500;
+    // const defaultsAmt = 15;
+
+    // const totalSupply = 50000;
+    // const decimal = 1e+6;
+
+    // let XTZ_Instance;
+    // let storage;
+
+    // storage = {
+    //   ledger: MichelsonMap.fromLiteral({
+    //     [DEFAULT]: {
+    //       balance: defaultsBalance,
+    //       allowances: MichelsonMap.fromLiteral({
+    //         [DEFAULT]: defaultsAmt,
+    //       }),
+    //     },
+    //   }),
+    //   totalSupply: totalSupply,
+    // };
+
+    // XTZInstance = await XTZ.new(storage);
+
     let XTZStorage = {
       totalSupply: 0,
-      ledger: new MichelsonMap(),
+      ledger: MichelsonMap.fromLiteral({
+        [accounts[0]]: {
+          balance: 15000,
+          allowances: MichelsonMap.fromLiteral({}),
+        },
+      }),
     };
     XTZInstance = await XTZ.new(XTZStorage);
+    
     fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
 
@@ -48,6 +81,7 @@ contract("Controller", async () => {
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
     qTokens.push(qTokenAddress);
     console.log("New qToken:", qTokenAddress);
+    await XTZInstance.approve(qTokenAddress, 2000);
   });
 
   describe("setOracle", async () => {
@@ -66,19 +100,32 @@ contract("Controller", async () => {
         signer: await InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])),
       });
 
+      console.log(qTokens);
+
       var amount = 142;
       await cInstance.useController("safeMint", amount, qTokenAddress);
 
       let token = await qT.at(qTokenAddress);
       let res = await token.storage();
+      console.log(res);
       console.log(await res.storage.accountTokens.get(accounts[0]));
     });
   });
   
   describe("safeBorrow", async () => {
     it("Safe Borrow", async () => {
+      tezos.setProvider({
+        signer: await InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])),
+      });
+
+      console.log(qTokens);
+
       var amount = 10;
       await cInstance.useController("safeBorrow", qTokens[qTokens.length -2], amount, qTokens[qTokens.length - 1]);
+
+      const cStorage = await cInstance.storage();
+      console.log(await cStorage.storage.accountMembership.get(accounts[0]));
+
 
       let token = await qT.at(qTokens[qTokens.length -2]);
       let res = await token.storage();
@@ -87,19 +134,32 @@ contract("Controller", async () => {
     });
   });
 
-  // describe("safeReddem", async () => {
-  //   it("Safe Reddem", async () => {
-  //     var amount = 200;
-  //     await cInstance.useController("safeRedeem", amount, qTokens[qTokens.length -3]);
-  //   });
-  // });
+  describe("safeReddem", async () => {
+    it("Safe Reddem", async () => {
+      var amount = 10;
+      await cInstance.useController("safeRedeem", amount, qTokens[qTokens.length - 3]);
 
-  // describe("safeRepay", async () => {
-  //   it("Safe Repay", async () => {
-  //     var amount = 20;
-  //     await cInstance.useController("safeRepay", amount, qTokens[qTokens.length -4]);
-  //   });
-  // });
+      let token = await qT.at(qTokens[qTokens.length - 3]);
+      let res = await token.storage();
+      console.log(res);
+      console.log(await res.storage.accountBorrows.get(accounts[0]));
+      console.log(await res.storage.accountTokens.get(accounts[0]));
+
+    });
+  });
+
+  describe("safeRepay", async () => {
+    it("Safe Repay", async () => {
+      var amount = 10;
+      await cInstance.useController("safeRepay", amount, qTokens[qTokens.length - 4]);
+
+      let token = await qT.at(qTokens[qTokens.length - 4]);
+      let res = await token.storage();
+      console.log(res);
+      console.log(await res.storage.accountBorrows.get(accounts[0]).amount);
+      console.log(await res.storage.accountTokens.get(accounts[0]));
+    });
+  });
 
   // describe("safeLiquidate", async () => {
   //   it("Safe Liquidate", async () => {

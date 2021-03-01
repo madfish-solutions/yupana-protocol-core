@@ -537,6 +537,8 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
 
       s.accountMembership[Tezos.sender] := tokens;
 
+      // borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s);
+
       operations := list [
         Tezos.transaction(
           QUpdateControllerState(Tezos.sender),
@@ -548,7 +550,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
             user         = Tezos.sender;
             qToken       = safeBorrowParams.qToken;
             redeemTokens = safeBorrowParams.amount;
-            borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s);
+            borrowAmount = safeBorrowParams.amount;
           ],
           0mutez,
           getBorrowMiddleEntrypoint(this)
