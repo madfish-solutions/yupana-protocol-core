@@ -1,4 +1,4 @@
-function getBorrows (const addr : address; const s : tokenStorage) : borrows is
+[@inline] function getBorrows (const addr : address; const s : tokenStorage) : borrows is
   block {
     var b : borrows :=
       record [
@@ -12,11 +12,43 @@ function getBorrows (const addr : address; const s : tokenStorage) : borrows is
     end;
   } with b
 
-function getTokens (const addr : address; const s : tokenStorage) : nat is
+[@inline] function getTokens (const addr : address; const s : tokenStorage) : nat is
   case s.accountTokens[addr] of
     Some (value) -> value
   | None -> 0n
   end;
+
+[@inline] function getTokenContract (const tokenAddress : address) : contract(transferType) is 
+  case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetContractToken") : contract(transferType))
+  end;
+
+[@inline] function getUpdateQToken (const tokenAddress : address) : contract(useControllerParam) is 
+  case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetContractController") : contract(useControllerParam))
+  end;
+
+[@inline] function getSeizeEntrypiont (const tokenAddress : address) : contract(seizeParams) is
+  case (Tezos.get_entrypoint_opt("%seize", tokenAddress) : option(contract(seizeParams))) of 
+    Some(contr) -> contr
+    | None -> (failwith("CantGetSeizeEntrypiont") : contract(seizeParams))
+  end;
+
+[@inline] function mustBeOwner (const s : tokenStorage) : unit is
+  block {
+    if Tezos.sender =/= s.owner then
+      failwith("NotOwner")
+    else skip;
+  } with (unit)
+
+[@inline] function mustBeAdmin (const s : tokenStorage) : unit is
+  block {
+    if Tezos.sender =/= s.admin then
+      failwith("NotAdmin")
+    else skip;
+  } with (unit)
 
 function getAllowance (const borrw : borrows; const spender : address; const s : tokenStorage) : nat is
   case borrw.allowances[spender] of
@@ -33,8 +65,8 @@ function transfer (const p : tokenAction; const s : tokenStorage) : return is
           failwith("InvalidSelfToSelfTransfer")
         else skip;
 
-        const senderAccount : borrows = getBorrows(args.0, s);
         const accountTokensFrom : nat = getTokens(args.0, s);
+        const senderAccount : borrows = getBorrows(args.0, s);
 
         if accountTokensFrom < args.1.1 then
           failwith("NotEnoughBalance")
@@ -129,38 +161,6 @@ function getTotalSupply (const p : tokenAction; const s : tokenStorage) : return
     end
   } with (operations, s)
 
-function getTokenContract (const tokenAddress : address) : contract(transferType) is 
-  case (Tezos.get_entrypoint_opt("%transfer", tokenAddress) : option(contract(transferType))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetContractToken") : contract(transferType))
-  end;
-
-function getUpdateQToken (const tokenAddress : address) : contract(useControllerParam) is 
-  case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetContractController") : contract(useControllerParam))
-  end;
-
-[@inline] function getSeizeEntrypiont (const tokenAddress : address) : contract(seizeParams) is
-  case (Tezos.get_entrypoint_opt("%seize", tokenAddress) : option(contract(seizeParams))) of 
-    Some(contr) -> contr
-    | None -> (failwith("CantGetSeizeEntrypiont") : contract(seizeParams))
-  end;
-
-[@inline] function mustBeOwner (const s : tokenStorage) : unit is
-  block {
-    if Tezos.sender =/= s.owner then
-      failwith("NotOwner")
-    else skip;
-  } with (unit)
-
-[@inline] function mustBeAdmin (const s : tokenStorage) : unit is
-  block {
-    if Tezos.sender =/= s.admin then
-      failwith("NotAdmin")
-    else skip;
-  } with (unit)
-
 function setAdmin (const p : useAction; const s : tokenStorage; const this: address) : return is
   block {
     var operations : list(operation) := list[];
@@ -199,7 +199,7 @@ function setOwner (const p : useAction; const s : tokenStorage; const this: addr
     end
   } with (operations, s)
 
-function updateInterest (var s : tokenStorage) : tokenStorage is
+[@inline] function updateInterest (var s : tokenStorage) : tokenStorage is
   block {
     const hundredPercent : nat = 10000000000000000n;
     const apr : nat = 250000000000000n; // 2.5% (0.025)
@@ -232,7 +232,7 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
         
         if s.totalSupply =/= 0n then block {
           s := updateInterest(s);
-          
+
           const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
           mintTokens := mintParams.amount / exchangeRate;
         }
@@ -241,12 +241,12 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
         const accountTokens : nat = getTokens(mintParams.user, s);
         s.accountTokens[mintParams.user] := accountTokens + mintTokens;
         s.totalSupply := s.totalSupply + mintTokens;
-        s.totalLiquid := s.totalLiquid + mintParams.amount;
+        s.totalLiquid := s.totalLiquid + mintTokens;
 
         operations := list [
           Tezos.transaction(
-            TransferOuttside(mintParams.user, (this, mintParams.amount)), 
-            0mutez, 
+            TransferOuttside(mintParams.user, (this, mintTokens)), 
+            0mutez,
             getTokenContract(s.token)
           )
         ];
@@ -284,6 +284,9 @@ function redeem (const p : useAction; const s : tokenStorage; const this: addres
         else skip;
         burnTokens := redeemParams.amount / exchangeRate;
 
+        if s.totalLiquid < redeemParams.amount then
+          failwith("AmountTooBig")
+        else skip;
         
         s.accountTokens[redeemParams.user] := abs(accountTokens - burnTokens);
         s.totalSupply := abs(s.totalSupply - burnTokens);
@@ -318,6 +321,7 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
         if s.totalLiquid < borrowParams.amount then
           failwith("AmountTooBig")
         else skip;
+
         s := updateInterest(s);
 
         var accountBorrows : borrows := getBorrows(borrowParams.user, s);
@@ -326,10 +330,11 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
 
         s.accountBorrows[borrowParams.user] := accountBorrows;
         s.totalBorrows := s.totalBorrows + borrowParams.amount;
+        s.totalLiquid := abs(s.totalLiquid - borrowParams.amount);
 
         operations := list [
           Tezos.transaction(
-            TransferOuttside(this, (borrowParams.user, borrowParams.amount)), 
+            TransferOuttside(this, (borrowParams.user, borrowParams.amount)),
             0mutez, 
             getTokenContract(s.token)
           )
@@ -485,7 +490,7 @@ function updateControllerState (const p : useAction; const s : tokenStorage; con
         var userBorrows : borrows := getBorrows(addr, s);
         const accountTokens : nat = getTokens(addr, s);
         const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
-        
+
         if userBorrows.lastBorrowIndex =/= 0n then
           userBorrows.amount := userBorrows.amount * s.borrowIndex / userBorrows.lastBorrowIndex;
         else skip;

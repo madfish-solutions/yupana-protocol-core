@@ -313,11 +313,11 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
   
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-      if getAccountBorrows(this, membershipParams.borrowerToken, s) =/= 0n then
+      if getAccountBorrows(Tezos.sender, membershipParams.borrowerToken, s) =/= 0n then
         failwith("BorrowsExists")
       else skip;
       
-      remove this from map s.accountMembership
+      remove Tezos.sender from map s.accountMembership
     }
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
@@ -525,6 +525,8 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> {
       mustContainsQTokens(safeBorrowParams.qToken, s);
+      mustContainsQTokens(safeBorrowParams.borrowerToken, s);
+
 
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
@@ -543,12 +545,12 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
         Tezos.transaction(
           QUpdateControllerState(Tezos.sender),
           0mutez, 
-          getUpdateControllerStateEntrypoint(safeBorrowParams.qToken)
+          getUpdateControllerStateEntrypoint(safeBorrowParams.borrowerToken)
         );
         Tezos.transaction(
           record [
             user         = Tezos.sender;
-            qToken       = safeBorrowParams.qToken;
+            qToken       = safeBorrowParams.borrowerToken;
             redeemTokens = safeBorrowParams.amount;
             borrowAmount = safeBorrowParams.amount;
           ],

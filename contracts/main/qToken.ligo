@@ -279,12 +279,12 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
         const accountTokens : nat = getTokens(mintParams.user, s);
         s.accountTokens[mintParams.user] := accountTokens + mintTokens;
         s.totalSupply := s.totalSupply + mintTokens;
-        s.totalLiquid := s.totalLiquid + mintParams.amount;
+        s.totalLiquid := s.totalLiquid + mintTokens;
 
         operations := list [
           Tezos.transaction(
-            TransferOuttside(mintParams.user, (this, mintParams.amount)), 
-            0mutez, 
+            TransferOuttside(mintParams.user, (this, mintTokens)), 
+            0mutez,
             getTokenContract(s.token)
           )
         ];
@@ -321,6 +321,10 @@ function redeem (const p : useAction; const s : tokenStorage; const this: addres
           redeemParams.amount := accountTokens;
         else skip;
         burnTokens := redeemParams.amount / exchangeRate;
+
+        if s.totalLiquid < redeemParams.amount then
+          failwith("AmountTooBig")
+        else skip;
         
         s.accountTokens[redeemParams.user] := abs(accountTokens - burnTokens);
         s.totalSupply := abs(s.totalSupply - burnTokens);
@@ -355,6 +359,7 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
         if s.totalLiquid < borrowParams.amount then
           failwith("AmountTooBig")
         else skip;
+
         s := updateInterest(s);
 
         var accountBorrows : borrows := getBorrows(borrowParams.user, s);
@@ -363,6 +368,7 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
 
         s.accountBorrows[borrowParams.user] := accountBorrows;
         s.totalBorrows := s.totalBorrows + borrowParams.amount;
+        s.totalLiquid := abs(s.totalLiquid - borrowParams.amount);
 
         operations := list [
           Tezos.transaction(
