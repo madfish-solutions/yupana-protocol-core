@@ -19,19 +19,23 @@ var fa = [];
 var qTokens = [];
 
 contract("Controller", async () => {
-  before("setup", async () => {
+  before("setup1", async () => {
+    console.log("hi");
     cInstance = await Controller.deployed();
     fInstance = await Factory.deployed();
+    console.log("hi2");
 
-    await setSigner(accounts[0]);
+    // await setSigner(accounts[0]);
 
     await cInstance.setFactory(fInstance.address);
+    console.log("hi3");
     const cStorage = await cInstance.storage();
+    console.log("hi4");
     const value = cStorage.storage.factory;
     console.log("NewFactory: ", value);
   });
 
-  beforeEach("setup", async () => {
+  beforeEach("setup2", async () => {
     let XTZStorage = {
       totalSupply: 0,
       ledger: MichelsonMap.fromLiteral({

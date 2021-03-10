@@ -1,5 +1,8 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { accounts } = require("../scripts/sandbox/accounts");
+const { accountsMap } = require('../scripts/sandbox/accounts');
+const { TezosToolkit } = require("@taquito/taquito");
+const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
 const { execSync } = require("child_process");
 
@@ -28,12 +31,16 @@ function getLigo(isDockerizedLigo) {
 }
 
 module.exports = async function (deployer, network) {
+  tezos = new TezosToolkit(tezos.rpc.url);
+  const secretKey = accountsMap.get(accounts[0]);
+  
   tezos.setProvider({
     config: {
       confirmationPollingTimeoutSecond: 500,
     },
+    signer: await InMemorySigner.fromSecretKey(secretKey),
   });
-  // if (network == "development") return;
+
   const ControllerInstance = await Controller.deployed();
 
   const storage = {

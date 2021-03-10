@@ -4,8 +4,8 @@
   "description": "Tezos Example Box =================",
   "dependencies": {
     "@taquito/michelson-encoder": "latest",
-    "@taquito/signer": "latest",
-    "@taquito/taquito": "^6.3.4-beta.0",
+    "@taquito/signer": "^8.0.4-beta.0",
+    "@taquito/taquito": "^8.0.4-beta.0",
     "commander": "^7.0.0",
     "dotenv": "^8.2.0",
     "ganache-cli": "6.12.1-tezos.0",
@@ -16,7 +16,7 @@
     "truffle-assertions": "^0.9.2"
   },
   "scripts": {
-    "start-sandbox": "ganache-cli --flavor tezos --seed alice",
+    "start-sandbox": "ganache-cli --flavor tezos --seed alice --hardfork edo",
     "compile-qToken": "node scripts/cli.js build-qToken --no-json -o contracts"
   },
   "repository": {
