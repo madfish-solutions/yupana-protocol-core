@@ -1,7 +1,9 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { InMemorySigner } = require("@taquito/signer");
+const { TezosToolkit } = require("@taquito/taquito");
 
 const { accounts } = require("../scripts/sandbox/accounts");
+const { accountsMap } = require("../scripts/sandbox/accounts");
 const { revertDefaultSigner } = require("./helpers/signerSeter");
 const { setSigner } = require("./helpers/signerSeter");
 
@@ -20,17 +22,19 @@ var qTokens = [];
 
 contract("Controller", async () => {
   before("setup1", async () => {
-    console.log("hi");
-    cInstance = await Controller.deployed();
-    fInstance = await Factory.deployed();
-    console.log("hi2");
+    console.log(tezos.rpc.url);
+    tezos = new TezosToolkit(tezos.rpc.url);
+    tezos.setSignerProvider(new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
-    // await setSigner(accounts[0]);
+    cInstance = await tezos.contract.at((await Controller.deployed()).address);
+    fInstance = await tezos.contract.at((await Factory.deployed()).address);
+    console.log("Need address", fInstance.address);
 
-    await cInstance.setFactory(fInstance.address);
-    console.log("hi3");
+    console.log("CI: ",cInstance);
+
+    await cInstance.methods.setFactory(fInstance.address).send();
     const cStorage = await cInstance.storage();
-    console.log("hi4");
+    console.log("CS: ",cStorage);
     const value = cStorage.storage.factory;
     console.log("NewFactory: ", value);
   });
@@ -49,28 +53,39 @@ contract("Controller", async () => {
         },
       }),
     };
+    console.log("ky");
     XTZInstance = await XTZ.new(XTZStorage);
 
     fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
 
-    await fInstance.launchToken(XTZInstance.address);
+    console.log("FI: ", fInstance);
+
+    await fInstance.methods.launchToken(XTZInstance.address).send();
+    console.log("ky2");
 
     const fStorage = await fInstance.storage();
+    console.log("fS: ", fStorage);
+    console.log("ky3");
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
+    console.log("ky4");
     qTokens.push(qTokenAddress);
     console.log("New qToken:", qTokenAddress);
     await XTZInstance.approve(qTokenAddress, 2000);
+    console.log("ky5");
 
     await setSigner(accounts[1]);
+    console.log("ky6");
     await XTZInstance.approve(qTokenAddress, 2000);
+    console.log("ky7");
     await revertDefaultSigner();
+    console.log("ky8");
   });
 
   describe("setOracle", async () => {
     it("set new oracle", async () => {
       const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-      await cInstance.useController("setOracle", oracle, qTokenAddress);
+      await cInstance.methods.useController("setOracle", oracle, qTokenAddress).send();
       const oracleStorage = await cInstance.storage();
       const value = await oracleStorage.storage.markets.get(qTokenAddress);
       console.log("NewOracle:", await value.oracle);
@@ -80,7 +95,7 @@ contract("Controller", async () => {
   describe("safeMint", async () => {
     it("Safe Mint 140 for account 0", async () => {
       var amount = 140;
-      await cInstance.useController("safeMint", amount, qTokenAddress);
+      await cInstance.methods.useController("safeMint", amount, qTokenAddress);
 
       let token = await qT.at(qTokenAddress);
       let res = await token.storage();
@@ -101,7 +116,7 @@ contract("Controller", async () => {
       await setSigner(accounts[1]);
 
       var amount = 150;
-      await cInstance.useController("safeMint", amount, qTokenAddress);
+      await cInstance.methods.useController("safeMint", amount, qTokenAddress);
 
       let token = await qT.at(qTokenAddress);
       let res = await token.storage();
