@@ -313,7 +313,7 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
   
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-      if getAccountBorrows(Tezos.sender, membershipParams.borrowerToken, s) =/= 0n then
+      if getAccountBorrows(Tezos.sender, tokens.borrowerToken, s) =/= 0n then
         failwith("BorrowsExists")
       else skip;
       
@@ -539,7 +539,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
 
       s.accountMembership[Tezos.sender] := tokens;
 
-      // borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s);
+      // borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s); ?????????
 
       operations := list [
         Tezos.transaction(

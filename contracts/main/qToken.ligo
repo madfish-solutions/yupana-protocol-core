@@ -74,6 +74,7 @@ block {
     | None -> (failwith("CantGetSeizeEntrypiont") : contract(seizeParams))
   end;
 
+
 [@inline] function mustBeOwner (const s : tokenStorage) : unit is
   block {
     if Tezos.sender =/= s.owner then
@@ -363,18 +364,30 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
         s := updateInterest(s);
 
         var accountBorrows : borrows := getBorrows(borrowParams.user, s);
+        const accountTokens : nat = getTokens(borrowParams.user, s);
         accountBorrows.amount := accountBorrows.amount + borrowParams.amount;
         accountBorrows.lastBorrowIndex := s.borrowIndex;
 
         s.accountBorrows[borrowParams.user] := accountBorrows;
         s.totalBorrows := s.totalBorrows + borrowParams.amount;
         s.totalLiquid := abs(s.totalLiquid - borrowParams.amount);
+        const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
 
         operations := list [
           Tezos.transaction(
             TransferOuttside(this, (borrowParams.user, borrowParams.amount)),
             0mutez, 
             getTokenContract(s.token)
+          );
+          Tezos.transaction(
+            UpdateQToken(record [
+              user          = borrowParams.user;
+              balance       = accountTokens;
+              borrow        = accountBorrows.amount;
+              exchangeRate  = exchangeRate;
+            ]),
+            0mutez,
+            getUpdateQToken(Tezos.sender)
           )
         ]
       }
@@ -399,6 +412,7 @@ function repay (const p : useAction; const s : tokenStorage; const this: address
         s := updateInterest(s);
 
         var accountBorrows : borrows := getBorrows(repayParams.user, s);
+        const accountTokens : nat = getTokens(repayParams.user, s);
         if accountBorrows.lastBorrowIndex =/= 0n then
           accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
         else skip;
@@ -408,12 +422,23 @@ function repay (const p : useAction; const s : tokenStorage; const this: address
 
         s.accountBorrows[repayParams.user] := accountBorrows;
         s.totalBorrows := abs(s.totalBorrows - repayParams.amount);
+        const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) / s.totalSupply;
 
         operations := list [
           Tezos.transaction(
             TransferOuttside(repayParams.user, (this, repayParams.amount)), 
             0mutez, 
             getTokenContract(s.token)
+          );
+          Tezos.transaction(
+            UpdateQToken(record [
+              user          = repayParams.user;
+              balance       = accountTokens;
+              borrow        = accountBorrows.amount;
+              exchangeRate  = exchangeRate;
+            ]),
+            0mutez,
+            getUpdateQToken(Tezos.sender)
           )
         ]
       }

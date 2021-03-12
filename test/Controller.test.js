@@ -22,19 +22,15 @@ var qTokens = [];
 
 contract("Controller", async () => {
   before("setup1", async () => {
-    console.log(tezos.rpc.url);
     tezos = new TezosToolkit(tezos.rpc.url);
-    tezos.setSignerProvider(new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+    tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
     cInstance = await tezos.contract.at((await Controller.deployed()).address);
     fInstance = await tezos.contract.at((await Factory.deployed()).address);
-    console.log("Need address", fInstance.address);
 
-    console.log("CI: ",cInstance);
-
-    await cInstance.methods.setFactory(fInstance.address).send();
+    const operation = await cInstance.methods.setFactory(fInstance.address).send();
+    await operation.confirmation();
     const cStorage = await cInstance.storage();
-    console.log("CS: ",cStorage);
     const value = cStorage.storage.factory;
     console.log("NewFactory: ", value);
   });
@@ -53,39 +49,32 @@ contract("Controller", async () => {
         },
       }),
     };
-    console.log("ky");
-    XTZInstance = await XTZ.new(XTZStorage);
+    XTZInstance = await tezos.contract.at((await XTZ.new(XTZStorage)).address);
 
     fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
 
-    console.log("FI: ", fInstance);
-
-    await fInstance.methods.launchToken(XTZInstance.address).send();
-    console.log("ky2");
-
+    const operation = await fInstance.methods.launchToken(XTZInstance.address).send();
+    await operation.confirmation();
     const fStorage = await fInstance.storage();
-    console.log("fS: ", fStorage);
-    console.log("ky3");
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
-    console.log("ky4");
     qTokens.push(qTokenAddress);
     console.log("New qToken:", qTokenAddress);
-    await XTZInstance.approve(qTokenAddress, 2000);
-    console.log("ky5");
 
-    await setSigner(accounts[1]);
-    console.log("ky6");
-    await XTZInstance.approve(qTokenAddress, 2000);
-    console.log("ky7");
-    await revertDefaultSigner();
-    console.log("ky8");
+    const operation2 = await XTZInstance.methods.approve(qTokenAddress, 2000).send();
+    await operation2.confirmation();
+
+    tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
+    const operation3 = await XTZInstance.methods.approve(qTokenAddress, 2000).send();
+    await operation3.confirmation();
+    tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
   });
 
   describe("setOracle", async () => {
     it("set new oracle", async () => {
       const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-      await cInstance.methods.useController("setOracle", oracle, qTokenAddress).send();
+      const operation = await cInstance.methods.useController("setOracle", oracle, qTokenAddress).send();
+      await operation.confirmation();
       const oracleStorage = await cInstance.storage();
       const value = await oracleStorage.storage.markets.get(qTokenAddress);
       console.log("NewOracle:", await value.oracle);
@@ -95,7 +84,8 @@ contract("Controller", async () => {
   describe("safeMint", async () => {
     it("Safe Mint 140 for account 0", async () => {
       var amount = 140;
-      await cInstance.methods.useController("safeMint", amount, qTokenAddress);
+      const operation = await cInstance.methods.useController("safeMint", amount, qTokenAddress).send();
+      await operation.confirmation();
 
       let token = await qT.at(qTokenAddress);
       let res = await token.storage();
@@ -113,10 +103,11 @@ contract("Controller", async () => {
 
   describe("safeMint2", async () => {
     it("Safe Mint 150 for account 1", async () => {
-      await setSigner(accounts[1]);
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
 
       var amount = 150;
-      await cInstance.methods.useController("safeMint", amount, qTokenAddress);
+      const operation = await cInstance.methods.useController("safeMint", amount, qTokenAddress).send();
+      await operation.confirmation();
 
       let token = await qT.at(qTokenAddress);
       let res = await token.storage();
@@ -129,7 +120,7 @@ contract("Controller", async () => {
       let xRes = await x.storage();
       let xB = await xRes.ledger.get(accounts[1]);
       console.log("Balance:", await xB.balance);
-      await revertDefaultSigner();
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
     });
   });
 
@@ -137,40 +128,42 @@ contract("Controller", async () => {
     it("Safe Borrow 10 for account 0", async () => {
       var amount = 10;
 
-      await cInstance.useController(
+      const operation = await cInstance.methods.useController(
         "safeBorrow",
         qTokens[qTokens.length - 3],
         amount,
         qTokens[qTokens.length - 2]
-      );
+      ).send();
+      await operation.confirmation();
 
       let token = await qT.at(qTokens[qTokens.length - 2]);
       let res = await token.storage();
       let aB = await res.storage.accountBorrows.get(accounts[0]);
 
       console.log("Account Borrows amount: ", await aB.amount);
-      console.log(
-        "Account Tokens amount: ",
-        await res.storage.accountTokens.get(accounts[0])
-      );
 
       let x = await XTZ.at(fa[fa.length - 2]);
       let xRes = await x.storage();
       let xB = await xRes.ledger.get(accounts[0]);
-      console.log("Balance:", await xB.balance);
+      console.log("Balance in XTZ Token:", await xB.balance);
 
+      const MStorage = await cInstance.storage();
+      console.log("Account MEM: ", await MStorage.storage.accountMembership.get(accounts[0]));
+      const arr = [accounts[0], qTokens[qTokens.length - 2]];
 
+      console.log("Acc Borr: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
     });
   });
 
   describe("safeReddem", async () => {
     it("Safe Reddem 20 for account 0", async () => {
       var amount = 20;
-      await cInstance.useController(
+      const operation = await cInstance.methods.useController(
         "safeRedeem",
         amount,
         qTokens[qTokens.length - 4]
-      );
+      ).send();
+      await operation.confirmation();
 
       let token = await qT.at(qTokens[qTokens.length - 4]);
       let res = await token.storage();
@@ -192,11 +185,12 @@ contract("Controller", async () => {
   describe("safeRepay", async () => {
     it("Safe Repay 10 for account 0", async () => {
       var amount = 10;
-      await cInstance.useController(
+      const operation = await cInstance.methods.useController(
         "safeRepay",
         amount,
         qTokens[qTokens.length - 4]
-      );
+      ).send();
+      await operation.confirmation();
 
       let token = await qT.at(qTokens[qTokens.length - 4]);
       let res = await token.storage();
@@ -225,11 +219,15 @@ contract("Controller", async () => {
       let value = await oracleStorage.storage.accountMembership.get(accounts[0]);
       console.log("Account Membership 1: ", value);
 
-      await cInstance.useController(
+      // let value2 = await oracleStorage.storage.accountBorrows.get(accounts[1]);
+      // console.log("Account Borrows 1: ", value2);
+
+      const operation = await cInstance.methods.useController(
         "exitMarket",
         borrowerToken,
         collateralToken
-      );
+      ).send();
+      await operation.confirmation();
 
       oracleStorage = await cInstance.storage();
       value = await oracleStorage.storage.accountMembership.get(accounts[0]);
