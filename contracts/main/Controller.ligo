@@ -710,25 +710,32 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
 
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
+      // operations := list [
+      //   Tezos.transaction(
+      //     QUpdateControllerState(Tezos.sender), 
+      //     0mutez, 
+      //     getUpdateControllerStateEntrypoint(tokens.collateralToken)
+      //   )
+      // ];
+
       operations := list [
         Tezos.transaction(
           QUpdateControllerState(Tezos.sender), 
           0mutez, 
           getUpdateControllerStateEntrypoint(tokens.collateralToken)
+        );
+        Tezos.transaction(
+          record [
+              user         = Tezos.sender;
+              borrower     = safeLiquidateParams.borrower;
+              qToken       = safeLiquidateParams.qToken;
+              redeemTokens = safeLiquidateParams.amount;
+              borrowAmount = getAccountBorrows(safeLiquidateParams.borrower, safeLiquidateParams.qToken, s);
+          ], 
+          0mutez, 
+          getLiquidateMiddleEntrypoint(this)
         )
       ];
-
-      operations := Tezos.transaction(
-        record [
-            user         = Tezos.sender;
-            borrower     = safeLiquidateParams.borrower;
-            qToken       = safeLiquidateParams.qToken;
-            redeemTokens = safeLiquidateParams.amount;
-            borrowAmount = getAccountBorrows(safeLiquidateParams.borrower, safeLiquidateParams.qToken, s);
-        ], 
-        0mutez, 
-        getLiquidateMiddleEntrypoint(this)
-      ) # operations;
     }
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
@@ -812,8 +819,8 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
             liquidator     = ensuredLiquidateParams.user;
             borrower       = ensuredLiquidateParams.borrower;
             amount         = ensuredLiquidateParams.redeemTokens;
-          ]), 
-          0mutez, 
+          ]),
+          0mutez,
           getUseEntrypoint(ensuredLiquidateParams.qToken)
         )
       ];

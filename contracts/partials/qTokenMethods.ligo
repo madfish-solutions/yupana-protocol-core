@@ -103,9 +103,9 @@ function approve (const p : tokenAction; const s : tokenStorage) : return is
         var senderAccount : borrows := getBorrows(Tezos.sender, s);
         const spenderAllowance : nat = getAllowance(senderAccount, args.0, s);
 
-        if spenderAllowance > 0n and args.1 > 0n then
-          failwith("UnsafeAllowanceChange")
-        else skip;
+        // if spenderAllowance > 0n and args.1 > 0n then
+        //   failwith("UnsafeAllowanceChange")
+        // else skip;
 
         senderAccount.allowances[args.0] := args.1;
         s.accountBorrows[Tezos.sender] := senderAccount;

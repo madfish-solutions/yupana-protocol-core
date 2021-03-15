@@ -20,6 +20,7 @@ let qTokenAddress;
 var fa = [];
 var qTokens = [];
 
+
 contract("Controller", async () => {
   before("setup1", async () => {
     tezos = new TezosToolkit(tezos.rpc.url);
@@ -47,6 +48,10 @@ contract("Controller", async () => {
           balance: 15000,
           allowances: MichelsonMap.fromLiteral({}),
         },
+        [accounts[2]]: {
+          balance: 15000,
+          allowances: MichelsonMap.fromLiteral({}),
+        },
       }),
     };
     XTZInstance = await tezos.contract.at((await XTZ.new(XTZStorage)).address);
@@ -61,12 +66,16 @@ contract("Controller", async () => {
     qTokens.push(qTokenAddress);
     console.log("New qToken:", qTokenAddress);
 
-    const operation2 = await XTZInstance.methods.approve(qTokenAddress, 2000).send();
+    const operation2 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
     await operation2.confirmation();
 
     tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
-    const operation3 = await XTZInstance.methods.approve(qTokenAddress, 2000).send();
+    const operation3 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
     await operation3.confirmation();
+
+    tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
+    const operation4 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
+    await operation4.confirmation();
     tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
   });
 
@@ -219,9 +228,6 @@ contract("Controller", async () => {
       let value = await oracleStorage.storage.accountMembership.get(accounts[0]);
       console.log("Account Membership 1: ", value);
 
-      // let value2 = await oracleStorage.storage.accountBorrows.get(accounts[1]);
-      // console.log("Account Borrows 1: ", value2);
-
       const operation = await cInstance.methods.useController(
         "exitMarket",
         borrowerToken,
@@ -235,41 +241,137 @@ contract("Controller", async () => {
     });
   });
 
-  // describe("safeLiquidate", async () => {
-  //   it("Safe Liquidate", async () => {
-  //     var borrower = accounts[0];
-  //     var amount = 10;
+  describe("safeMint3", async () => {
+    it("Safe Mint 150 for account 2", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
 
-  //     await cInstance.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length -5]);
+      var amount = 150;
+      const operation = await cInstance.methods.useController("safeMint", amount, qTokenAddress).send();
+      await operation.confirmation();
 
-  //     let token = await qT.at(qTokens[qTokens.length - 5]);
-  //     let res = await token.storage();
-  //     let aB = await res.storage.accountBorrows.get(accounts[0]);
+      let token = await qT.at(qTokenAddress);
+      let res = await token.storage();
+      console.log(
+        "Account Tokens amount: ",
+        await res.storage.accountTokens.get(accounts[2])
+      );
 
-  //     console.log("Account Borrows amount: ",await aB.amount);
-  //     console.log("Account Tokens amount: ",await res.storage.accountTokens.get(accounts[0]));
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
-  //     let x = await XTZ.at(fa[fa.length - 5]);
-  //     let xRes = await x.storage();
-  //     let xB = await xRes.ledger.get(accounts[0]);
-  //     console.log("Balance:", await xB.balance);
+      var amount2 = 150;
+      const operation2 = await cInstance.methods.useController("safeMint", amount2, qTokenAddress).send();
+      await operation2.confirmation();
 
-  //   });
-  // });
+      let token2 = await qT.at(qTokenAddress);
+      let res2 = await token2.storage();
+      console.log(
+        "Account Tokens amount0: ",
+        await res2.storage.accountTokens.get(accounts[0])
+      );
+    });
+  });
 
-  // describe("exitMarket", async () => {
-  //   it("remove to accountMembership", async () => {
-  //     const tokens = {
-  //       borrowerToken: "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt",
-  //       collateralToken: "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67",
-  //     };
-  //     const borrowerToken = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-  //     const collateralToken = "KT19DbHikPZEY2H8im1F6HkRh3waWgmbmx67";
-  //     await cInstance.useController(
-  //       "exitMarket",
-  //       borrowerToken,
-  //       collateralToken
-  //     );
-  //   });
-  // });
+  describe("safeBorrow2", async () => {
+    it("Safe Borrow 20 for account 2", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
+      var amount = 20;
+
+      console.log("Collat: ",qTokens[qTokens.length - 2]);
+      console.log("Borrower: ",qTokens[qTokens.length - 7]);
+
+
+      const operation = await cInstance.methods.useController(
+        "safeBorrow",
+        qTokens[qTokens.length - 2],
+        amount,
+        qTokens[qTokens.length - 7]
+      ).send();
+      await operation.confirmation();
+
+      let token = await qT.at(qTokens[qTokens.length - 7]);
+      let res = await token.storage();
+      let bi = await res.storage;
+      console.log("BI: ",bi);
+      const value = await res.storage.markets.get(accounts[2]);
+      console.log("lastBorrowIndex:", await value.lastBorrowIndex);
+
+      let aB = await res.storage.accountBorrows.get(accounts[2]);
+
+      console.log("Account Borrows amount: ", await aB.amount);
+
+      let x = await XTZ.at(fa[fa.length - 7]);
+      let xRes = await x.storage();
+      let xB = await xRes.ledger.get(accounts[2]);
+      console.log("Balance in XTZ Token:", await xB.balance);
+
+      const MStorage = await cInstance.storage();
+      console.log("Account MEM: ", await MStorage.storage.accountMembership.get(accounts[2]));
+      const arr = [accounts[2], qTokens[qTokens.length - 7]];
+
+      console.log("Acc Borr: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
+
+
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+
+      var amount2 = 20;
+
+      console.log("Collat0: ",qTokens[qTokens.length - 2]);
+      console.log("Borrower0: ",qTokens[qTokens.length - 7]);
+
+
+      const operation2 = await cInstance.methods.useController(
+        "safeBorrow",
+        qTokens[qTokens.length - 2],
+        amount2,
+        qTokens[qTokens.length - 7]
+      ).send();
+      await operation2.confirmation();
+
+      let token2 = await qT.at(qTokens[qTokens.length - 7]);
+      let res2 = await token2.storage();
+      let bi2 = await res2.storage.borrowIndex;
+      console.log("BI0: ",bi2);
+      const value2 = await res2.storage.markets.get(accounts[0]);
+      console.log("lastBorrowIndex0:", await value2.lastBorrowIndex);
+      
+      let aB2 = await res2.storage.accountBorrows.get(accounts[0]);
+
+      console.log("Account Borrows amount0: ", await aB2.amount);
+
+      let x2 = await XTZ.at(fa[fa.length - 7]);
+      let xRes2 = await x2.storage();
+      let xB2 = await xRes2.ledger.get(accounts[0]);
+      console.log("Balance in XTZ Token0:", await xB2.balance);
+
+      const MStorage2 = await cInstance.storage();
+      console.log("Account MEM0: ", await MStorage2.storage.accountMembership.get(accounts[0]));
+      const arr2 = [accounts[0], qTokens[qTokens.length - 7]];
+
+      console.log("Acc Borr0: ", (await MStorage2.storage.accountBorrows.get(arr2)).toString());
+    });
+  });
+
+  describe("safeLiquidate", async () => {
+    it("Safe Liquidate", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+      var borrower = accounts[2];
+      console.log(borrower);
+      var amount = 5;
+
+      const operation = await cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 8]).send();
+      await operation.confirmation();
+
+      let token = await qT.at(qTokens[qTokens.length - 8]);
+      let res = await token.storage();
+      let aB = await res.storage.accountBorrows.get(accounts[2]);
+
+      console.log("Account Borrows amount: ", await aB.amount);
+      console.log("Account Tokens amount: ", await res.storage.accountTokens.get(accounts[2]));
+
+      let x = await XTZ.at(fa[fa.length - 8]);
+      let xRes = await x.storage();
+      let xB = await xRes.ledger.get(accounts[2]);
+      console.log("Balance:", await xB.balance);
+    });
+  });
 });
