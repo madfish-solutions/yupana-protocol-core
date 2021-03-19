@@ -32,6 +32,7 @@ type liquidateParams is record [
   liquidator       : address;
   borrower         : address;
   amount           : nat;
+  collateralToken  : address;
 ]
 
 type mintParams is record [
@@ -177,12 +178,7 @@ type liquidateMiddleParams is record [
   qToken                : address;
   redeemTokens          : nat;
   borrowAmount          : nat;
-]
-
-type liquidateType is record [
-  liquidator            : address;
-  borrower              : address;
-  amount                : nat;
+  collateralToken       : address;
 ]
 
 type ensuredLiquidateParams is record [
@@ -191,6 +187,14 @@ type ensuredLiquidateParams is record [
   qToken                : address;
   redeemTokens          : nat;
   borrowAmount          : nat;
+  collateralToken       : address;
+]
+
+type safeSeizeParams is [@layout:comb] record [
+  liquidator            : address;
+  borrower              : address;
+  amount                : nat;
+  collateralToken       : address;
 ]
 // CONTROLLERS PARAMS END
 
@@ -237,6 +241,7 @@ type useControllerAction is
   | SafeLiquidate of safeLiquidateParams
   | LiquidateMiddle of liquidateMiddleParams
   | EnsuredLiquidate of ensuredLiquidateParams
+  | SafeSeize of safeSeizeParams
 
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return

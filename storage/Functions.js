@@ -124,6 +124,10 @@ let useControllerFunctions = [
   {
     index: 15,
     name: "ensuredLiquidate",
+  },
+  {
+    index: 16,
+    name: "safeSeize",
   }
 ];
 

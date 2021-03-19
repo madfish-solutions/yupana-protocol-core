@@ -9,7 +9,7 @@ function setFactory (const newFactoryAddress: address; const s : fullControllerS
 
 function setUseAction (const idx : nat; const f : useControllerFunc; const s : fullControllerStorage) : fullReturn is
   block {
-    case s.useControllerLambdas[idx] of 
+    case s.useControllerLambdas[idx] of
       Some(n) -> failwith("Controller/function-set") 
       | None -> s.useControllerLambdas[idx] := f 
     end;
@@ -34,6 +34,7 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
       | SafeLiquidate(safeLiquidateParams) -> 13n
       | LiquidateMiddle(liquidateMiddleParams) -> 14n
       | EnsuredLiquidate(ensuredLiquidateParams) -> 15n
+      | SafeSeize(safeSeizeParams) -> 16n
     end;
 
     const res : return = case s.useControllerLambdas[idx] of 
@@ -201,6 +202,7 @@ function updatePrice (const p : useControllerAction; const this : address; var s
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -232,6 +234,7 @@ function setOracle (const p : useControllerAction; const this : address; var s :
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -264,6 +267,7 @@ function register (const p : useControllerAction; const this : address; var s : 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -296,6 +300,7 @@ function updateQToken (const p : useControllerAction; const this : address; var 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -313,7 +318,11 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
   
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-      if getAccountBorrows(Tezos.sender, tokens.borrowerToken, s) =/= 0n then
+      if tokens.borrowerToken = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address) then
+        failwith("NotEnter")
+      else skip;
+
+      if getAccountBorrows(Tezos.sender, membershipParams.borrowerToken, s) =/= 0n then
         failwith("BorrowsExists")
       else skip;
       
@@ -330,6 +339,7 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -366,6 +376,7 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -423,6 +434,7 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -463,6 +475,7 @@ function redeemMiddle (const p : useControllerAction; const this : address; var 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -507,6 +520,7 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -526,7 +540,6 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     | SafeBorrow(safeBorrowParams) -> {
       mustContainsQTokens(safeBorrowParams.qToken, s);
       mustContainsQTokens(safeBorrowParams.borrowerToken, s);
-
 
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
@@ -565,6 +578,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -605,6 +619,7 @@ function borrowMiddle (const p : useControllerAction; const this : address; var 
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -649,6 +664,7 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -685,6 +701,7 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
     | SafeLiquidate(safeLiquidateParams) -> skip
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -709,14 +726,8 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
       mustContainsQTokens(safeLiquidateParams.qToken, s);
 
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
+      var tokensBorrow : membershipParams := getAccountMembership(safeLiquidateParams.borrower, s);
 
-      // operations := list [
-      //   Tezos.transaction(
-      //     QUpdateControllerState(Tezos.sender), 
-      //     0mutez, 
-      //     getUpdateControllerStateEntrypoint(tokens.collateralToken)
-      //   )
-      // ];
 
       operations := list [
         Tezos.transaction(
@@ -726,11 +737,12 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
         );
         Tezos.transaction(
           record [
-              user         = Tezos.sender;
-              borrower     = safeLiquidateParams.borrower;
-              qToken       = safeLiquidateParams.qToken;
-              redeemTokens = safeLiquidateParams.amount;
-              borrowAmount = getAccountBorrows(safeLiquidateParams.borrower, safeLiquidateParams.qToken, s);
+              user            = Tezos.sender;
+              borrower        = safeLiquidateParams.borrower;
+              qToken          = safeLiquidateParams.qToken;
+              redeemTokens    = safeLiquidateParams.amount;
+              borrowAmount    = getAccountBorrows(safeLiquidateParams.borrower, safeLiquidateParams.qToken, s);
+              collateralToken = tokensBorrow.collateralToken;
           ], 
           0mutez, 
           getLiquidateMiddleEntrypoint(this)
@@ -739,6 +751,7 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
     }
     | LiquidateMiddle(liquidateMiddleParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -768,11 +781,12 @@ function liquidateMiddle (const p : useControllerAction; const this : address; v
       operations := list [
         Tezos.transaction(
           record [
-              user         = liquidateMiddleParams.user;
-              borrower     = liquidateMiddleParams.borrower;
-              qToken       = liquidateMiddleParams.qToken;
-              redeemTokens = liquidateMiddleParams.redeemTokens;
-              borrowAmount = liquidateMiddleParams.borrowAmount;
+              user            = liquidateMiddleParams.user;
+              borrower        = liquidateMiddleParams.borrower;
+              qToken          = liquidateMiddleParams.qToken;
+              redeemTokens    = liquidateMiddleParams.redeemTokens;
+              borrowAmount    = liquidateMiddleParams.borrowAmount;
+              collateralToken = liquidateMiddleParams.collateralToken;
           ], 
           0mutez,
           getEnsuredLiquidateEntrypoint(this)
@@ -780,6 +794,7 @@ function liquidateMiddle (const p : useControllerAction; const this : address; v
       ];
     }
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -816,13 +831,52 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
       operations := list [
         Tezos.transaction(
           Liquidate(record [
-            liquidator     = ensuredLiquidateParams.user;
-            borrower       = ensuredLiquidateParams.borrower;
-            amount         = ensuredLiquidateParams.redeemTokens;
+            liquidator      = ensuredLiquidateParams.user;
+            borrower        = ensuredLiquidateParams.borrower;
+            amount          = ensuredLiquidateParams.redeemTokens;
+            collateralToken = ensuredLiquidateParams.collateralToken;
           ]),
           0mutez,
           getUseEntrypoint(ensuredLiquidateParams.qToken)
         )
+      ];
+    }
+    | SafeSeize(safeSeizeParams) -> skip
+    end
+  } with (operations, s)
+
+function safeSeize (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
+  block {
+    var operations : list(operation) := list[];
+    case p of
+    | UpdatePrice(updateParams) -> skip
+    | SetOracle(setOracleParams) -> skip
+    | Register(registerParams) -> skip
+    | UpdateQToken(updateQTokenParams) -> skip
+    | ExitMarket(membershipParams) -> skip
+    | SafeMint(safeMintParams) -> skip
+    | SafeRedeem(safeRedeemParams) -> skip
+    | RedeemMiddle(redeemMiddleParams) -> skip
+    | EnsuredRedeem(ensuredRedeemParams) -> skip
+    | SafeBorrow(safeBorrowParams) -> skip
+    | BorrowMiddle(borrowMiddleParams) -> skip
+    | EnsuredBorrow(ensuredBorrowParams) -> skip
+    | SafeRepay(safeRepayParams) -> skip
+    | SafeLiquidate(safeLiquidateParams) -> skip
+    | LiquidateMiddle(liquidateMiddleParams) -> skip
+    | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    | SafeSeize(safeSeizeParams) -> {
+      
+      operations := list [
+        Tezos.transaction(
+          Seize(record [
+            liquidator  = safeSeizeParams.liquidator;
+            borrower    = safeSeizeParams.borrower;
+            amount      = safeSeizeParams.amount;
+          ]),
+          0mutez,
+          getUseEntrypoint(safeSeizeParams.collateralToken)
+        );
       ];
     }
     end
