@@ -100,35 +100,35 @@ function transfer (const p : tokenAction; const s : tokenStorage) : return is
     var operations : list(operation) := list[];
       case p of
       | ITransfer(args) -> {
-        if args.0 = args.1.0 then
+        if sender = receiver then
           failwith("InvalidSelfToSelfTransfer")
         else skip;
 
-        const accountTokensFrom : nat = getTokens(args.0, s);
-        const senderAccount : borrows = getBorrows(args.0, s);
+        const accountTokensFrom : nat = getTokens(sender, s);
+        const senderAccount : borrows = getBorrows(sender, s);
 
         if senderAccount.amount =/= 0n then 
           failwith("YouHaveBorrow")
         else skip;
 
-        if accountTokensFrom < args.1.1 then
+        if accountTokensFrom < amount then
           failwith("NotEnoughBalance")
         else skip;
 
-        if args.0 =/= Tezos.sender then block {
+        if sender =/= Tezos.sender then block {
           const spenderAllowance : nat = getAllowance(senderAccount, Tezos.sender, s);
 
-          if spenderAllowance < args.1.1 then
+          if spenderAllowance < amount then
             failwith("NotEnoughAllowance")
           else skip;
 
-          senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - args.1.1);
+          senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - amount);
         } else skip;
 
-        accountTokensFrom := abs(accountTokensFrom - args.1.1);
+        accountTokensFrom := abs(accountTokensFrom - amount);
 
-        const accountTokensTo : nat = getTokens(args.1.0, s);
-        accountTokensTo := accountTokensTo + args.1.1;
+        const accountTokensTo : nat = getTokens(receiver, s);
+        accountTokensTo := accountTokensTo + amount;
       }
       | IApprove(approveParams) -> skip
       | IGetBalance(balanceParams) -> skip
@@ -244,6 +244,7 @@ function setOwner (const p : useAction; const s : tokenStorage; const this: addr
 
 [@inline] function updateInterest (var s : tokenStorage) : tokenStorage is
   block {
+    //* NOTE :: borrow rate? *//
     const apr : nat = 25000000000000000n; // 2.5% (0.025) from accuracy
     const utilizationBase : nat = 200000000000000000n; // 20% (0.2)
     const secondsPerYear : nat = 31536000n;
@@ -274,7 +275,7 @@ function mint (const p : useAction; const s : tokenStorage; const this: address)
         if s.totalSupply =/= 0n then block {
           s := updateInterest(s);
           const exchangeRate : nat = abs(s.totalLiquid + s.totalBorrows - s.totalReserves) * accuracy / s.totalSupply;
-          mintTokens := mintParams.amount * accuracy * accuracy / exchangeRate;
+          mintTokens := mintTokens * accuracy / exchangeRate;
         }
         else skip;
 
@@ -373,6 +374,10 @@ function borrow (const p : useAction; const s : tokenStorage; const this: addres
         var accountBorrows : borrows := getBorrows(borrowParams.user, s);
         const accountTokens : nat = getTokens(borrowParams.user, s);
         accountBorrows.amount := accountBorrows.amount + borrowParams.amount;
+        
+        if accountBorrows.lastBorrowIndex =/= 0n then
+          accountBorrows.amount := accountBorrows.amount * s.borrowIndex / accountBorrows.lastBorrowIndex;
+        else skip;
         accountBorrows.lastBorrowIndex := s.borrowIndex;
 
         s.accountBorrows[borrowParams.user] := accountBorrows;
