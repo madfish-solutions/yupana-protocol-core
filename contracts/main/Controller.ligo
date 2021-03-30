@@ -314,15 +314,13 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
     | UpdateQToken(updateQTokenParams) -> skip
     | ExitMarket(membershipParams) -> {
       mustContainsQTokens(membershipParams.borrowerToken, s);
-      mustContainsQTokens(membershipParams.collateralToken, s); // NOTE!
+      mustContainsQTokens(membershipParams.collateralToken, s);
   
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-      // NOTE
       if tokens.borrowerToken = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address) then
         failwith("NotEnter")
       else skip;
-      //
 
       if getAccountBorrows(Tezos.sender, membershipParams.borrowerToken, s) =/= 0n then
         failwith("BorrowsExists")
@@ -543,7 +541,6 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
       mustContainsQTokens(safeBorrowParams.qToken, s);
       mustContainsQTokens(safeBorrowParams.borrowerToken, s);
 
-      // NOTE
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
       if tokens.collateralToken = safeBorrowParams.qToken then
@@ -554,7 +551,6 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
       tokens.borrowerToken := safeBorrowParams.borrowerToken;
 
       s.accountMembership[Tezos.sender] := tokens;
-      //
 
       // borrowAmount = getAccountBorrows(Tezos.sender, safeBorrowParams.qToken, s); ?????????
 
@@ -734,7 +730,6 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
 
 
       operations := list [
-        // NOTE: two updates are required
         Tezos.transaction(
           QUpdateControllerState(Tezos.sender), 
           0mutez, 

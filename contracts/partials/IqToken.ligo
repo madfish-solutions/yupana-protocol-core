@@ -67,6 +67,7 @@ type membershipParams is record [
   collateralToken       : address;
 ]
 
+
 type updateParams is record [
   qToken                : address;
   price                 : nat;
