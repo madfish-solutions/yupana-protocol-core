@@ -188,12 +188,6 @@ type ensuredLiquidateParams is record [
   collateralToken       : address;
 ]
 
-type safeSeizeParams is [@layout:comb] record [
-  liquidator            : address;
-  borrower              : address;
-  amount                : nat;
-  collateralToken       : address;
-]
 // CONTROLLERS PARAMS END
 
 type useAction is
@@ -236,7 +230,6 @@ type useControllerAction is
   | SafeRepay of safeRepayParams
   | SafeLiquidate of safeLiquidateParams
   | EnsuredLiquidate of ensuredLiquidateParams
-  | SafeSeize of safeSeizeParams
 
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return

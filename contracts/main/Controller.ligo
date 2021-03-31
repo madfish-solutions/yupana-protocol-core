@@ -33,7 +33,6 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
       | SafeRepay(safeRepayParams) -> 10n
       | SafeLiquidate(safeLiquidateParams) -> 11n
       | EnsuredLiquidate(ensuredLiquidateParams) -> 12n
-      | SafeSeize(safeSeizeParams) -> 13n
     end;
 
     const res : return = case s.useControllerLambdas[idx] of
@@ -198,7 +197,6 @@ function updatePrice (const p : useControllerAction; const this : address; var s
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -231,7 +229,6 @@ function setOracle (const p : useControllerAction; const this : address; var s :
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -261,7 +258,6 @@ function register (const p : useControllerAction; const this : address; var s : 
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -291,7 +287,6 @@ function updateQToken (const p : useControllerAction; const this : address; var 
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -327,7 +322,6 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -361,7 +355,6 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -421,7 +414,6 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -463,7 +455,6 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -521,7 +512,6 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -563,7 +553,6 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
     | SafeRepay(safeRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -597,7 +586,6 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
     }
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -649,7 +637,6 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
       ];
     }
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> skip
     end
   } with (operations, s)
 
@@ -699,41 +686,6 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
           ]),
           0mutez,
           getUseEntrypoint(ensuredLiquidateParams.collateralToken)
-        );
-      ];
-    }
-    | SafeSeize(safeSeizeParams) -> skip
-    end
-  } with (operations, s)
-
-function safeSeize (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
-  block {
-    var operations : list(operation) := list[];
-    case p of
-    | UpdatePrice(updateParams) -> skip
-    | SetOracle(setOracleParams) -> skip
-    | Register(registerParams) -> skip
-    | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
-    | SafeMint(safeMintParams) -> skip
-    | SafeRedeem(safeRedeemParams) -> skip
-    | EnsuredRedeem(ensuredRedeemParams) -> skip
-    | SafeBorrow(safeBorrowParams) -> skip
-    | EnsuredBorrow(ensuredBorrowParams) -> skip
-    | SafeRepay(safeRepayParams) -> skip
-    | SafeLiquidate(safeLiquidateParams) -> skip
-    | EnsuredLiquidate(ensuredLiquidateParams) -> skip
-    | SafeSeize(safeSeizeParams) -> {
-
-      operations := list [
-        Tezos.transaction(
-          Seize(record [
-            liquidator  = safeSeizeParams.liquidator;
-            borrower    = safeSeizeParams.borrower;
-            amount      = safeSeizeParams.amount;
-          ]),
-          0mutez,
-          getUseEntrypoint(safeSeizeParams.collateralToken)
         );
       ];
     }

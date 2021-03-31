@@ -462,16 +462,6 @@ function liquidate (const p : useAction; const s : tokenStorage; const this: add
             TransferOutside(record [from_ = liquidateParams.liquidator; to_ = this; value = liquidateParams.amount / accuracy]),
             0mutez,
             getTokenContract(s.token)
-          );
-          Tezos.transaction(
-            SafeSeize(record [
-              liquidator       = liquidateParams.liquidator;
-              borrower         = liquidateParams.borrower;
-              amount           = liquidateParams.amount;
-              collateralToken  = liquidateParams.collateralToken;
-            ]),
-            0mutez,
-            getUseController(Tezos.sender)
           )
         ];
       }
