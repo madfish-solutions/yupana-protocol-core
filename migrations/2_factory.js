@@ -1,15 +1,18 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { accounts } = require("../scripts/sandbox/accounts");
+const { accountsMap } = require('../scripts/sandbox/accounts');
+const { TezosToolkit } = require("@taquito/taquito");
+const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
 const { execSync } = require("child_process");
-const Factory = artifacts.require("Factory");
 
-var qToken = artifacts.require("qToken");
+const Factory = artifacts.require("Factory");
+const Controller = artifacts.require("Controller");
 
 function getLigo(isDockerizedLigo) {
   let path = "ligo";
   if (isDockerizedLigo) {
-    path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:next";
+    path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.11.0";
     try {
       execSync(`${path}  --help`);
     } catch (err) {
@@ -20,34 +23,35 @@ function getLigo(isDockerizedLigo) {
     try {
       execSync(`${path}  --help`);
     } catch (err) {
-      path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:next";
+      path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.11.0";
       execSync(`${path}  --help`);
     }
   }
   return path;
 }
 
-module.exports = async function (deployer) {
-  const factoryInstance = await Factory.deployed();
-  const storage = {
-    owner: accounts[0],
-    admin: accounts[0],
-    token: accounts[0],
-    lastUpdateTime: "2000-01-01T10:10:10.000Z",
-    totalBorrows: "0",
-    totalLiquid: "0",
-    totalSupply: "0",
-    totalReserves: "0",
-    borrowIndex: "0",
-    accountBorrows: MichelsonMap.fromLiteral({}),
-    accountTokens: MichelsonMap.fromLiteral({}),
-  };
+module.exports = async function (deployer, network) {
+  tezos = new TezosToolkit(tezos.rpc.url);
+  const secretKey = accountsMap.get(accounts[0]);
+  
+  tezos.setProvider({
+    config: {
+      confirmationPollingTimeoutSecond: 500,
+    },
+    signer: await InMemorySigner.fromSecretKey(secretKey),
+  });
 
-  const fullStorage = {
-    storage: storage,
-    tokenLambdas: MichelsonMap.fromLiteral({}),
-    useLambdas: MichelsonMap.fromLiteral({}),
+  const ControllerInstance = await Controller.deployed();
+
+  const storage = {
+    tokenList: new MichelsonMap(),
+    owner: accounts[0],
+    admin: ControllerInstance.address,
+    tokenLambdas: new MichelsonMap(),
+    useLambdas: new MichelsonMap(),
   };
+  await deployer.deploy(Factory, storage);
+  const factoryInstance = await Factory.deployed();
 
   let ligo = getLigo(true);
 
@@ -66,6 +70,7 @@ module.exports = async function (deployer) {
     });
     await operation.confirmation();
   }
+
   for (useFunction of functions.use) {
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetUseFunction(record index =${useFunction.index}n; func = ${useFunction.name}; end)'`,
@@ -81,6 +86,4 @@ module.exports = async function (deployer) {
     });
     await operation.confirmation();
   }
-
-  await deployer.deploy(qToken, fullStorage);
 };

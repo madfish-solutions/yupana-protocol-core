@@ -7,7 +7,7 @@ module.exports = {
   contracts_directory: "./contracts/main",
   networks: {
     development: {
-      host: "http://localhost",
+      host: "http://136.244.96.28",
       port: 8732,
       network_id: "*",
       secretKey: accountsMap.get(accounts[0]),
@@ -17,7 +17,7 @@ module.exports = {
       host: "https://delphinet.smartpy.io",
       port: 443,
       network_id: "*",
-      secretKey: accountsMap.get(accounts[0]),
+      secretKey: accountsMap.get(accounts[10]),
       type: "tezos",
     }
   }

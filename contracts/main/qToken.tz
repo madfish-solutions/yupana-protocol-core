@@ -5,12 +5,16 @@
                 (pair %getTotalSupply unit (contract nat))))
         (or (pair %transfer (address %from) (pair (address %to) (nat %value)))
             (or %use
-               (or (or (pair %borrow (nat %amount) (address %user))
-                       (pair %liquidate (address %from) (pair (address %to) (nat %value))))
-                   (or (pair %mint (nat %amount) (address %user))
-                       (pair %redeem (nat %amount) (address %user))))
-               (or (or (pair %repay (nat %amount) (address %user)) (address %setAdmin))
-                   (address %setOwner))))) ;
+               (or (or (or (pair %borrow (nat %amount) (address %user))
+                           (pair %liquidate
+                              (pair (nat %amount) (address %borrower))
+                              (pair (address %collateralToken) (address %liquidator))))
+                       (or (pair %mint (nat %amount) (address %user))
+                           (pair %redeem (nat %amount) (address %user))))
+                   (or (or (pair %repay (nat %amount) (address %user))
+                           (pair %seize (pair (nat %amount) (address %borrower)) (address %liquidator)))
+                       (or (address %setAdmin) (address %setOwner))))
+               (address %updateControllerState)))) ;
   storage
     (pair (pair (pair %storage
                    (pair (pair (pair (big_map %accountBorrows
@@ -49,12 +53,16 @@
           (big_map %useLambdas
              nat
              (lambda
-                (pair (pair (or (or (or (pair %borrow (nat %amount) (address %user))
-                                        (pair %liquidate (address %from) (pair (address %to) (nat %value))))
-                                    (or (pair %mint (nat %amount) (address %user))
-                                        (pair %redeem (nat %amount) (address %user))))
-                                (or (or (pair %repay (nat %amount) (address %user)) (address %setAdmin))
-                                    (address %setOwner)))
+                (pair (pair (or (or (or (or (pair %borrow (nat %amount) (address %user))
+                                            (pair %liquidate
+                                               (pair (nat %amount) (address %borrower))
+                                               (pair (address %collateralToken) (address %liquidator))))
+                                        (or (pair %mint (nat %amount) (address %user))
+                                            (pair %redeem (nat %amount) (address %user))))
+                                    (or (or (pair %repay (nat %amount) (address %user))
+                                            (pair %seize (pair (nat %amount) (address %borrower)) (address %liquidator)))
+                                        (or (address %setAdmin) (address %setOwner))))
+                                (address %updateControllerState))
                             (pair (pair (pair (pair (big_map %accountBorrows
                                                        address
                                                        (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
@@ -73,12 +81,9 @@
                                   (pair (pair (timestamp %lastUpdateTime) (address %owner))
                                         (pair (address %token) (nat %totalBorrows))))
                             (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))))) ;
-  code { DUP ;
-         CDR ;
-         SELF ;
-         ADDRESS ;
-         DIG 2 ;
-         CAR ;
+  code { UNPAIR ;
+         SELF_ADDRESS ;
+         SWAP ;
          IF_LEFT
            { SWAP ;
              DROP ;
@@ -89,11 +94,12 @@
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
                      DUP ;
+                     DUG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
+                     SWAP ;
                      DUP ;
-                     DUG 3 ;
+                     DUG 2 ;
                      IF_LEFT
                        { IF_LEFT
                            { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
@@ -101,8 +107,8 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
-                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -110,9 +116,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -124,11 +128,12 @@
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
                      DUP ;
+                     DUG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
+                     SWAP ;
                      DUP ;
-                     DUG 3 ;
+                     DUG 2 ;
                      IF_LEFT
                        { IF_LEFT
                            { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
@@ -136,8 +141,8 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
-                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -145,9 +150,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -160,11 +163,12 @@
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
                      DUP ;
+                     DUG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
+                     SWAP ;
                      DUP ;
-                     DUG 3 ;
+                     DUG 2 ;
                      IF_LEFT
                        { IF_LEFT
                            { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
@@ -172,8 +176,8 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
-                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -181,9 +185,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -195,11 +197,12 @@
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
                      DUP ;
+                     DUG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
+                     SWAP ;
                      DUP ;
-                     DUG 3 ;
+                     DUG 2 ;
                      IF_LEFT
                        { IF_LEFT
                            { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
@@ -207,8 +210,8 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
-                       { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -216,9 +219,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -233,11 +234,12 @@
                        (or (pair address (contract nat)) (pair unit (contract nat)))) ;
                  SWAP ;
                  DUP ;
+                 DUG 2 ;
                  CAR ;
                  CDR ;
-                 DIG 2 ;
+                 SWAP ;
                  DUP ;
-                 DUG 3 ;
+                 DUG 2 ;
                  IF_LEFT
                    { IF_LEFT
                        { IF_LEFT { DROP ; PUSH nat 1 } { DROP ; PUSH nat 3 } }
@@ -245,8 +247,8 @@
                    { DROP ; PUSH nat 0 } ;
                  GET ;
                  IF_NONE
-                   { SWAP ; DROP ; PUSH string "qToken/function-not-set" ; FAILWITH }
-                   { SWAP ; DUP ; DUG 2 ; CAR ; CAR ; DIG 3 ; PAIR ; EXEC } ;
+                   { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                   { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;
                  DUG 2 ;
@@ -254,56 +256,31 @@
                  DIG 2 ;
                  CAR ;
                  CDR ;
-                 DIG 2 ;
-                 DUP ;
-                 DUG 3 ;
+                 DUP 3 ;
                  CDR ;
                  PAIR ;
                  PAIR ;
                  SWAP ;
                  CAR ;
                  PAIR }
-               { PAIR ;
-                 PAIR ;
-                 DUP ;
-                 CAR ;
-                 CAR ;
+               { DUP 3 ;
+                 CDR ;
                  SWAP ;
                  DUP ;
                  DUG 2 ;
-                 CDR ;
-                 DUP ;
-                 CDR ;
-                 DIG 2 ;
-                 DUP ;
-                 DUG 3 ;
                  IF_LEFT
                    { IF_LEFT
-                       { IF_LEFT { DROP ; PUSH nat 4 } { DROP ; PUSH nat 6 } }
-                       { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 3 } } }
-                   { IF_LEFT
-                       { IF_LEFT { DROP ; PUSH nat 5 } { DROP ; PUSH nat 0 } }
-                       { DROP ; PUSH nat 1 } } ;
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 4 } { DROP ; PUSH nat 6 } }
+                           { IF_LEFT { DROP ; PUSH nat 2 } { DROP ; PUSH nat 3 } } }
+                       { IF_LEFT
+                           { IF_LEFT { DROP ; PUSH nat 5 } { DROP ; PUSH nat 7 } }
+                           { IF_LEFT { DROP ; PUSH nat 0 } { DROP ; PUSH nat 1 } } } }
+                   { DROP ; PUSH nat 8 } ;
                  GET ;
                  IF_NONE
-                   { SWAP ;
-                     DROP ;
-                     SWAP ;
-                     DROP ;
-                     PUSH string "qToken/function-not-set" ;
-                     FAILWITH }
-                   { DIG 3 ;
-                     CAR ;
-                     CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
-                     CAR ;
-                     CAR ;
-                     DIG 4 ;
-                     PAIR ;
-                     PAIR ;
-                     EXEC } ;
+                   { DROP 2 ; PUSH string "qToken/middleUse/function-not-set" ; FAILWITH }
+                   { DIG 2 ; DUP 4 ; CAR ; CAR ; DIG 3 ; PAIR ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;
                  DUG 2 ;
@@ -311,9 +288,7 @@
                  DIG 2 ;
                  CAR ;
                  CDR ;
-                 DIG 2 ;
-                 DUP ;
-                 DUG 3 ;
+                 DUP 3 ;
                  CDR ;
                  PAIR ;
                  PAIR ;

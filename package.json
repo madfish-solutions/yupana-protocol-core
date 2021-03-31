@@ -4,20 +4,25 @@
   "description": "Tezos Example Box =================",
   "dependencies": {
     "@taquito/michelson-encoder": "latest",
-    "@taquito/signer": "latest",
-    "@taquito/taquito": "^6.3.4-beta.0",
+    "@taquito/signer": "^8.0.4-beta.0",
+    "@taquito/taquito": "^8.0.4-beta-RC.0",
     "commander": "^7.0.0",
     "dotenv": "^8.2.0",
-    "ganache-cli": "^6.11.0-tezos.0",
+    "ganache-cli": "6.12.1-tezos.0",
+    "patch-package": "^6.4.7",
+    "postinstall-postinstall": "^2.1.0",
+    "truffle": "^5.5.0-tezos.4",
     "truffle-assertions": "^0.9.2"
   },
   "devDependencies": {
-    "mocha": "^8.1.1",
-    "truffle-assertions": "^0.9.2"
+    "mocha": "^8.1.1"
   },
   "scripts": {
-    "start-sandbox": "ganache-cli --flavor tezos --seed alice",
-    "compile-qToken": "node scripts/cli.js build-qToken --no-json -o contracts"
+    "start-sandbox": "ganache-cli --flavor tezos --seed alice --hardfork edo",
+    "compile-qToken": "node scripts/cli.js build-qToken --no-json -o contracts",
+    "compile": "truffle compile",
+    "test": "truffle test",
+    "postinstall": "patch-package"
   },
   "repository": {
     "type": "git",
