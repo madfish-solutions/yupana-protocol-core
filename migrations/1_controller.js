@@ -31,13 +31,14 @@ function getLigo(isDockerizedLigo) {
 module.exports = async function (deployer) {
   tezos = new TezosToolkit(tezos.rpc.url);
   const secretKey = accountsMap.get(accounts[0]);
-  
+
   tezos.setProvider({
     config: {
       confirmationPollingTimeoutSecond: 500,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
+  // FOR EDO
   const controllerStorage = {
     factory: accounts[0],
     admin: accounts[0],

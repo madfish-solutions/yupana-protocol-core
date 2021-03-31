@@ -1,4 +1,4 @@
-#include "./IqToken.ligo"
+#include "./MainTypes.ligo"
 
 type factoryStorage is record [
   tokenList           : big_map(address, address);
@@ -32,8 +32,9 @@ type registerType is record [
 type iController is QRegister of registerType
 type fullFactoryReturn is list(operation) * factoryStorage
 
-type factoryAction is 
+type factoryAction is
 | LaunchToken           of launchTokenParams
 | SetFactoryAdmin       of address
+| SetNewOwner           of address
 | SetTokenFunction      of setTokenParams
 | SetUseFunction        of setUseParams

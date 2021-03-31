@@ -33,7 +33,7 @@ function getLigo(isDockerizedLigo) {
 module.exports = async function (deployer, network) {
   tezos = new TezosToolkit(tezos.rpc.url);
   const secretKey = accountsMap.get(accounts[0]);
-  
+
   tezos.setProvider({
     config: {
       confirmationPollingTimeoutSecond: 500,

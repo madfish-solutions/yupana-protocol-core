@@ -1,7 +1,9 @@
 { parameter
     (or (or (or (pair %approve (address %spender) (nat %value))
-                (pair %getAllowance (pair (address %owner) (address %spender)) (contract nat)))
-            (or (pair %getBalance (address %owner) (contract nat))
+                (pair %getAllowance
+                   (address %owner)
+                   (pair (address %spender) (contract %receiver nat))))
+            (or (pair %getBalance (address %owner) (contract %receiver nat))
                 (pair %getTotalSupply unit (contract nat))))
         (or (pair %transfer (address %from) (pair (address %to) (nat %value)))
             (or %use
@@ -29,8 +31,10 @@
                    nat
                    (lambda
                       (pair (or (or (or (pair %iApprove (address %spender) (nat %value))
-                                        (pair %iGetAllowance (pair (address %owner) (address %spender)) (contract nat)))
-                                    (or (pair %iGetBalance (address %owner) (contract nat))
+                                        (pair %iGetAllowance
+                                           (address %owner)
+                                           (pair (address %spender) (contract %receiver nat))))
+                                    (or (pair %iGetBalance (address %owner) (contract %receiver nat))
                                         (pair %iGetTotalSupply unit (contract nat))))
                                 (pair %iTransfer (address %from) (pair (address %to) (nat %value))))
                             (pair (pair (pair (pair (big_map %accountBorrows
@@ -89,7 +93,7 @@
              DROP ;
              IF_LEFT
                { IF_LEFT
-                   { LEFT (pair (pair address address) (contract nat)) ;
+                   { LEFT (pair address (pair address (contract nat))) ;
                      LEFT (or (pair address (contract nat)) (pair unit (contract nat))) ;
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
@@ -107,7 +111,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
                        { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -141,7 +145,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
                        { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -159,7 +163,7 @@
                      PAIR } }
                { IF_LEFT
                    { LEFT (pair unit (contract nat)) ;
-                     RIGHT (or (pair address nat) (pair (pair address address) (contract nat))) ;
+                     RIGHT (or (pair address nat) (pair address (pair address (contract nat)))) ;
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
                      DUP ;
@@ -176,7 +180,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
                        { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -193,7 +197,7 @@
                      CAR ;
                      PAIR }
                    { RIGHT (pair address (contract nat)) ;
-                     RIGHT (or (pair address nat) (pair (pair address address) (contract nat))) ;
+                     RIGHT (or (pair address nat) (pair address (pair address (contract nat)))) ;
                      LEFT (pair address (pair address nat)) ;
                      SWAP ;
                      DUP ;
@@ -210,7 +214,7 @@
                        { DROP ; PUSH nat 0 } ;
                      GET ;
                      IF_NONE
-                       { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                       { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
                        { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
@@ -230,7 +234,7 @@
                { SWAP ;
                  DROP ;
                  RIGHT
-                   (or (or (pair address nat) (pair (pair address address) (contract nat)))
+                   (or (or (pair address nat) (pair address (pair address (contract nat))))
                        (or (pair address (contract nat)) (pair unit (contract nat)))) ;
                  SWAP ;
                  DUP ;
@@ -247,7 +251,7 @@
                    { DROP ; PUSH nat 0 } ;
                  GET ;
                  IF_NONE
-                   { DROP ; PUSH string "qToken/middleToken/function-not-set" ; FAILWITH }
+                   { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
                    { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;
@@ -279,7 +283,9 @@
                    { DROP ; PUSH nat 8 } ;
                  GET ;
                  IF_NONE
-                   { DROP 2 ; PUSH string "qToken/middleUse/function-not-set" ; FAILWITH }
+                   { DROP 2 ;
+                     PUSH string "qTokenMiddleTokenFunctionNotSetInMiddleUse" ;
+                     FAILWITH }
                    { DIG 2 ; DUP 4 ; CAR ; CAR ; DIG 3 ; PAIR ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;

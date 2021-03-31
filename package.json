@@ -18,10 +18,13 @@
     "mocha": "^8.1.1"
   },
   "scripts": {
+    "clean": "rm -rf ./build",
     "start-sandbox": "ganache-cli --flavor tezos --seed alice --hardfork edo",
     "compile-qToken": "node scripts/cli.js build-qToken --no-json -o contracts",
-    "compile": "truffle compile",
-    "test": "truffle test",
+    "migrate": "yarn clean && yarn truffle migrate",
+    "migrate-edonet": "yarn clean && yarn truffle migrate --network edonet",
+    "compile": "yarn clean && yarn truffle compile",
+    "test": "yarn truffle test",
     "postinstall": "patch-package"
   },
   "repository": {

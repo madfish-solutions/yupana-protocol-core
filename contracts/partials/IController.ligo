@@ -1,4 +1,4 @@
-#include "./IqToken.ligo"
+#include "./MainTypes.ligo"
 
 type market is record [
   collateralFactor      : nat;
@@ -11,11 +11,13 @@ type controllerStorage is record [
   factory               : address;
   admin                 : address;
   qTokens               : set(address);
+  // oraclePairs           : big_map(string, address); // !!!!
   pairs                 : big_map(address, address);
   accountBorrows        : big_map((address * address), nat);
   accountTokens         : big_map((address * address), nat);
   markets               : big_map(address, market);
   accountMembership     : big_map(address, membershipParams);
+  // oracleContract        : address; // !!!!
 ]
 
 [@inline] const noOperations : list (operation) = nil
@@ -36,7 +38,7 @@ type fullControllerStorage is record [
 
 type fullReturn is list (operation) * fullControllerStorage
 
-type entryAction is 
+type entryAction is
   | UseController of useControllerAction
   | SetUseAction of setUseParams
   | SetFactory of address
