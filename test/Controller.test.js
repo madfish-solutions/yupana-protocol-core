@@ -20,7 +20,6 @@ let qTokenAddress;
 var fa = [];
 var qTokens = [];
 
-
 contract("Controller", async () => {
   before("setup1", async () => {
     tezos = new TezosToolkit(tezos.rpc.url);

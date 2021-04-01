@@ -610,7 +610,6 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
       var tokensBorrow : membershipParams := getAccountMembership(safeLiquidateParams.borrower, s);
 
-
       operations := list [
         Tezos.transaction(
           QUpdateControllerState(Tezos.sender),
