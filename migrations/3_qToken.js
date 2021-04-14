@@ -35,10 +35,10 @@ module.exports = async function (deployer, network) {
   tezos = new TezosToolkit(tezos.rpc.url);
   if (network == "development") return;
   const secretKey = accountsMap.get(accounts[0]);
-  
+
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 500,
+      confirmationPollingTimeoutSecond: 2500,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });

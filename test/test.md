@@ -123,19 +123,20 @@
 
 1. Should contains in qToken in qTokens list
 2. Shouldn't call if qToken not in qTokens list
-3. Ensure shortfail = 0
-4. Shouldn`t call if collateralToken already entered to market
-5. Collateral token must be minted
-6. Shouldn't call if collateral token dont minted
+3. Collateral and Borrower token must be different
+4. Brower token must be minted
+5. Shouldn't call if collateral token dont minted
+6. Ensure shortfail = 0
+7. Shouldn`t call if collateralToken already entered to market
 
 #### SafeRedeem
 
 **Test cases to cover entrypoint call:**
 
-1. Should contains in qToken in qTokens list
-2. Shouldn't call if qToken not in qTokens list
-3. Check way if user enter the market. Should return list of operations: qToken.updateControllerState(user)  (qToken is the contract the user set as the collateral) + self.redeemMiddle
-4. Check way if user did not enter the market. Should call qToken.redeem
+1. Shouldn't call if qToken not in qTokens list
+2. Check way if user did not enter the market. Should call qToken.redeem
+3. Check way if user enter the market. Should return list of operations: qToken.updateControllerState(user)  (qToken is the contract the user set as the collateral)
+4. Should contains in qToken in qTokens list
 5. Should calculate the redeemed amount.
 6. Should transfer the amount of underlying tokens
 
@@ -144,34 +145,34 @@
 
 **Test cases to cover entrypoint call:**
 
-1. Should contains in qToken in qTokens list
-2. Shouldn't call if qToken not in qTokens list
-3. Should call if user have borrow.
-4. Shouldn't call if user doesnt have borrow.
-5. Should call if user have tokens.
-6. Shouldn't call if user doesnt have tokens.
-7. Amount of collateral should be withdrawn (transferred) from the sender
+1. Shouldn't call if qToken not in qTokens list
+2. Shouldn't call if user doesnt have borrow.
+3. Should contains in qToken in qTokens list
+4. Should call if user have borrow.
+5. Amount of collateral should be withdrawn (transferred) from the sender
 
 
 #### ExitMarket
 
 **Test cases to cover entrypoint call:**
 
-1. Should delete date in controller.storage.accountMembership if entered in market and borrow not exist
-2. Should`nt delete date in controller.storage.accountMembership if dont entered in market and borrow exist
+1. Should`nt delete date in controller.storage.accountMembership if doesnt entered in market and borrow exist
+2. Should delete date in controller.storage.accountMembership if entered in market and borrow not exist
 
 
 #### SafeLiquidate
 
 **Test cases to cover entrypoint call:**
 
-1. Should contains in qToken in qTokens list
-2. Shouldn't call if qToken not in qTokens list
-3. Should send qToken.liquidate if ensure shortfail =/= 0
-4. Shouldn't send qToken.liquidate if ensure shortfail =/= 0
-5. Should failed if liquidator dont have borrower token.
-6. Shouldn't failed if liquidator have borrower token.
-7. Shouldn't failed if borrower havent borrow
+1. Shouldn't call if qToken not in qTokens list.
+2. Should failed if Borrower = Liquidator.
+3. Should failed if liquidator doesnt have borrower token.
+4. Should failed if debt amount is zero.
+5. Shouldn't send qToken.liquidate if ensure shortfail =/= 0.
+6. Should send qToken.liquidate if ensure shortfail =/= 0.
+7. Should contains in qToken in qTokens list.
+8. Shouldn't failed if liquidator have borrower token.
+9. Shouldn't failed if borrower havent borrow.
 
 ## 3. qToken
 

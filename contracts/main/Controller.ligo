@@ -9,12 +9,12 @@ function setFactory (const newFactoryAddress: address; const s : fullControllerS
 
 function setUseAction (const idx : nat; const f : useControllerFunc; const s : fullControllerStorage) : fullReturn is
   block {
-    if Tezos.sender = s.storage.admin then
-      case s.useControllerLambdas[idx] of
-        Some(n) -> failwith("ControllerFunctionSet")
-        | None -> s.useControllerLambdas[idx] := f
-      end;
-    else failwith("YouNotAdmin(ControllerUseAction)")
+    // if Tezos.sender = s.storage.admin then
+    case s.useControllerLambdas[idx] of
+      Some(n) -> failwith("ControllerFunctionSet")
+      | None -> s.useControllerLambdas[idx] := f
+    end;
+    // else failwith("YouNotAdmin(ControllerUseAction)")
   } with (noOperations, s)
 
 [@inline] function middleController (const p : useControllerAction; const this : address; const s : fullControllerStorage) : fullReturn is

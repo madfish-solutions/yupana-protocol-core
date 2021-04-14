@@ -63,7 +63,7 @@ contract("Controller", async () => {
     const fStorage = await fInstance.storage();
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
     qTokens.push(qTokenAddress);
-    console.log("New qToken:", qTokenAddress);
+    console.log("Created new qToken:", qTokenAddress);
 
     const operation2 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
     await operation2.confirmation();
@@ -79,7 +79,17 @@ contract("Controller", async () => {
   });
 
   describe("setOracle", async () => {
-    it("set new oracle", async () => {
+    it("set new oracle colled by admin", async () => {
+      const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
+      const operation = await cInstance.methods.useController("setOracle", oracle, qTokenAddress).send();
+      await operation.confirmation();
+      const oracleStorage = await cInstance.storage();
+      const value = await oracleStorage.storage.markets.get(qTokenAddress);
+      console.log("NewOracle:", await value.oracle);
+    });
+
+    it("set new oracle colled by non-admin", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
       const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
       const operation = await cInstance.methods.useController("setOracle", oracle, qTokenAddress).send();
       await operation.confirmation();
@@ -90,7 +100,16 @@ contract("Controller", async () => {
   });
 
   describe("safeMint", async () => {
-    it("Safe Mint 140 for account 0", async () => {
+    it("Safe Mint 140 for account 0; qToken non contain in qTokens list", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+      var amount = 140;
+      var randomAddress = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
+      const operation = await cInstance.methods.useController("safeMint", amount, randomAddress).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Mint 140 for account 0; qToken contain in qTokens list", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
       var amount = 140;
       const operation = await cInstance.methods.useController("safeMint", amount, qTokenAddress).send();
       await operation.confirmation();
@@ -133,6 +152,56 @@ contract("Controller", async () => {
   });
 
   describe("safeBorrow", async () => {
+    it("Safe Borrow 10 for account 0; qToken non contain in qTokens list", async () => {
+      var amount = 10;
+      var randomCollateral = "KT1D2F12dbneCAJUXDxzYgoZu8gb5Mjf618m";
+      var randomBorrow = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
+
+      const operation = await cInstance.methods.useController(
+        "safeBorrow",
+        randomCollateral,
+        amount,
+        randomBorrow
+      ).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Borrow 10 for account 0; Collateral and Borrower token not different", async () => {
+      var amount = 10;
+
+      const operation = await cInstance.methods.useController(
+        "safeBorrow",
+        qTokens[qTokens.length - 3],
+        amount,
+        qTokens[qTokens.length - 3]
+      ).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Borrow 10 for account 0. Brower token is`nt minted", async () => {
+      var amount = 10;
+
+      const operation = await cInstance.methods.useController(
+        "safeBorrow",
+        qTokens[qTokens.length - 3],
+        amount,
+        qTokenAddress
+      ).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Borrow 10 for account 0. Collateral token is`nt minted", async () => {
+      var amount = 10;
+
+      const operation = await cInstance.methods.useController(
+        "safeBorrow",
+        qTokenAddress,
+        amount,
+        qTokens[qTokens.length - 3]
+      ).send();
+      await operation.confirmation();
+    });
+
     it("Safe Borrow 10 for account 0", async () => {
       var amount = 10;
 
@@ -161,9 +230,64 @@ contract("Controller", async () => {
 
       console.log("Acc Borr in Contr: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
     });
+
+    // it("Safe Borrow 10 for account 0. shortfail not zero", async () => {
+
+    // });
+
+    it("Safe Borrow 10 for account 0. CollateralToken already entered to market", async () => {
+      var amount = 10;
+
+      const operation = await cInstance.methods.useController(
+        "safeBorrow",
+        qTokens[qTokens.length - 3],
+        amount,
+        qTokens[qTokens.length - 2]
+      ).send();
+      await operation.confirmation();
+    });
   });
 
   describe("safeRedeem", async () => {
+    it("Safe Redeem 20 for account 0. qToken non contain in qTokens list", async () => {
+      var amount = 20;
+      var randomToken = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
+
+      const operation = await cInstance.methods.useController(
+        "safeRedeem",
+        amount,
+        randomToken
+      ).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Redeem 20 for account 1. Redeem without borrow.", async () => {
+      var amount = 20;
+
+      const operation = await cInstance.methods.useController(
+        "safeRedeem",
+        amount,
+        NEEDTOKEN //!!!!!!!!!!!!!!!!!!!!!!!
+      ).send();
+      await operation.confirmation();
+
+      let token = await qT.at(qTokens[qTokens.length - 4]);
+      let res = await token.storage();
+      let aB = await res.storage.accountBorrows.get(accounts[0]);
+
+      console.log("Account Borrows amount: ", await aB.amount);
+      console.log(
+        "Account Tokens amount: ",
+        await res.storage.accountTokens.get(accounts[0])
+      );
+
+      let x = await XTZ.at(fa[fa.length - 4]);
+      let xRes = await x.storage();
+      let xB = await xRes.ledger.get(accounts[0]);
+      console.log("Balance in XTZ:", await xB.balance);
+    });
+
+
     it("Safe Redeem 20 for account 0", async () => {
       var amount = 20;
       const operation = await cInstance.methods.useController(
@@ -191,8 +315,33 @@ contract("Controller", async () => {
   });
 
   describe("safeRepay", async () => {
-    it("Safe Repay 10 for account 0", async () => {
+    it("Safe Repay 10 for account 0. qToken non contain in qTokens list", async () => {
       var amount = 10;
+      var randomToken = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
+
+      const operation = await cInstance.methods.useController(
+        "safeRepay",
+        amount,
+        randomToken
+      ).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Repay 10 for account 1. user doesnt have borrow", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
+      var amount = 10;
+
+      const operation = await cInstance.methods.useController(
+        "safeRepay",
+        amount,
+        qTokens[qTokens.length - 4]
+      ).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Repay 5 for account 0", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+      var amount = 5;
       const operation = await cInstance.methods.useController(
         "safeRepay",
         amount,
@@ -214,12 +363,14 @@ contract("Controller", async () => {
   });
 
   describe("exitMarket", async () => {
-    it("remove accountMembership for account 0", async () => {
+    it("remove accountMembership for account 1. user doesnt entered to market", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
+
       const borrowerToken = qTokens[qTokens.length - 5];
       const collateralToken = qTokens[qTokens.length - 6];
 
-      let oracleStorage = await cInstance.storage();
-      let value = await oracleStorage.storage.accountMembership.get(accounts[0]);
+      let cMarketStorage = await cInstance.storage();
+      let value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
       console.log("Account Membership: ", value);
 
       const operation = await cInstance.methods.useController(
@@ -229,13 +380,63 @@ contract("Controller", async () => {
       ).send();
       await operation.confirmation();
 
-      oracleStorage = await cInstance.storage();
-      value = await oracleStorage.storage.accountMembership.get(accounts[0]);
+      cMarketStorage = await cInstance.storage();
+      value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
+      console.log("Account Membership after exit: ", value);
+    });
+
+    it("remove accountMembership for account 0. Borrow exist", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+      const borrowerToken = qTokens[qTokens.length - 5];
+      const collateralToken = qTokens[qTokens.length - 6];
+
+      let cMarketStorage = await cInstance.storage();
+      let value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
+      console.log("Account Membership: ", value);
+
+      const operation = await cInstance.methods.useController(
+        "exitMarket",
+        borrowerToken,
+        collateralToken
+      ).send();
+      await operation.confirmation();
+
+      cMarketStorage = await cInstance.storage();
+      value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
+      console.log("Account Membership after exit: ", value);
+    });
+
+    it("remove accountMembership for account 0. Borrow not exist", async () => {
+      var amount = 5;
+
+      const operation = await cInstance.methods.useController(
+        "safeRepay",
+        amount,
+        qTokens[qTokens.length - 6]
+      ).send();
+      await operation.confirmation();
+
+      const borrowerToken = qTokens[qTokens.length - 5];
+      const collateralToken = qTokens[qTokens.length - 6];
+
+      let cMarketStorage = await cInstance.storage();
+      let value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
+      console.log("Account Membership: ", value);
+
+      const operation = await cInstance.methods.useController(
+        "exitMarket",
+        borrowerToken,
+        collateralToken
+      ).send();
+      await operation.confirmation();
+
+      cMarketStorage = await cInstance.storage();
+      value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
       console.log("Account Membership after exit: ", value);
     });
   });
 
-  describe("safeMint3", async () => {
+  describe("safeMint3 for SafeLiquidate", async () => {
     it("Safe Mint 150 for account 2", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
 
@@ -265,7 +466,7 @@ contract("Controller", async () => {
     });
   });
 
-  describe("safeBorrow2", async () => {
+  describe("safeBorrow2 for SafeLiquidate", async () => {
     it("Safe Borrow 20 for account 2", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
       var amount = 20;
@@ -330,6 +531,41 @@ contract("Controller", async () => {
   });
 
   describe("safeLiquidate", async () => {
+    it("Safe Liquidate. qToken not in qTokens list", async () => {
+      var borrower = accounts[2];
+      var amount = 0;
+      var randomToken = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
+
+      const operation = await cInstance.methods.useController("safeLiquidate", borrower, amount, randomToken).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Liquidate. Borrower = Liquidator", async () => {
+      var borrower = accounts[0];
+      var amount = 0;
+
+      const operation = await cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 8]).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Liquidate. Liquidator doesnt have borrower token", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
+      var borrower = accounts[2];
+      var amount = 0;
+
+      const operation = await cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 8]).send();
+      await operation.confirmation();
+    });
+
+    it("Safe Liquidate.Brower debt amount is zero", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+      var borrower = accounts[2];
+      var amount = 0;
+
+      const operation = await cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 8]).send();
+      await operation.confirmation();
+    });
+
     it("Safe Liquidate", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
       var borrower = accounts[2];
@@ -341,7 +577,6 @@ contract("Controller", async () => {
       console.log("Acc Borr controller: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
       console.log("Acc Tok controller: ", (await MStorage.storage.accountTokens.get(arr)).toString());
       console.log("Account MEM controller: ", await MStorage.storage.accountMembership.get(accounts[2]));
-
 
       let token = await qT.at(qTokens[qTokens.length - 8]);
       let res = await token.storage();

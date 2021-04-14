@@ -19,7 +19,7 @@
   },
   "scripts": {
     "clean": "rm -rf ./build",
-    "start-sandbox": "ganache-cli --flavor tezos --seed alice --hardfork edo",
+    "start-sandbox": "docker run --rm --name my-sandbox -e flextesa_node_cors_origin=\"*\" --detach -p 8732:20000 tqtezos/flextesa:20210316 flobox start",
     "compile-qToken": "node scripts/cli.js build-qToken --no-json -o contracts",
     "migrate": "yarn clean && yarn truffle migrate",
     "migrate-edonet": "yarn clean && yarn truffle migrate --network edonet",

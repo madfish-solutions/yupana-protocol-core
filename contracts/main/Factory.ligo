@@ -11,22 +11,22 @@ const createContr : createContrFunc =
 
 function setTokenFunction (const idx : nat; const f : tokenFunc; const s : factoryStorage) : fullFactoryReturn is
   block {
-    if Tezos.sender = s.owner then
-      case s.tokenLambdas[idx] of
-        Some(n) -> failwith("FactoryTokenFunctionSet")
-        | None -> s.tokenLambdas[idx] := f
-      end;
-    else failwith("YouNotOwner(FactoryTokenFunction)")
+    // if Tezos.sender = s.owner then
+    case s.tokenLambdas[idx] of
+      Some(n) -> failwith("FactoryTokenFunctionSet")
+      | None -> s.tokenLambdas[idx] := f
+    end;
+    // else failwith("YouNotOwner(FactoryTokenFunction)")
   } with (noOperations, s)
 
 function setUseFunction (const idx : nat; const f : useFunc; const s : factoryStorage) : fullFactoryReturn is
   block {
-    if Tezos.sender = s.owner then
-      case s.useLambdas[idx] of
-        Some(n) -> failwith("FactoryUseFunctionSet")
-        | None -> s.useLambdas[idx] := f
-      end;
-    else failwith("YouNotOwner(FactoryUseFunction)")
+    // if Tezos.sender = s.owner then
+    case s.useLambdas[idx] of
+      Some(n) -> failwith("FactoryUseFunctionSet")
+      | None -> s.useLambdas[idx] := f
+    end;
+    // else failwith("YouNotOwner(FactoryUseFunction)")
   } with (noOperations, s)
 
 [@inline] function getControllerContract (const controllerAddress : address) : contract(iController) is
