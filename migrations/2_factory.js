@@ -36,7 +36,7 @@ module.exports = async function (deployer, network) {
 
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 2500,
+      confirmationPollingTimeoutSecond: 500000000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
@@ -52,20 +52,27 @@ module.exports = async function (deployer, network) {
   };
   await deployer.deploy(Factory, storage);
   const factoryInstance = await Factory.deployed();
+  // Try to deploy another way
+  // const factoryInstance = await tezos.contract.originate({
+  //   code: JSON.parse(Factory.michelson),
+  //   storage: storage,
+  // });
+
+  // await factoryInstance.confirmation();
 
   let ligo = getLigo(true);
 
   for (tokenFunction of functions.token) {
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetTokenFunction(record index =${tokenFunction.index}n; func =${tokenFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
+      { maxBuffer: 1024 * 4000 }
     );
     const operation = await tezos.contract.transfer({
-      to: factoryInstance.address,
+      to: factoryInstance.contractAddress,
       amount: 0,
       parameter: {
         entrypoint: "setTokenFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
+        value: JSON.parse(stdout.toString()).args[0].args[0].args[0],
       },
     });
     await operation.confirmation();
@@ -74,14 +81,14 @@ module.exports = async function (deployer, network) {
   for (useFunction of functions.use) {
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetUseFunction(record index =${useFunction.index}n; func = ${useFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
+      { maxBuffer: 1024 * 3000 }
     );
     const operation = await tezos.contract.transfer({
-      to: factoryInstance.address,
+      to: factoryInstance.contractAddress,
       amount: 0,
       parameter: {
         entrypoint: "setUseFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
+        value: JSON.parse(stdout.toString()).args[0],
       },
     });
     await operation.confirmation();

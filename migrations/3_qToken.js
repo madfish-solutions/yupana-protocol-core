@@ -38,7 +38,7 @@ module.exports = async function (deployer, network) {
 
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 2500,
+      confirmationPollingTimeoutSecond: 5000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });

@@ -423,7 +423,7 @@ contract("Controller", async () => {
       let value = await cMarketStorage.storage.accountMembership.get(accounts[0]);
       console.log("Account Membership: ", value);
 
-      const operation = await cInstance.methods.useController(
+      operation = await cInstance.methods.useController(
         "exitMarket",
         borrowerToken,
         collateralToken

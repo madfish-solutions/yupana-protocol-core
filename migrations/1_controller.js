@@ -34,7 +34,7 @@ module.exports = async function (deployer) {
 
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 2500,
+      confirmationPollingTimeoutSecond: 500000000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
@@ -58,6 +58,8 @@ module.exports = async function (deployer) {
   await deployer.deploy(Controller, fullControllerStorage);
   const ControllerInstance = await Controller.deployed();
 
+  console.log(ControllerInstance.address);
+
   // Try to deploy another way
   // const controllerOperation = await tezos.contract.originate({
   //   code: JSON.parse(Controller.michelson),
@@ -72,10 +74,10 @@ module.exports = async function (deployer) {
   let ligo = getLigo(true);
 
   for (useControllerFunction of functions.useController) {
-    console.log('2');
+    console.log(useControllerFunction.name);
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Controller.ligo main 'SetUseAction(record index =${useControllerFunction.index}n; func = ${useControllerFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
+      { maxBuffer: 1024 * 1000 }
     );
     const operation = await tezos.contract.transfer({
       to: ControllerInstance.address,
@@ -86,6 +88,6 @@ module.exports = async function (deployer) {
       },
     });
     await operation.confirmation();
-    console.log('q');
+    console.log('end');
   }
 };

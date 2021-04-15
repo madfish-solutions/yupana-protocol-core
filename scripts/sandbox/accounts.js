@@ -11,6 +11,7 @@ module.exports = {
         'tz1PQP815EzZRktgLaEhtDCR22kiRrcQEurw',
         'tz1WP3xUvTP6vUWLRnexxnjNTYDiZ7QzVdxo',
         'tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk',
+        'tz1ReWbQzoJoyLp7rAV4T6VuMmPzp3dTG3Cj',
     ],
     accountsMap: (new Map())
                  .set('tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb', 'edsk3QoqBuvdamxouPhin7swCvkQNgq4jP5KZPbwWNnwdZpSpJiEbq')
@@ -23,5 +24,6 @@ module.exports = {
                  .set('tz1i3eqdPNs9zjpavVBFcF8JarJUgEErfsUK', 'edsk3YkQyZaZgY9TWVPX4jZ4tBzyfHABZy9NRNu79pxYWY1zdP5E9J')
                  .set('tz1PQP815EzZRktgLaEhtDCR22kiRrcQEurw', 'edsk3RfpoEY1G8cH4J1HswJ2xU3ZQggSnXxvrPHgn3mHyYdYQs4g9Z')
                  .set('tz1WP3xUvTP6vUWLRnexxnjNTYDiZ7QzVdxo', 'edsk3ZA4Uuirw4VXwGeamzLuQyn2juohC8eFYxD5fKobxUBX9HKWpu')
-                 .set('tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk', 'edskS3DCtGJsveC5MLQarnzEaWnLTsPHhqDediHEPadoJWT1PLLHQzwgnP4uttw7Hme9kzHiXjqq9XwNX4Ff94mXH61RFD5dCG'),
+                 .set('tz1WBSTvfSC58wjHGsPeYkcftmbgscUybNuk', 'edskS3DCtGJsveC5MLQarnzEaWnLTsPHhqDediHEPadoJWT1PLLHQzwgnP4uttw7Hme9kzHiXjqq9XwNX4Ff94mXH61RFD5dCG')
+                 .set('tz1ReWbQzoJoyLp7rAV4T6VuMmPzp3dTG3Cj', 'edskRmM2cWNAqdvUVSDvu5au9W67XsKtb5toKAYNeLyorxRvVuSLFPfbbTiTd7hXKZTXz7A7XKX91FGvp5b5js41QwrTtFprwy'),
 };

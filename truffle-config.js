@@ -14,6 +14,13 @@ module.exports = {
   contracts_directory: "./contracts/main",
   networks: {
     development: {
+      host: "http://localhost",
+      port: 8732,
+      network_id: "*",
+      secretKey: accountsMap.get(accounts[0]),
+      type: "tezos",
+    },
+    development_server: {
       host: "http://136.244.96.28",
       port: 8732,
       network_id: "*",
@@ -24,7 +31,7 @@ module.exports = {
       host: "https://florencenet.smartpy.io",
       port: 443,
       network_id: "*",
-      secretKey: accountsMap.get(accounts[10]),
+      secretKey: accountsMap.get(accounts[11]),
       type: "tezos",
     },
     edonet: {

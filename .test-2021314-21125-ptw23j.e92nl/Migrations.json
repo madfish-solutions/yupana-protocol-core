@@ -1,0 +1,15 @@
+{
+  "contractName": "Migrations",
+  "abi": [],
+  "michelson": "[ { \"prim\": \"parameter\", \"args\": [ { \"prim\": \"int\" } ] },\n  { \"prim\": \"storage\",\n    \"args\":\n      [ { \"prim\": \"pair\",\n          \"args\":\n            [ { \"prim\": \"int\", \"annots\": [ \"%last_completed_migration\" ] },\n              { \"prim\": \"address\", \"annots\": [ \"%owner\" ] } ] } ] },\n  { \"prim\": \"code\",\n    \"args\":\n      [ [ { \"prim\": \"UNPAIR\" }, { \"prim\": \"SWAP\" }, { \"prim\": \"DUP\" },\n          { \"prim\": \"DUG\", \"args\": [ { \"int\": \"2\" } ] }, { \"prim\": \"CDR\" },\n          { \"prim\": \"SENDER\" }, { \"prim\": \"COMPARE\" }, { \"prim\": \"NEQ\" },\n          { \"prim\": \"IF\",\n            \"args\":\n              [ [ { \"prim\": \"DROP\" } ],\n                [ { \"prim\": \"SWAP\" }, { \"prim\": \"CDR\" }, { \"prim\": \"SWAP\" },\n                  { \"prim\": \"PAIR\" } ] ] },\n          { \"prim\": \"NIL\", \"args\": [ { \"prim\": \"operation\" } ] },\n          { \"prim\": \"PAIR\" } ] ] } ]",
+  "source": "type migrations is record\n  owner : address;\n  last_completed_migration : int;\nend\n\nfunction main (const completed_migration: int ; var migrations : migrations) : (list(operation) * migrations) is\n  block {\n    if sender =/= migrations.owner\n    then\n      skip\n    else\n      migrations.last_completed_migration := completed_migration;\n  } with ((nil : list(operation)), migrations);\n",
+  "sourcePath": "/Users/oleh/Desktop/BasicLendingProtocol/contracts/main/Migrations.ligo",
+  "compiler": {
+    "name": "ligo",
+    "version": "next"
+  },
+  "networks": {},
+  "schemaVersion": "3.2.0-tezos.1",
+  "updatedAt": "2021-04-14T12:09:06.801Z",
+  "networkType": "tezos"
+}
