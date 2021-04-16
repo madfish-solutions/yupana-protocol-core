@@ -59,19 +59,6 @@ module.exports = async function (deployer) {
   await deployer.deploy(Controller, fullControllerStorage);
   const ControllerInstance = await Controller.deployed();
 
-  console.log(ControllerInstance.address);
-
-  // Try to deploy another way
-  // const controllerOperation = await tezos.contract.originate({
-  //   code: JSON.parse(Controller.michelson),
-  //   storage: fullControllerStorage,
-  // });
-
-  // await confirmOperation(tezos, controllerOperation.hash)
-
-  // console.log(controllerOperation.contractAddress);
-
-
   let ligo = getLigo(true);
   for (useControllerFunction of functions.useController) {
     console.log(useControllerFunction.name);
@@ -79,7 +66,6 @@ module.exports = async function (deployer) {
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Controller.ligo main 'SetUseAction(record index =${useControllerFunction.index}n; func = ${useControllerFunction.name}; end)'`,
       { maxBuffer: 1024 * 1000 }
     );
-    console.log('1');
     const operation = await tezos.contract.transfer({
       to: ControllerInstance.address,
       amount: 0,
@@ -89,6 +75,5 @@ module.exports = async function (deployer) {
       },
     });
     await confirmOperation(tezos, operation.hash)
-    console.log('end');
   }
 };

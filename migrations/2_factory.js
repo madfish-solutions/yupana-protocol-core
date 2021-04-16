@@ -8,7 +8,7 @@ const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
 
 const Factory = artifacts.require("Factory");
-// const Controller = artifacts.require("Controller");
+const Controller = artifacts.require("Controller");
 
 function getLigo(isDockerizedLigo) {
   let path = "ligo";
@@ -42,24 +42,17 @@ module.exports = async function (deployer, network) {
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
 
-  // const ControllerInstance = await Controller.deployed();
+  const ControllerInstance = await Controller.deployed();
 
   const storage = {
     tokenList: new MichelsonMap(),
     owner: accounts[0],
-    admin: accounts[0],
+    admin: ControllerInstance.address,
     tokenLambdas: new MichelsonMap(),
     useLambdas: new MichelsonMap(),
   };
   await deployer.deploy(Factory, storage);
   const factoryInstance = await Factory.deployed();
-  // Try to deploy another way
-  // const factoryInstance = await tezos.contract.originate({
-  //   code: JSON.parse(Factory.michelson),
-  //   storage: storage,
-  // });
-
-  // await confirmOperation(tezos, factoryInstance.hash)
 
   let ligo = getLigo(true);
 
@@ -78,9 +71,7 @@ module.exports = async function (deployer, network) {
       },
     });
     await confirmOperation(tezos, operation.hash)
-    console.log('end');
   }
-  console.log('full end1');
 
   for (useFunction of functions.use) {
     console.log(useFunction.name);
@@ -93,11 +84,9 @@ module.exports = async function (deployer, network) {
       amount: 0,
       parameter: {
         entrypoint: "setUseFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
+        value: JSON.parse(stdout.toString()).args[0],
       },
     });
     await confirmOperation(tezos, operation.hash)
-    console.log('end')
   }
-  console.log('full end2');
 };
