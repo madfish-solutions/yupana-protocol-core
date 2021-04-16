@@ -7,7 +7,7 @@ const { functions } = require("../storage/Functions");
 const { execSync } = require("child_process");
 
 const Factory = artifacts.require("Factory");
-const Controller = artifacts.require("Controller");
+// const Controller = artifacts.require("Controller");
 
 function getLigo(isDockerizedLigo) {
   let path = "ligo";
@@ -36,17 +36,17 @@ module.exports = async function (deployer, network) {
 
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 500000000,
+      confirmationPollingTimeoutSecond: 5000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
 
-  const ControllerInstance = await Controller.deployed();
+  // const ControllerInstance = await Controller.deployed();
 
   const storage = {
     tokenList: new MichelsonMap(),
     owner: accounts[0],
-    admin: ControllerInstance.address,
+    admin: accounts[0],
     tokenLambdas: new MichelsonMap(),
     useLambdas: new MichelsonMap(),
   };
@@ -63,12 +63,13 @@ module.exports = async function (deployer, network) {
   let ligo = getLigo(true);
 
   for (tokenFunction of functions.token) {
+    console.log(tokenFunction.name);
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetTokenFunction(record index =${tokenFunction.index}n; func =${tokenFunction.name}; end)'`,
       { maxBuffer: 1024 * 4000 }
     );
     const operation = await tezos.contract.transfer({
-      to: factoryInstance.contractAddress,
+      to: factoryInstance.address,
       amount: 0,
       parameter: {
         entrypoint: "setTokenFunction",
@@ -76,21 +77,26 @@ module.exports = async function (deployer, network) {
       },
     });
     await operation.confirmation();
+    console.log('end');
   }
+  console.log('full end1');
 
   for (useFunction of functions.use) {
+    console.log(useFunction.name);
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetUseFunction(record index =${useFunction.index}n; func = ${useFunction.name}; end)'`,
       { maxBuffer: 1024 * 3000 }
     );
     const operation = await tezos.contract.transfer({
-      to: factoryInstance.contractAddress,
+      to: factoryInstance.address,
       amount: 0,
       parameter: {
         entrypoint: "setUseFunction",
-        value: JSON.parse(stdout.toString()).args[0],
+        value: JSON.parse(stdout.toString()).args[0].args[0],
       },
     });
     await operation.confirmation();
+    console.log('end')
   }
+  console.log('full end2');
 };
