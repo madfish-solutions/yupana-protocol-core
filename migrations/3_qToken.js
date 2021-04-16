@@ -80,7 +80,7 @@ module.exports = async function (deployer, network) {
   //       value: JSON.parse(stdout.toString()).args[0].args[0],
   //     },
   //   });
-  //   await operation.confirmation();
+  //   await confirmOperation(tezos, operation.hash)
   // }
   // for (useFunction of functions.use) {
   //   const stdout = execSync(
@@ -95,7 +95,7 @@ module.exports = async function (deployer, network) {
   //       value: JSON.parse(stdout.toString()).args[0].args[0],
   //     },
   //   });
-  //   await operation.confirmation();
+  //   await confirmOperation(tezos, operation.hash)
   // }
 
   var XTZInstance = null;

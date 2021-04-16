@@ -4,6 +4,7 @@ const { accountsMap } = require('../scripts/sandbox/accounts');
 const { TezosToolkit } = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
+const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
 
 const Factory = artifacts.require("Factory");
@@ -58,7 +59,7 @@ module.exports = async function (deployer, network) {
   //   storage: storage,
   // });
 
-  // await factoryInstance.confirmation();
+  // await confirmOperation(tezos, factoryInstance.hash)
 
   let ligo = getLigo(true);
 
@@ -76,7 +77,7 @@ module.exports = async function (deployer, network) {
         value: JSON.parse(stdout.toString()).args[0].args[0].args[0],
       },
     });
-    await operation.confirmation();
+    await confirmOperation(tezos, operation.hash)
     console.log('end');
   }
   console.log('full end1');
@@ -95,7 +96,7 @@ module.exports = async function (deployer, network) {
         value: JSON.parse(stdout.toString()).args[0].args[0],
       },
     });
-    await operation.confirmation();
+    await confirmOperation(tezos, operation.hash)
     console.log('end')
   }
   console.log('full end2');

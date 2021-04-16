@@ -5,6 +5,7 @@ const { TezosToolkit } = require("@taquito/taquito");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
+const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
 
 function getLigo(isDockerizedLigo) {
@@ -66,7 +67,7 @@ module.exports = async function (deployer) {
   //   storage: fullControllerStorage,
   // });
 
-  // await controllerOperation.confirmation();
+  // await confirmOperation(tezos, controllerOperation.hash)
 
   // console.log(controllerOperation.contractAddress);
 
@@ -87,7 +88,7 @@ module.exports = async function (deployer) {
         value: JSON.parse(stdout.toString()).args[0].args[0],
       },
     });
-    await operation.confirmation();
+    await confirmOperation(tezos, operation.hash)
     console.log('end');
   }
 };
