@@ -80,9 +80,9 @@ function transfer (const p : tokenAction; const s : tokenStorage) : return is
         if transferParams.from_ =/= Tezos.sender then block {
           const spenderAllowance : nat = getAllowance(senderAccount, Tezos.sender, s);
 
-          if spenderAllowance < transferParams.value then
-            failwith("NotEnoughAllowance")
-          else skip;
+          // if spenderAllowance < transferParams.value then
+          //   failwith("NotEnoughAllowance")
+          // else skip;
 
           senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - transferParams.value);
         } else skip;

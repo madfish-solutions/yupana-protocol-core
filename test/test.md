@@ -137,8 +137,7 @@
 2. Check way if user did not enter the market. Should call qToken.redeem
 3. Check way if user enter the market. Should return list of operations: qToken.updateControllerState(user)  (qToken is the contract the user set as the collateral)
 4. Should contains in qToken in qTokens list
-5. Should calculate the redeemed amount.
-6. Should transfer the amount of underlying tokens
+5. Should fail if redeem without mint
 
 
 #### SafeRepay

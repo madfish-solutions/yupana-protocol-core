@@ -83,34 +83,42 @@ let useControllerFunctions = [
   },
   {
     index: 5,
-    name: "safeMint",
+    name: "ensuredExitMarket",
   },
   {
     index: 6,
-    name: "safeRedeem",
+    name: "safeMint",
   },
   {
     index: 7,
-    name: "ensuredRedeem",
+    name: "safeRedeem",
   },
   {
     index: 8,
-    name: "safeBorrow",
+    name: "ensuredRedeem",
   },
   {
     index: 9,
-    name: "ensuredBorrow",
+    name: "safeBorrow",
   },
   {
     index: 10,
-    name: "safeRepay",
+    name: "ensuredBorrow",
   },
   {
     index: 11,
-    name: "safeLiquidate",
+    name: "safeRepay",
   },
   {
     index: 12,
+    name: "ensuredRepay",
+  },
+  {
+    index: 13,
+    name: "safeLiquidate",
+  },
+  {
+    index: 14,
     name: "ensuredLiquidate",
   }
 ];

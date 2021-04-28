@@ -86,6 +86,12 @@ type membershipParams is record [
   collateralToken       : address;
 ]
 
+type ensuredExitMarketParams is record [
+  user                  : address;
+  borrowerToken         : address;
+  collateralToken       : address;
+]
+
 
 type updateParams is record [
   qToken                : address;
@@ -168,7 +174,14 @@ type ensuredBorrowParams is record [
   borrowAmount          : nat;
 ]
 
+
 type safeRepayParams is record [
+  qToken                : address;
+  amount                : nat;
+]
+
+type ensuredRepayParams is record [
+  user                  : address;
   qToken                : address;
   amount                : nat;
 ]
@@ -221,13 +234,15 @@ type useControllerAction is
   | SetOracle of setOracleParams
   | Register of registerParams
   | UpdateQToken of updateQTokenParams
-  | ExitMarket of membershipParams
+  | ExitMarket of address
+  | EnsuredExitMarket of ensuredExitMarketParams
   | SafeMint of safeMintParams
   | SafeRedeem of safeRedeemParams
   | EnsuredRedeem of ensuredRedeemParams
   | SafeBorrow of safeBorrowParams
   | EnsuredBorrow of ensuredBorrowParams
   | SafeRepay of safeRepayParams
+  | EnsuredRepay of ensuredRepayParams
   | SafeLiquidate of safeLiquidateParams
   | EnsuredLiquidate of ensuredLiquidateParams
 

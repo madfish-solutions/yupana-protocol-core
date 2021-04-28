@@ -24,15 +24,17 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
       | SetOracle(setOracleParams) -> 1n
       | Register(registerParams) -> 2n
       | UpdateQToken(updateQTokenParams) -> 3n
-      | ExitMarket(membershipParams) -> 4n
-      | SafeMint(safeMintParams) -> 5n
-      | SafeRedeem(safeRedeemParams) -> 6n
-      | EnsuredRedeem(ensuredRedeemParams) -> 7n
-      | SafeBorrow(safeBorrowParams) -> 8n
-      | EnsuredBorrow(ensuredBorrowParams) -> 9n
-      | SafeRepay(safeRepayParams) -> 10n
-      | SafeLiquidate(safeLiquidateParams) -> 11n
-      | EnsuredLiquidate(ensuredLiquidateParams) -> 12n
+      | ExitMarket(addr) -> 4n
+      | EnsuredExitMarket(ensuredExitMarketParams) -> 5n
+      | SafeMint(safeMintParams) -> 6n
+      | SafeRedeem(safeRedeemParams) -> 7n
+      | EnsuredRedeem(ensuredRedeemParams) -> 8n
+      | SafeBorrow(safeBorrowParams) -> 9n
+      | EnsuredBorrow(ensuredBorrowParams) -> 10n
+      | SafeRepay(safeRepayParams) -> 11n
+      | EnsuredRepay(ensuredRepayParams) -> 12n
+      | SafeLiquidate(safeLiquidateParams) -> 13n
+      | EnsuredLiquidate(ensuredLiquidateParams) -> 14n
     end;
 
     const res : return = case s.useControllerLambdas[idx] of
@@ -67,6 +69,12 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     | None -> (failwith("CantGetUpdateControllerStateEntrypoint") : contract(updateControllerStateType))
   end;
 
+[@inline] function getEnsuredExitMarketEntrypoint (const tokenAddress : address) : contract(ensuredExitMarketParams) is
+  case (Tezos.get_entrypoint_opt("%ensuredExitMarket", tokenAddress) : option(contract(ensuredExitMarketParams))) of
+    Some(contr) -> contr
+    | None -> (failwith("CantGetEnsuredExitMarketEntrypoint") : contract(ensuredExitMarketParams))
+  end;
+
 [@inline] function getEnsuredRedeemEntrypoint (const tokenAddress : address) : contract(ensuredRedeemParams) is
   case (Tezos.get_entrypoint_opt("%ensuredRedeem", tokenAddress) : option(contract(ensuredRedeemParams))) of
     Some(contr) -> contr
@@ -77,6 +85,12 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
   case (Tezos.get_entrypoint_opt("%ensuredBorrow", tokenAddress) : option(contract(ensuredBorrowParams))) of
     Some(contr) -> contr
     | None -> (failwith("CantGetEnsuredBorrowEntrypoint") : contract(ensuredBorrowParams))
+  end;
+
+[@inline] function getEnsuredRepayEntrypoint (const tokenAddress : address) : contract(ensuredRepayParams) is
+  case (Tezos.get_entrypoint_opt("%ensuredRepay", tokenAddress) : option(contract(ensuredRepayParams))) of
+    Some(contr) -> contr
+    | None -> (failwith("CantGetEnsuredRepayEntrypoint") : contract(ensuredRepayParams))
   end;
 
 [@inline] function getEnsuredLiquidateEntrypoint (const tokenAddress : address) : contract(ensuredLiquidateParams) is
@@ -188,13 +202,15 @@ function updatePrice (const p : useControllerAction; const this : address; var s
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -213,20 +229,19 @@ function setOracle (const p : useControllerAction; const this : address; var s :
       var m : market := getMarket(setOracleParams.qToken, s);
       m.oracle := setOracleParams.oracle;
 
-      // s.oraclePairs[("XTZ-USD" : string)] := setOracleParams.qToken // !!!!!!!
-
-      // s.oraclePairs := setOracleParams.oracle; // !!!!!!!
       s.markets[setOracleParams.qToken] := m;
     }
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -249,13 +264,15 @@ function register (const p : useControllerAction; const this : address; var s : 
       s.pairs[registerParams.token] := registerParams.qToken;
     }
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -278,13 +295,15 @@ function updateQToken (const p : useControllerAction; const this : address; var 
       s.accountBorrows[(updateQTokenParams.user, Tezos.sender)] := updateQTokenParams.borrow;
       s.markets[this] := m;
     }
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -298,21 +317,67 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> {
-      mustContainsQTokens(membershipParams.borrowerToken, s);
-      mustContainsQTokens(membershipParams.collateralToken, s);
-
+    | ExitMarket(addr) -> {
       var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-      if tokens.borrowerToken = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address) then
+      operations := list [
+        Tezos.transaction(
+          QUpdateControllerState(Tezos.sender),
+          0mutez,
+          getUpdateControllerStateEntrypoint(tokens.collateralToken)
+        );
+        Tezos.transaction(
+          QUpdateControllerState(Tezos.sender),
+          0mutez,
+          getUpdateControllerStateEntrypoint(tokens.borrowerToken)
+        );
+        Tezos.transaction(
+          record [
+            user            = Tezos.sender;
+            borrowerToken   = tokens.borrowerToken;
+            collateralToken = tokens.collateralToken;
+          ],
+          0mutez,
+          getEnsuredExitMarketEntrypoint(this)
+        )
+      ];
+    }
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
+    | SafeMint(safeMintParams) -> skip
+    | SafeRedeem(safeRedeemParams) -> skip
+    | EnsuredRedeem(ensuredRedeemParams) -> skip
+    | SafeBorrow(safeBorrowParams) -> skip
+    | EnsuredBorrow(ensuredBorrowParams) -> skip
+    | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
+    | SafeLiquidate(safeLiquidateParams) -> skip
+    | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function ensuredExitMarket (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
+  block {
+    var operations : list(operation) := list[];
+    case p of
+    | UpdatePrice(updateParams) -> skip
+    | SetOracle(setOracleParams) -> skip
+    | Register(registerParams) -> skip
+    | UpdateQToken(updateQTokenParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> {
+      if Tezos.sender =/= this then
+        failwith("NotSelfAddress")
+      else skip;
+
+      if ensuredExitMarketParams.borrowerToken = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address) then
         failwith("NotEnter")
       else skip;
 
-      if getAccountBorrows(Tezos.sender, membershipParams.borrowerToken, s) =/= 0n then
+      if getAccountBorrows(ensuredExitMarketParams.user, ensuredExitMarketParams.borrowerToken, s) =/= 0n then
         failwith("BorrowsExists")
       else skip;
 
-      remove Tezos.sender from map s.accountMembership
+      remove ensuredExitMarketParams.user from map s.accountMembership
     }
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
@@ -320,6 +385,7 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -333,7 +399,8 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> {
       mustContainsQTokens(safeMintParams.qToken, s);
 
@@ -353,6 +420,7 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -366,7 +434,8 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> {
       mustContainsQTokens(safeRedeemParams.qToken, s);
@@ -412,6 +481,7 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -425,7 +495,8 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> {
@@ -453,6 +524,7 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -466,7 +538,8 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
@@ -478,6 +551,10 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
 
       if tokens.collateralToken = safeBorrowParams.qToken then
         failwith("AlreadyEnteredToMarket")
+      else skip;
+
+      if safeBorrowParams.qToken = safeBorrowParams.borrowerToken then
+        failwith("SimularCollateralAndBorrowerToken")
       else skip;
 
       tokens.collateralToken := safeBorrowParams.qToken;
@@ -510,6 +587,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     }
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -523,7 +601,8 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
@@ -551,6 +630,7 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
       ];
     }
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> skip
     end
@@ -564,7 +644,8 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
@@ -572,15 +653,65 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> {
       mustContainsQTokens(safeRepayParams.qToken, s);
+      var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
+
+      operations := list [
+        Tezos.transaction(
+          QUpdateControllerState(Tezos.sender),
+          0mutez,
+          getUpdateControllerStateEntrypoint(tokens.collateralToken)
+        );
+        Tezos.transaction(
+          QUpdateControllerState(Tezos.sender),
+          0mutez,
+          getUpdateControllerStateEntrypoint(tokens.borrowerToken)
+        );
+        Tezos.transaction(
+          record [
+            user    = Tezos.sender;
+            qToken  = safeRepayParams.qToken;
+            amount  = safeRepayParams.amount;
+          ],
+          0mutez,
+          getEnsuredRepayEntrypoint(this)
+        )
+      ];
+    }
+    | EnsuredRepay(ensuredRepayParams) -> skip
+    | SafeLiquidate(safeLiquidateParams) -> skip
+    | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function ensuredRepay (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
+  block {
+    var operations : list(operation) := list[];
+    case p of
+    | UpdatePrice(updateParams) -> skip
+    | SetOracle(setOracleParams) -> skip
+    | Register(registerParams) -> skip
+    | UpdateQToken(updateQTokenParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
+    | SafeMint(safeMintParams) -> skip
+    | SafeRedeem(safeRedeemParams) -> skip
+    | EnsuredRedeem(ensuredRedeemParams) -> skip
+    | SafeBorrow(safeBorrowParams) -> skip
+    | EnsuredBorrow(ensuredBorrowParams) -> skip
+    | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> {
+      if Tezos.sender =/= this then
+        failwith("NotSelfAddress")
+      else skip;
 
       operations := list [
         Tezos.transaction(
           Repay(record [
-            user    = Tezos.sender;
-            amount  = safeRepayParams.amount;
+            user    = ensuredRepayParams.user;
+            amount  = ensuredRepayParams.amount;
           ]),
           0mutez,
-          getUseEntrypoint(safeRepayParams.qToken)
+          getUseEntrypoint(ensuredRepayParams.qToken)
         )
       ];
     }
@@ -597,13 +728,15 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> {
       mustContainsQTokens(safeLiquidateParams.qToken, s);
 
@@ -647,13 +780,15 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
-    | ExitMarket(membershipParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
     | SafeMint(safeMintParams) -> skip
     | SafeRedeem(safeRedeemParams) -> skip
     | EnsuredRedeem(ensuredRedeemParams) -> skip
     | SafeBorrow(safeBorrowParams) -> skip
     | EnsuredBorrow(ensuredBorrowParams) -> skip
     | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
     | SafeLiquidate(safeLiquidateParams) -> skip
     | EnsuredLiquidate(ensuredLiquidateParams) -> {
       if Tezos.sender =/= this then

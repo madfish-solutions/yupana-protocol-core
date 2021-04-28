@@ -37,9 +37,9 @@ function transfer (const from_ : address; const to_ : address; const value : amt
     if from_ =/= Tezos.sender then block {
       const spenderAllowance : amt = getAllowance(senderAccount, Tezos.sender, s);
 
-      if spenderAllowance < value then
-        failwith("NotEnoughAllowance")
-      else skip;
+      // if spenderAllowance < value then
+      //   failwith("NotEnoughAllowance")
+      // else skip;
 
       (* Decrease any allowances *)
       senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - value);
