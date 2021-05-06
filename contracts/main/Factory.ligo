@@ -11,22 +11,22 @@ const createContr : createContrFunc =
 
 function setTokenFunction (const idx : nat; const f : tokenFunc; const s : factoryStorage) : fullFactoryReturn is
   block {
-    // if Tezos.sender = s.owner then
-    case s.tokenLambdas[idx] of
-      Some(n) -> failwith("FactoryTokenFunctionSet")
-      | None -> s.tokenLambdas[idx] := f
-    end;
-    // else failwith("YouNotOwner(FactoryTokenFunction)")
+    if Tezos.sender = s.owner then
+      case s.tokenLambdas[idx] of
+        Some(n) -> failwith("FactoryTokenFunctionSet")
+        | None -> s.tokenLambdas[idx] := f
+      end;
+    else failwith("YouNotOwner(FactoryTokenFunction)")
   } with (noOperations, s)
 
 function setUseFunction (const idx : nat; const f : useFunc; const s : factoryStorage) : fullFactoryReturn is
   block {
-    // if Tezos.sender = s.owner then
-    case s.useLambdas[idx] of
-      Some(n) -> failwith("FactoryUseFunctionSet")
-      | None -> s.useLambdas[idx] := f
-    end;
-    // else failwith("YouNotOwner(FactoryUseFunction)")
+    if Tezos.sender = s.owner then
+      case s.useLambdas[idx] of
+        Some(n) -> failwith("FactoryUseFunctionSet")
+        | None -> s.useLambdas[idx] := f
+      end;
+    else failwith("YouNotOwner(FactoryUseFunction)")
   } with (noOperations, s)
 
 [@inline] function getControllerContract (const controllerAddress : address) : contract(iController) is
@@ -51,8 +51,12 @@ function setNewOwner (const newOwner : address; var s : factoryStorage) : fullFa
     s.owner := newOwner;
   } with (noOperations, s)
 
-function launchToken (const token : address; var s : factoryStorage) : fullFactoryReturn is
+function launchToken (const token : address; const oralcePairName : string; var s : factoryStorage) : fullFactoryReturn is
   block {
+    if Tezos.sender =/= s.owner then
+      failwith("NotOwner")
+    else skip;
+
     case s.tokenList[token] of
     Some(t) -> failwith("SimularToken")
     | None -> skip
@@ -84,15 +88,15 @@ function launchToken (const token : address; var s : factoryStorage) : fullFacto
   } with (list[
       res.0;
       Tezos.transaction(
-        QRegister(record[token = token; qToken = res.1]),
+        QRegister(record[token = token; qToken = res.1; pairName = oralcePairName]),
         0mutez,
         getControllerContract(s.admin)
-      )
+      ) // !!!!!!
     ], s)
 
 function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is
   case p of
-    | LaunchToken(params)           -> launchToken(params.token, s)
+    | LaunchToken(params)           -> launchToken(params.token, params.oralcePairName, s)
     | SetFactoryAdmin(params)       -> setFactoryAdmin(params, s)
     | SetNewOwner(params)           -> setNewOwner(params,s)
     | SetTokenFunction(params)      -> setTokenFunction(params.index, params.func, s)

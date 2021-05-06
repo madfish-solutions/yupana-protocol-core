@@ -11,7 +11,8 @@ type factoryStorage is record [
 type createContrFunc is (option(key_hash) * tez * fullTokenStorage) -> (operation * address)
 
 type launchTokenParams is record [
-  token : address;
+  token           : address;
+  oralcePairName  : string; // !!!!!!!!!
 ]
 
 type setTokenParams is record [
@@ -25,8 +26,9 @@ type setUseParams is record [
 ]
 
 type registerType is record [
-    token        :address;
-    qToken       :address;
+    token        : address;
+    qToken       : address;
+    pairName     : string; // !!!!!!!!!
 ]
 
 type iController is QRegister of registerType

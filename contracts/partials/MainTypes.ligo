@@ -98,16 +98,22 @@ type updateParams is record [
   price                 : nat;
 ]
 
+type contrParam is (string * (timestamp * nat))
+type updParams is (string * contract(contrParam)) // !!!!!!
+
 // type updParams is michelson_pair(string, "string", contract(michelson_pair(string, "string", michelson_pair(timestamp, "timestamp", nat, "nat"))), "")
 
-type setOracleParams is record [
-  qToken                : address;
-  oracle                : address;
-]
+// type setOracleParams is record [
+//   qToken                : address;
+//   oracle                : address;
+// ]
+
+type setOracleParams is address //!!!!!!!!!
 
 type registerParams is record [
   qToken                : address;
   token                 : address;
+  pairName              : string; // !!!!!!!!!
 ]
 
 type updateQTokenParams is [@layout:comb] record [
@@ -230,7 +236,8 @@ type entryAction is
   | Use of useAction
 
 type useControllerAction is
-  | UpdatePrice of updateParams
+  | UpdatePrice of contrParam
+  | SendToOracle of address
   | SetOracle of setOracleParams
   | Register of registerParams
   | UpdateQToken of updateQTokenParams

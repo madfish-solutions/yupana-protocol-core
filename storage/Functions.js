@@ -67,58 +67,62 @@ let useControllerFunctions = [
   },
   {
     index: 1,
-    name: "setOracle",
+    name: "sendToOracle",
   },
   {
     index: 2,
-    name: "register",
+    name: "setOracle",
   },
   {
     index: 3,
-    name: "updateQToken",
+    name: "register",
   },
   {
     index: 4,
-    name: "exitMarket",
+    name: "updateQToken",
   },
   {
     index: 5,
-    name: "ensuredExitMarket",
+    name: "exitMarket",
   },
   {
     index: 6,
-    name: "safeMint",
+    name: "ensuredExitMarket",
   },
   {
     index: 7,
-    name: "safeRedeem",
+    name: "safeMint",
   },
   {
     index: 8,
-    name: "ensuredRedeem",
+    name: "safeRedeem",
   },
   {
     index: 9,
-    name: "safeBorrow",
+    name: "ensuredRedeem",
   },
   {
     index: 10,
-    name: "ensuredBorrow",
+    name: "safeBorrow",
   },
   {
     index: 11,
-    name: "safeRepay",
+    name: "ensuredBorrow",
   },
   {
     index: 12,
-    name: "ensuredRepay",
+    name: "safeRepay",
   },
   {
     index: 13,
-    name: "safeLiquidate",
+    name: "ensuredRepay",
   },
   {
     index: 14,
+    name: "safeLiquidate",
+  },
+  {
+    index: 15,
     name: "ensuredLiquidate",
   }
 ];

@@ -44,11 +44,14 @@ module.exports = async function (deployer) {
     factory: accounts[0],
     admin: accounts[0],
     qTokens: [],
+    oraclePairs: new MichelsonMap(), // !!!!
+    oracleStringPairs: new MichelsonMap(), // !!!!
     pairs: new MichelsonMap(),
     accountBorrows: new MichelsonMap(),
     accountTokens: new MichelsonMap(),
     markets: new MichelsonMap(),
     accountMembership: new MichelsonMap(),
+    oracle: accounts[0], // !!!!!
   };
 
   const fullControllerStorage = {

@@ -9,32 +9,33 @@ function setFactory (const newFactoryAddress: address; const s : fullControllerS
 
 function setUseAction (const idx : nat; const f : useControllerFunc; const s : fullControllerStorage) : fullReturn is
   block {
-    // if Tezos.sender = s.storage.admin then
-    case s.useControllerLambdas[idx] of
-      Some(n) -> failwith("ControllerFunctionSet")
-      | None -> s.useControllerLambdas[idx] := f
-    end;
-    // else failwith("YouNotAdmin(ControllerUseAction)")
+    if Tezos.sender = s.storage.admin then
+      case s.useControllerLambdas[idx] of
+        Some(n) -> failwith("ControllerFunctionSet")
+        | None -> s.useControllerLambdas[idx] := f
+      end;
+    else failwith("YouNotAdmin(ControllerUseAction)")
   } with (noOperations, s)
 
 [@inline] function middleController (const p : useControllerAction; const this : address; const s : fullControllerStorage) : fullReturn is
   block {
     const idx : nat = case p of
-      | UpdatePrice(updateParams) -> 0n
-      | SetOracle(setOracleParams) -> 1n
-      | Register(registerParams) -> 2n
-      | UpdateQToken(updateQTokenParams) -> 3n
-      | ExitMarket(addr) -> 4n
-      | EnsuredExitMarket(ensuredExitMarketParams) -> 5n
-      | SafeMint(safeMintParams) -> 6n
-      | SafeRedeem(safeRedeemParams) -> 7n
-      | EnsuredRedeem(ensuredRedeemParams) -> 8n
-      | SafeBorrow(safeBorrowParams) -> 9n
-      | EnsuredBorrow(ensuredBorrowParams) -> 10n
-      | SafeRepay(safeRepayParams) -> 11n
-      | EnsuredRepay(ensuredRepayParams) -> 12n
-      | SafeLiquidate(safeLiquidateParams) -> 13n
-      | EnsuredLiquidate(ensuredLiquidateParams) -> 14n
+      | UpdatePrice(contrParam) -> 0n
+      | SendToOracle(addr) -> 1n
+      | SetOracle(setOracleParams) -> 2n
+      | Register(registerParams) -> 3n
+      | UpdateQToken(updateQTokenParams) -> 4n
+      | ExitMarket(addr) -> 5n
+      | EnsuredExitMarket(ensuredExitMarketParams) -> 6n
+      | SafeMint(safeMintParams) -> 7n
+      | SafeRedeem(safeRedeemParams) -> 8n
+      | EnsuredRedeem(ensuredRedeemParams) -> 9n
+      | SafeBorrow(safeBorrowParams) -> 10n
+      | EnsuredBorrow(ensuredBorrowParams) -> 11n
+      | SafeRepay(safeRepayParams) -> 12n
+      | EnsuredRepay(ensuredRepayParams) -> 13n
+      | SafeLiquidate(safeLiquidateParams) -> 14n
+      | EnsuredLiquidate(ensuredLiquidateParams) -> 15n
     end;
 
     const res : return = case s.useControllerLambdas[idx] of
@@ -61,6 +62,12 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
   case (Tezos.get_entrypoint_opt("%use", tokenAddress) : option(contract(useParam))) of
     Some(contr) -> contr
     | None -> (failwith("CantGetUseEntrypoint") : contract(useParam))
+  end;
+
+[@inline] function getNormalizerContract (const oracleAddress : address) : contract(updParams) is
+  case (Tezos.get_entrypoint_opt("%get", oracleAddress) : option(contract(updParams))) of
+    Some(contr) -> contr
+    | None -> (failwith("CantGetOracleEntrypoint") : contract(updParams))
   end;
 
 [@inline] function getUpdateControllerStateEntrypoint (const tokenAddress : address) : contract(updateControllerStateType) is
@@ -111,12 +118,24 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
   | None -> 0n
   end;
 
+[@inline] function checkOraclePair (const qToken : address; const s : controllerStorage) : string is
+  case s.oraclePairs[qToken] of
+    | Some(v) -> v
+    | None -> (failwith("StringNotDefined") : string)
+  end;
+
+[@inline] function checkStringOraclePair (const pairName : string; const s : controllerStorage) : address is
+  case s.oracleStringPairs[pairName] of
+    | Some(v) -> v
+    | None -> (failwith("AddressNotDefined") : address)
+  end;
+
 [@inline] function getMarket (const qToken : address; const s : controllerStorage) : market is
   block {
     var m : market := record [
       collateralFactor = 0n;
       lastPrice        = 0n;
-      oracle           = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
+      // oracle           = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
       exchangeRate     = 0n;
     ];
     case s.markets[qToken] of
@@ -130,26 +149,6 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     Some (value) -> value
   | None -> (record [borrowerToken = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address); collateralToken = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address)])
   end;
-
-// function sendToOracle (const this : address; const s : fullControllerStorage) : fullReturn is
-//   block {
-//     const oracleAddress : address = ("KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ" : address);
-//     const strName : string = "XTZ-USD";
-//     var param : contract(updParams) := nil;
-
-//     case (Tezos.get_entrypoint_opt("%updatePrice", this) : option(contract(updParams))) of
-//     | None -> failwith("Callback function not found")
-//     | Some(p) -> param := p
-//     end;
-
-//     const operations : list(operation) = list[
-//       Tezos.transaction(
-//         (strName, param),
-//         0mutez,
-//         getNormalizerContract(oracleAddress)
-//       )
-//     ];
-//   } with (operations, s)
 
 function getUserLiquidity (const user : address; const qToken : address; const redeemTokens : nat; const borrowAmount : nat; const s : controllerStorage) : getUserLiquidityReturn is
   block {
@@ -187,17 +186,63 @@ function updatePrice (const p : useControllerAction; const this : address; var s
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> {
-      mustContainsQTokens(updateParams.qToken, s);
-
-      var m : market := getMarket(updateParams.qToken, s);
-
-      if Tezos.sender =/= m.oracle then
+    | UpdatePrice(contrParam) -> {
+      if Tezos.sender =/= s.oracle then
         failwith("NotOracle")
       else skip;
 
-      m.lastPrice := updateParams.price;
-      s.markets[updateParams.qToken] := m;
+      const qToken : address = checkStringOraclePair(contrParam.0, s);
+
+      mustContainsQTokens(qToken, s);
+
+      var m : market := getMarket(qToken, s);
+
+      m.lastPrice := contrParam.1.1;
+      s.markets[qToken] := m;
+    }
+    | SendToOracle(addr) -> skip
+    | SetOracle(setOracleParams) -> skip
+    | Register(registerParams) -> skip
+    | UpdateQToken(updateQTokenParams) -> skip
+    | ExitMarket(addr) -> skip
+    | EnsuredExitMarket(ensuredExitMarketParams) -> skip
+    | SafeMint(safeMintParams) -> skip
+    | SafeRedeem(safeRedeemParams) -> skip
+    | EnsuredRedeem(ensuredRedeemParams) -> skip
+    | SafeBorrow(safeBorrowParams) -> skip
+    | EnsuredBorrow(ensuredBorrowParams) -> skip
+    | SafeRepay(safeRepayParams) -> skip
+    | EnsuredRepay(ensuredRepayParams) -> skip
+    | SafeLiquidate(safeLiquidateParams) -> skip
+    | EnsuredLiquidate(ensuredLiquidateParams) -> skip
+    end
+  } with (operations, s)
+
+function sendToOracle (const p : useControllerAction; const this : address; var s : controllerStorage) : return is
+  block {
+    var operations : list(operation) := list[];
+    case p of
+    | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> {
+      if Tezos.sender =/= s.admin then
+          failwith("NotAdmin")
+      else skip;
+
+      const strName : string = checkOraclePair(addr, s);
+      var param : contract(contrParam) := nil;
+
+      case (Tezos.get_entrypoint_opt("%updatePrice", this) : option(contract(contrParam))) of
+      | None -> failwith("Callback function not found")
+      | Some(p) -> param := p
+      end;
+
+      const operations : list(operation) = list[
+        Tezos.transaction(
+          (strName, param),
+          0mutez,
+          getNormalizerContract(s.oracle)
+        )
+      ];
     }
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -221,15 +266,18 @@ function setOracle (const p : useControllerAction; const this : address; var s :
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> {
       if Tezos.sender =/= s.admin then
         failwith("NotAdmin")
       else skip;
 
-      var m : market := getMarket(setOracleParams.qToken, s);
-      m.oracle := setOracleParams.oracle;
+      s.oracle := setOracleParams;
 
-      s.markets[setOracleParams.qToken] := m;
+      // var m : market := getMarket(setOracleParams.qToken, s);
+      // m.oracle := setOracleParams.oracle;
+
+      // s.markets[setOracleParams.qToken] := m;
     }
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -252,6 +300,7 @@ function register (const p : useControllerAction; const this : address; var s : 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> {
       if Tezos.sender =/= s.factory then
@@ -262,6 +311,9 @@ function register (const p : useControllerAction; const this : address; var s : 
 
       s.qTokens := Set.add(registerParams.qToken, s.qTokens);
       s.pairs[registerParams.token] := registerParams.qToken;
+
+      s.oraclePairs[registerParams.qToken] := registerParams.pairName; //!!!!!!!!!
+      s.oracleStringPairs[registerParams.pairName] := registerParams.qToken //!!!!!!!!!
     }
     | UpdateQToken(updateQTokenParams) -> skip
     | ExitMarket(addr) -> skip
@@ -283,6 +335,7 @@ function updateQToken (const p : useControllerAction; const this : address; var 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> {
@@ -314,6 +367,7 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -360,6 +414,7 @@ function ensuredExitMarket (const p : useControllerAction; const this : address;
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -396,6 +451,7 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -431,6 +487,7 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -492,6 +549,7 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -535,6 +593,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -598,6 +657,7 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -641,6 +701,7 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -688,6 +749,7 @@ function ensuredRepay (const p : useControllerAction; const this : address; var 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -725,6 +787,7 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -777,6 +840,7 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
     var operations : list(operation) := list[];
     case p of
     | UpdatePrice(updateParams) -> skip
+    | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
