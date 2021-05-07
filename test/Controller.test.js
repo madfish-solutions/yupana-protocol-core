@@ -12,6 +12,7 @@ const Controller = artifacts.require("Controller");
 const XTZ = artifacts.require("XTZ");
 const Factory = artifacts.require("Factory");
 const qT = artifacts.require("qToken");
+const getOracle = artifacts.require("getOracle");
 
 let cInstance;
 let fInstance;
