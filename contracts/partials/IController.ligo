@@ -20,7 +20,6 @@ type controllerStorage is record [
   markets               : big_map(address, market);
   accountMembership     : big_map(address, membershipParams);
   oracle                : address; // !!!!
-  q2                    : nat;
 ]
 
 [@inline] const noOperations : list (operation) = nil
@@ -29,7 +28,7 @@ type useControllerFunc is (useControllerAction  * address * controllerStorage) -
 const accuracy : nat = 1000000000000000000n; //1e+18
 type updateControllerStateType is QUpdateControllerState of address
 
-type get_type is Get of string * contract(contrParam)
+type getType is Get of string * contract(contrParam)
 
 type setUseParams is record [
   index                 : nat;

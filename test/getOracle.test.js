@@ -131,19 +131,7 @@ contract("Controller", async () => {
 
       const oracleStorage = await cInstance.storage();
       const value = await oracleStorage.storage.markets.get(qTokenAddress);
-      console.log("LastPrice Bef:", await value);
-
-      var val2 = await oracleStorage.storage.q2;
-      console.log("q2:", await val2);
-
-      var cStorage = await gInstance.storage();
-      // var value2 = await cStorage.qq;
-      console.log("qq: ", await cStorage);
-
-
-
-      // operation = await gInstance.methods.get(["XTZ-USD", cInstance]).send();
-      // await confirmOperation(tezos, operation.hash)
+      console.log("LastPrice after upd:", (value.lastPrice).toString());
     });
   });
 });

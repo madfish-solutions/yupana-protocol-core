@@ -5,13 +5,9 @@ type storage is record [
   lastDate        : timestamp;
   lastPrice       : nat;
   returnAddress   : address;
-  qq              : nat;
 ]
 
 [@inline] const noOperations : list (operation) = nil;
-
-// type contrParam is (string * (timestamp * nat))
-// type updParams is (string * contract(contrParam))
 
 type return is list (operation) * storage
 
@@ -20,18 +16,10 @@ type updParamsOracleParams is record [
   time  : timestamp;
 ]
 
-type iController is QUpdatePrice of contrParam
-
 type entryAction is
   | Get of updParams
   | UpdParamsOracle of updParamsOracleParams
   | UpdReturnAddressOracle of address
-
-// [@inline] function getUpdPriceEntrypoint (const controllerAddress : address) : contract(iController) is
-//   case (Tezos.get_entrypoint_opt("%updatePrice", controllerAddress) : option(contract(iController))) of
-//     Some(contr) -> contr
-//     | None -> (failwith("CantGetUpdPriceEntrypoint") : contract(iController))
-//   end;
 
 [@inline] function getUseController (const tokenAddress : address) : contract(useControllerParam) is
   case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of
@@ -47,8 +35,6 @@ function get (const upd : updParams; const s : storage) : return is
     var lastPrice : nat := s.lastPrice;
 
     var callbackParam : contrParam := (requestedAsset, (lastUpdateTime, lastPrice));
-
-    s.qq := 200n;
 
     var operations := list [
       Tezos.transaction(

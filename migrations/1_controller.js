@@ -52,7 +52,6 @@ module.exports = async function (deployer) {
     markets: new MichelsonMap(),
     accountMembership: new MichelsonMap(),
     oracle: accounts[0], // !!!!!
-    q2: "0",
   };
 
   const fullControllerStorage = {

@@ -64,10 +64,10 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     | None -> (failwith("CantGetUseEntrypoint") : contract(useParam))
   end;
 
-[@inline] function getNormalizerContract (const oracleAddress : address) : contract(get_type) is
-  case (Tezos.get_entrypoint_opt("%get", oracleAddress) : option(contract(get_type))) of
+[@inline] function getNormalizerContract (const oracleAddress : address) : contract(getType) is
+  case (Tezos.get_entrypoint_opt("%get", oracleAddress) : option(contract(getType))) of
     Some(contr) -> contr
-    | None -> (failwith("CantGetOracleEntrypoint") : contract(get_type))
+    | None -> (failwith("CantGetOracleEntrypoint") : contract(getType))
   end;
 
 [@inline] function getUpdateControllerStateEntrypoint (const tokenAddress : address) : contract(updateControllerStateType) is
@@ -191,8 +191,6 @@ function updatePrice (const p : useControllerAction; const this : address; var s
         failwith("NotOracle")
       else skip;
 
-      s.q2 := 300n;
-
       const qToken : address = checkStringOraclePair(contrParam.0, s);
 
       mustContainsQTokens(qToken, s);
@@ -238,7 +236,7 @@ function sendToOracle (const p : useControllerAction; const this : address; var 
       | Some(p) -> param := p
       end;
 
-      const operations : list(operation) = list[
+      operations := list[
         Tezos.transaction(
           Get(strName, param),
           0mutez,

@@ -9,6 +9,5 @@ module.exports = async (deployer, _network) => {
     lastDate: startTimestamp,
     lastPrice: "7612934",
     returnAddress: accounts[0],
-    qq: "0",
   });
 };
