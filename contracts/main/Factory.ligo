@@ -91,7 +91,7 @@ function launchToken (const token : address; const oralcePairName : string; var 
         QRegister(record[token = token; qToken = res.1; pairName = oralcePairName]),
         0mutez,
         getControllerContract(s.admin)
-      ) // !!!!!!
+      )
     ], s)
 
 function main (const p : factoryAction; const s : factoryStorage) : fullFactoryReturn is

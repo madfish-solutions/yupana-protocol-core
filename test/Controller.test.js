@@ -12,7 +12,6 @@ const Controller = artifacts.require("Controller");
 const XTZ = artifacts.require("XTZ");
 const Factory = artifacts.require("Factory");
 const qT = artifacts.require("qToken");
-const getOracle = artifacts.require("getOracle");
 
 let cInstance;
 let fInstance;
@@ -29,12 +28,12 @@ contract("Controller", async () => {
     cInstance = await tezos.contract.at((await Controller.deployed()).address);
     fInstance = await tezos.contract.at((await Factory.deployed()).address);
 
-    // let operation = await tezos.contract.transfer({
-    //   to: accounts[2],
-    //   amount: 50000000,
-    //   mutez: true,
-    // });
-    // await confirmOperation(tezos, operation.hash)
+    let operation = await tezos.contract.transfer({
+      to: accounts[2],
+      amount: 50000000,
+      mutez: true,
+    });
+    await confirmOperation(tezos, operation.hash)
 
     console.log("acc0", await tezos.tz.getBalance(accounts[0]));
 
@@ -272,8 +271,7 @@ contract("Controller", async () => {
       const arr = [accounts[0], qTokens[qTokens.length - 3]];
 
       console.log("Acc Borr in Contr: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
-    });ды
-    
+    });
 
     it("Safe Borrow 10 for account 0. CollateralToken already entered to market", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));

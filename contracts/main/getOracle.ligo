@@ -4,6 +4,7 @@ type storage is record [
   lastDate        : timestamp;
   lastPrice       : nat;
   returnAddress   : address;
+  qq              : nat;
 ]
 
 [@inline] const noOperations : list (operation) = nil;
@@ -39,6 +40,8 @@ function get (const upd : updParams; const s : storage) : return is
     var lastPrice : nat := s.lastPrice;
 
     var callbackParam : contrParam := (requestedAsset, (lastUpdateTime, lastPrice));
+
+    s.qq := 200n;
 
     var operations := list [
       Tezos.transaction(

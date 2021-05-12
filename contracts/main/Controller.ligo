@@ -64,10 +64,10 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     | None -> (failwith("CantGetUseEntrypoint") : contract(useParam))
   end;
 
-[@inline] function getNormalizerContract (const oracleAddress : address) : contract(updParams) is
-  case (Tezos.get_entrypoint_opt("%get", oracleAddress) : option(contract(updParams))) of
+[@inline] function getNormalizerContract (const oracleAddress : address) : contract(get_type) is
+  case (Tezos.get_entrypoint_opt("%get", oracleAddress) : option(contract(get_type))) of
     Some(contr) -> contr
-    | None -> (failwith("CantGetOracleEntrypoint") : contract(updParams))
+    | None -> (failwith("CantGetOracleEntrypoint") : contract(get_type))
   end;
 
 [@inline] function getUpdateControllerStateEntrypoint (const tokenAddress : address) : contract(updateControllerStateType) is
@@ -191,6 +191,8 @@ function updatePrice (const p : useControllerAction; const this : address; var s
         failwith("NotOracle")
       else skip;
 
+      s.q2 := 300n;
+
       const qToken : address = checkStringOraclePair(contrParam.0, s);
 
       mustContainsQTokens(qToken, s);
@@ -222,7 +224,7 @@ function sendToOracle (const p : useControllerAction; const this : address; var 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> {
       if Tezos.sender =/= s.admin then
           failwith("NotAdmin")
@@ -238,7 +240,7 @@ function sendToOracle (const p : useControllerAction; const this : address; var 
 
       const operations : list(operation) = list[
         Tezos.transaction(
-          (strName, param),
+          Get(strName, param),
           0mutez,
           getNormalizerContract(s.oracle)
         )
@@ -265,7 +267,7 @@ function setOracle (const p : useControllerAction; const this : address; var s :
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> {
       if Tezos.sender =/= s.admin then
@@ -299,7 +301,7 @@ function register (const p : useControllerAction; const this : address; var s : 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> {
@@ -334,7 +336,7 @@ function updateQToken (const p : useControllerAction; const this : address; var 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -366,7 +368,7 @@ function exitMarket (const p : useControllerAction; const this : address; var s 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -413,7 +415,7 @@ function ensuredExitMarket (const p : useControllerAction; const this : address;
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -450,7 +452,7 @@ function safeMint (const p : useControllerAction; const this : address; var s : 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -486,7 +488,7 @@ function safeRedeem (const p : useControllerAction; const this : address; var s 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -548,7 +550,7 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -592,7 +594,7 @@ function safeBorrow (const p : useControllerAction; const this : address; var s 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -656,7 +658,7 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -700,7 +702,7 @@ function safeRepay (const p : useControllerAction; const this : address; var s :
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -748,7 +750,7 @@ function ensuredRepay (const p : useControllerAction; const this : address; var 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -786,7 +788,7 @@ function safeLiquidate (const p : useControllerAction; const this : address; var
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
@@ -839,7 +841,7 @@ function ensuredLiquidate (const p : useControllerAction; const this : address; 
   block {
     var operations : list(operation) := list[];
     case p of
-    | UpdatePrice(updateParams) -> skip
+    | UpdatePrice(contrParam) -> skip
     | SendToOracle(addr) -> skip
     | SetOracle(setOracleParams) -> skip
     | Register(registerParams) -> skip
