@@ -1,4 +1,5 @@
 // test contract for oracle entrypoint
+#include "../partials/MainTypes.ligo"
 
 type storage is record [
   lastDate        : timestamp;
@@ -9,8 +10,8 @@ type storage is record [
 
 [@inline] const noOperations : list (operation) = nil;
 
-type contrParam is (string * (timestamp * nat))
-type updParams is (string * contract(contrParam))
+// type contrParam is (string * (timestamp * nat))
+// type updParams is (string * contract(contrParam))
 
 type return is list (operation) * storage
 
@@ -26,10 +27,16 @@ type entryAction is
   | UpdParamsOracle of updParamsOracleParams
   | UpdReturnAddressOracle of address
 
-[@inline] function getUpdPriceEntrypoint (const controllerAddress : address) : contract(iController) is
-  case (Tezos.get_entrypoint_opt("%updatePrice", controllerAddress) : option(contract(iController))) of
+// [@inline] function getUpdPriceEntrypoint (const controllerAddress : address) : contract(iController) is
+//   case (Tezos.get_entrypoint_opt("%updatePrice", controllerAddress) : option(contract(iController))) of
+//     Some(contr) -> contr
+//     | None -> (failwith("CantGetUpdPriceEntrypoint") : contract(iController))
+//   end;
+
+[@inline] function getUseController (const tokenAddress : address) : contract(useControllerParam) is
+  case (Tezos.get_entrypoint_opt("%useController", tokenAddress) : option(contract(useControllerParam))) of
     Some(contr) -> contr
-    | None -> (failwith("CantGetUpdPriceEntrypoint") : contract(iController))
+    | None -> (failwith("CantGetContractController") : contract(useControllerParam))
   end;
 
 function get (const upd : updParams; const s : storage) : return is
@@ -45,9 +52,9 @@ function get (const upd : updParams; const s : storage) : return is
 
     var operations := list [
       Tezos.transaction(
-        QUpdatePrice(callbackParam),
+        UpdatePrice(callbackParam),
         0mutez,
-        getUpdPriceEntrypoint(s.returnAddress)
+        getUseController(s.returnAddress)
       );
     ]
 
