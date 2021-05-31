@@ -99,21 +99,14 @@ type updateParams is record [
 ]
 
 type contrParam is (string * (timestamp * nat))
-type updParams is (string * contract(contrParam)) // !!!!!!
+type updParams is (string * contract(contrParam))
 
-// type updParams is michelson_pair(string, "string", contract(michelson_pair(string, "string", michelson_pair(timestamp, "timestamp", nat, "nat"))), "")
-
-// type setOracleParams is record [
-//   qToken                : address;
-//   oracle                : address;
-// ]
-
-type setOracleParams is address //!!!!!!!!!
+type setOracleParams is address
 
 type registerParams is record [
   qToken                : address;
   token                 : address;
-  pairName              : string; // !!!!!!!!!
+  pairName              : string;
 ]
 
 type updateQTokenParams is [@layout:comb] record [

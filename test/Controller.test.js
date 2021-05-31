@@ -12,9 +12,11 @@ const Controller = artifacts.require("Controller");
 const XTZ = artifacts.require("XTZ");
 const Factory = artifacts.require("Factory");
 const qT = artifacts.require("qToken");
+const getOracle = artifacts.require("getOracle");
 
 let cInstance;
 let fInstance;
+let gInstance;
 let XTZInstance;
 let qTokenAddress;
 
@@ -27,6 +29,7 @@ contract("Controller", async () => {
     tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
     cInstance = await tezos.contract.at((await Controller.deployed()).address);
     fInstance = await tezos.contract.at((await Factory.deployed()).address);
+    gInstance = await tezos.contract.at((await getOracle.deployed()).address);
 
     let operation = await tezos.contract.transfer({
       to: accounts[2],
@@ -40,75 +43,96 @@ contract("Controller", async () => {
     console.log("acc2", await tezos.tz.getBalance(accounts[2]));
 
     operation = await cInstance.methods.setFactory(fInstance.address).send();
-    await confirmOperation(tezos, operation.hash)
+    await confirmOperation(tezos, operation.hash);
+
+    operation = await gInstance.methods.updReturnAddressOracle(cInstance.address).send();
+    await confirmOperation(tezos, operation.hash);
+
     const cStorage = await cInstance.storage();
     const value = cStorage.storage.factory;
     console.log("NewFactory: ", value);
   });
 
-  async function setup2 () {
+  async function setup2 (name) {
+    tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
     let XTZStorage = {
       totalSupply: 0,
       ledger: MichelsonMap.fromLiteral({
         [accounts[0]]: {
-          balance: 15000,
+          balance: 100000000,
           allowances: MichelsonMap.fromLiteral({}),
         },
         [accounts[1]]: {
-          balance: 15000,
+          balance: 100000000,
           allowances: MichelsonMap.fromLiteral({}),
         },
         [accounts[2]]: {
-          balance: 15000,
+          balance: 100000000,
           allowances: MichelsonMap.fromLiteral({}),
         },
       }),
     };
     XTZInstance = await tezos.contract.at((await XTZ.new(XTZStorage)).address);
 
+    let oraclePrice = 100;
+
     fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
 
-    const operation = await fInstance.methods.launchToken(XTZInstance.address).send();
+    const operation = await fInstance.methods.launchToken(name, XTZInstance.address).send();
     await confirmOperation(tezos, operation.hash)
     const fStorage = await fInstance.storage();
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
     qTokens.push(qTokenAddress);
     console.log("Created new qToken:", qTokenAddress);
 
-    const operation2 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
+    const operation2 = await XTZInstance.methods.approve(qTokenAddress, 10000000).send();
     await confirmOperation(tezos, operation2.hash)
 
     tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
-    const operation3 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
+    const operation3 = await XTZInstance.methods.approve(qTokenAddress, 10000000).send();
     await confirmOperation(tezos, operation3.hash)
 
     tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
-    const operation4 = await XTZInstance.methods.approve(qTokenAddress, 500).send();
+    const operation4 = await XTZInstance.methods.approve(qTokenAddress, 10000000).send();
     await confirmOperation(tezos, operation4.hash)
     tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+
+    const now = new Date((await tezos.rpc.getBlockHeader()).timestamp);
+	  const startTimestamp = new Date(now.setSeconds(now.getSeconds()));
+
+    // oraclePrice += 100/
+    var oracleOperation = await gInstance.methods.updParamsOracle(oraclePrice, startTimestamp).send();
+    await confirmOperation(tezos, oracleOperation.hash)
+
+    oracleOperation = await cInstance.methods.useController("sendToOracle", qTokenAddress).send();
+    await confirmOperation(tezos, oracleOperation.hash)
+
+    const oracleStorage = await cInstance.storage();
+    const value = await oracleStorage.storage.markets.get(qTokenAddress);
+    console.log("LastPrice after upd:", (value.lastPrice).toString());
   }
 
   describe("setOracle", async () => {
     it("set new oracle colled by admin", async () => {
-      await setup2(); // 0
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
-      const oracle = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
-      const operation = await cInstance.methods.useController("setOracle", oracle, qTokenAddress).send();
+      const oracle = gInstance.address;
+      const operation = await cInstance.methods.useController("setOracle", oracle).send();
       await confirmOperation(tezos, operation.hash)
 
       const oracleStorage = await cInstance.storage();
-      const value = await oracleStorage.storage.markets.get(qTokenAddress);
-      console.log("NewOracle:", await value.oracle);
+      const value = await oracleStorage.storage.oracle;
+      console.log("NewOracle:", await value);
     });
 
     it("set new oracle colled by non-admin", async () => {
+      await setup2("XTZ-USD"); // 0
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
 
-      const oracle = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
+      const oracle = gInstance.address;
 
-      await rejects(cInstance.methods.useController("setOracle", oracle, qTokenAddress).send(), (err) => {
+      await rejects(cInstance.methods.useController("setOracle", oracle).send(), (err) => {
         ok(
           err.message == "NotAdmin",
           "Error message mismatch"
@@ -123,7 +147,7 @@ contract("Controller", async () => {
     it("Safe Mint 140 for account 0; qToken non contain in qTokens list", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
-      var amount = 140;
+      var amount = 1000000;
       var randomAddress = "KT1Hi94gxTZAZjHaqSFEu3Y8PShsY4gF48Mt";
 
       await rejects(cInstance.methods.useController("safeMint", amount, randomAddress).send(), (err) => {
@@ -137,12 +161,12 @@ contract("Controller", async () => {
     });
 
     it("Safe Mint 140 for account 0; qToken contain in qTokens list", async () => {
-      await setup2(); // 0,1
+      await setup2("BTC-USD"); // 0,1
 
       console.log("current qToken: ", qTokens[qTokens.length - 2]);
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
-      var amount = 140;
+      var amount = 1000000;
       const operation = await cInstance.methods.useController("safeMint", amount, qTokens[qTokens.length - 2]).send();
       await confirmOperation(tezos, operation.hash)
 
@@ -164,7 +188,7 @@ contract("Controller", async () => {
     it("Safe Mint 150 for account 1", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
 
-      var amount = 150;
+      var amount = 1000000;
       const operation = await cInstance.methods.useController("safeMint", amount, qTokens[qTokens.length - 1]).send();
       await confirmOperation(tezos, operation.hash)
 
@@ -185,7 +209,7 @@ contract("Controller", async () => {
   describe("safeBorrow", async () => {
     it("Safe Borrow 10 for account 0; qToken non contain in qTokens list", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      var amount = 10;
+      var amount = 500000;
       var randomCollateral = "KT1D2F12dbneCAJUXDxzYgoZu8gb5Mjf618m";
       var randomBorrow = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
 
@@ -201,8 +225,8 @@ contract("Controller", async () => {
 
     it("Safe Borrow 10 for account 0; Collateral and Borrower token not different", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      await setup2(); // 0,1,2
-      var amount = 10;
+      await setup2("ETH-USD"); // 0,1,2
+      var amount = 500000;
 
       await rejects(cInstance.methods.useController("safeBorrow", qTokens[qTokens.length - 3], amount, qTokens[qTokens.length - 3]).send(), (err) => {
         ok(
@@ -216,8 +240,8 @@ contract("Controller", async () => {
 
     it("Safe Borrow 10 for account 0. Brower token is`nt minted", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      await setup2(); // 0,1,2,3
-      var amount = 10;
+      await setup2("BNB-USD"); // 0,1,2,3
+      var amount = 500000;
 
       await rejects(cInstance.methods.useController("safeBorrow", qTokens[qTokens.length - 4], amount, qTokens[qTokens.length - 1]).send(), (err) => {
         ok(
@@ -231,7 +255,7 @@ contract("Controller", async () => {
 
     it("Safe Borrow 10 for account 0. Collateral token is`nt minted", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      var amount = 10;
+      var amount = 500000;
 
       await rejects(cInstance.methods.useController("safeBorrow", qTokens[qTokens.length - 1], amount, qTokens[qTokens.length - 4]).send(), (err) => {
         ok(
@@ -245,7 +269,7 @@ contract("Controller", async () => {
 
     it("Safe Borrow 10 for account 0", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      var amount = 10;
+      var amount = 500000;
 
       const operation = await cInstance.methods.useController(
         "safeBorrow",
@@ -270,12 +294,14 @@ contract("Controller", async () => {
       console.log("Account MEM: ", await MStorage.storage.accountMembership.get(accounts[0]));
       const arr = [accounts[0], qTokens[qTokens.length - 3]];
 
+      console.log("iCONTR",await MStorage.storage.icontroller);
+
       console.log("Acc Borr in Contr: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
     });
 
     it("Safe Borrow 10 for account 0. CollateralToken already entered to market", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      var amount = 10;
+      var amount = 500000;
 
       await rejects(cInstance.methods.useController("safeBorrow", qTokens[qTokens.length - 4], amount, qTokens[qTokens.length - 3]).send(), (err) => {
         ok(
@@ -291,8 +317,8 @@ contract("Controller", async () => {
   describe("safeRedeem", async () => {
     it("Safe Redeem 20 for account 0. qToken non contain in qTokens list", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      await setup2(); // 0,1,2,3,4
-      var amount = 20;
+      await setup2("CAKE-USD"); // 0,1,2,3,4
+      var amount = 500000;
       var randomToken = "KT1RCNpUEDjZAYhabjzgz1ZfxQijCDVMEaTZ";
 
       await rejects(cInstance.methods.useController("safeRedeem", amount, randomToken).send(), (err) => {
@@ -307,7 +333,7 @@ contract("Controller", async () => {
 
     it("Safe Redeem 20 for account 1. Redeem without mint.", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[1])));
-      var amount = 20;
+      var amount = 500000;
 
       await rejects(cInstance.methods.useController("safeRedeem", amount, qTokens[qTokens.length - 5]).send(), (err) => {
         ok(
@@ -320,32 +346,37 @@ contract("Controller", async () => {
     });
 
 
-    it("Safe Redeem 20 for account 0", async () => {
-      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-      var amount = 20;
+    // it("Safe Redeem 20 for account 0", async () => {
+    //   tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+    //   var amount = 10;
 
-      const operation = await cInstance.methods.useController(
-        "safeRedeem",
-        amount,
-        qTokens[qTokens.length - 5]
-      ).send();
-      await confirmOperation(tezos, operation.hash)
+    //   const operation = await cInstance.methods.useController(
+    //     "safeRedeem",
+    //     amount,
+    //     qTokens[qTokens.length - 5]
+    //   ).send();
+    //   await confirmOperation(tezos, operation.hash)
 
-      let token = await qT.at(qTokens[qTokens.length - 5]);
-      let res = await token.storage();
-      let aB = await res.storage.accountBorrows.get(accounts[0]);
+    //   let token = await qT.at(qTokens[qTokens.length - 5]);
+    //   let res = await token.storage();
+    //   let aB = await res.storage.accountBorrows.get(accounts[0]);
 
-      console.log("Account Borrows amount: ", await aB.amount);
-      console.log(
-        "Account Tokens amount: ",
-        await res.storage.accountTokens.get(accounts[0])
-      );
+    //   console.log("Account Borrows amount: ", await aB.amount);
+    //   console.log(
+    //     "Account Tokens amount: ",
+    //     await res.storage.accountTokens.get(accounts[0])
+    //   );
 
-      let x = await XTZ.at(fa[fa.length - 5]);
-      let xRes = await x.storage();
-      let xB = await xRes.ledger.get(accounts[0]);
-      console.log("Balance in XTZ:", await xB.balance);
-    });
+    //   let x = await XTZ.at(fa[fa.length - 5]);
+    //   let xRes = await x.storage();
+    //   let xB = await xRes.ledger.get(accounts[0]);
+    //   console.log("Balance in XTZ:", await xB.balance);
+
+    //   const MStorage = await cInstance.storage();
+
+    //   console.log("iCONTR",await MStorage.storage.icontroller);
+
+    // });
   });
 
   describe("safeRepay", async () => {
@@ -398,7 +429,7 @@ contract("Controller", async () => {
 
       console.log("Acc Borr in Contr bef: ", (await MStorage.storage.accountBorrows.get(arr)).toString());
 
-      var amount = 5;
+      var amount = 200000;
       const operation = await cInstance.methods.useController(
         "safeRepay",
         amount,
@@ -468,7 +499,7 @@ contract("Controller", async () => {
       const borrowerToken = qTokens[qTokens.length - 4];
       const collateralToken = qTokens[qTokens.length - 5];
 
-      var amount = 5;
+      var amount = 300000;
 
       var operation = await cInstance.methods.useController(
         "safeRepay",
@@ -502,7 +533,7 @@ contract("Controller", async () => {
   describe("safeMint3 for SafeLiquidate", async () => {
     it("Safe Mint 150 for account 2", async () => {
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[2])));
-      await setup2(); // 0,1,2,3,4,5
+      await setup2("BUNNY-USD"); // 0,1,2,3,4,5
 
 
       var amount = 150;
@@ -617,17 +648,20 @@ contract("Controller", async () => {
     });
 
     it("Safe Liquidate. Borrower = Liquidator", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
       var borrower = accounts[0];
       var amount = 0;
 
-      await rejects(cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send(), (err) => {
-        ok(
-          err.message == "BorrowerCannotBeLiquidator",
-          "Error message mismatch"
-        );
+      const operation = cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send();
+      await confirmOperation(tezos, operation.hash);
+      // await rejects(cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send(), (err) => {
+      //   ok(
+      //     err.message == "BorrowerCannotBeLiquidator",
+      //     "Error message mismatch"
+      //   );
 
-        return true;
-      });
+      //   return true;
+      // });
     });
 
     it("Safe Liquidate. Liquidator doesnt have borrower token", async () => {

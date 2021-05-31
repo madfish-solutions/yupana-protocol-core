@@ -56,7 +56,7 @@ contract("Controller", async () => {
     console.log("NewAddress Controller: ", value);
 	});
 
-	async function setup2 () {
+	async function setup2 (name) {
     let XTZStorage = {
       totalSupply: 0,
       ledger: MichelsonMap.fromLiteral({
@@ -79,14 +79,14 @@ contract("Controller", async () => {
     fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
 
-    const operation = await fInstance.methods.launchToken("XTZ-USD",XTZInstance.address).send();
+    const operation = await fInstance.methods.launchToken(name, XTZInstance.address).send();
     await confirmOperation(tezos, operation.hash)
     const fStorage = await fInstance.storage();
     qTokenAddress = await fStorage.tokenList.get(XTZInstance.address);
     qTokens.push(qTokenAddress);
 
     var cStorage = await cInstance.storage();
-    var value = cStorage.storage.oracleStringPairs.get("XTZ-USD");
+    var value = cStorage.storage.oracleStringPairs.get(name);
     console.log("check1: ", await value);
 
     cStorage = await cInstance.storage();
@@ -111,7 +111,7 @@ contract("Controller", async () => {
 
   describe("setOracle", async () => {
     it("set new oracle colled by admin", async () => {
-      await setup2(); // 0
+      await setup2("XTZ-USD"); // 0
       tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
 
       const oracle = gInstance.address;

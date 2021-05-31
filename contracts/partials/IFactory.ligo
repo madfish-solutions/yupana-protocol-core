@@ -12,7 +12,7 @@ type createContrFunc is (option(key_hash) * tez * fullTokenStorage) -> (operatio
 
 type launchTokenParams is record [
   token           : address;
-  oralcePairName  : string; // !!!!!!!!!
+  oralcePairName  : string;
 ]
 
 type setTokenParams is record [
@@ -28,7 +28,7 @@ type setUseParams is record [
 type registerType is record [
     token        : address;
     qToken       : address;
-    pairName     : string; // !!!!!!!!!
+    pairName     : string;
 ]
 
 type iController is QRegister of registerType

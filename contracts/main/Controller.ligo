@@ -135,7 +135,6 @@ function setUseAction (const idx : nat; const f : useControllerFunc; const s : f
     var m : market := record [
       collateralFactor = 0n;
       lastPrice        = 0n;
-      // oracle           = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
       exchangeRate     = 0n;
     ];
     case s.markets[qToken] of
@@ -156,8 +155,8 @@ function getUserLiquidity (const user : address; const qToken : address; const r
     var collateralMarket : market := getMarket(tokens.collateralToken, s);
     var borrowedMarket : market := getMarket(tokens.borrowerToken, s);
 
-    const collateralTokensToDenom : nat = collateralMarket.collateralFactor * collateralMarket.exchangeRate * collateralMarket.lastPrice / accuracy / accuracy;
-    const borrowedTokensToDenom : nat = borrowedMarket.collateralFactor * borrowedMarket.exchangeRate * borrowedMarket.lastPrice / accuracy / accuracy;
+    const collateralTokensToDenom : nat = collateralMarket.collateralFactor * collateralMarket.exchangeRate * collateralMarket.lastPrice;
+    const borrowedTokensToDenom : nat = borrowedMarket.collateralFactor * borrowedMarket.exchangeRate * borrowedMarket.lastPrice;
 
     //  calculate collateral based on the collateral market
     var sumCollateral : nat :=  collateralTokensToDenom * getAccountTokens(user, tokens.collateralToken, s) / accuracy;
@@ -167,9 +166,8 @@ function getUserLiquidity (const user : address; const qToken : address; const r
     // calculate the impack of the current operation
     if tokens.collateralToken = qToken then block {
       sumBorrow := sumBorrow + collateralTokensToDenom * redeemTokens;
-    } else block {
       sumBorrow := sumBorrow + borrowedMarket.lastPrice * borrowAmount;
-    };
+    } else skip;
 
     var response : getUserLiquidityReturn :=
     record [
@@ -273,11 +271,6 @@ function setOracle (const p : useControllerAction; const this : address; var s :
       else skip;
 
       s.oracle := setOracleParams;
-
-      // var m : market := getMarket(setOracleParams.qToken, s);
-      // m.oracle := setOracleParams.oracle;
-
-      // s.markets[setOracleParams.qToken] := m;
     }
     | Register(registerParams) -> skip
     | UpdateQToken(updateQTokenParams) -> skip
@@ -312,8 +305,8 @@ function register (const p : useControllerAction; const this : address; var s : 
       s.qTokens := Set.add(registerParams.qToken, s.qTokens);
       s.pairs[registerParams.token] := registerParams.qToken;
 
-      s.oraclePairs[registerParams.qToken] := registerParams.pairName; //!!!!!!!!!
-      s.oracleStringPairs[registerParams.pairName] := registerParams.qToken //!!!!!!!!!
+      s.oraclePairs[registerParams.qToken] := registerParams.pairName;
+      s.oracleStringPairs[registerParams.pairName] := registerParams.qToken;
     }
     | UpdateQToken(updateQTokenParams) -> skip
     | ExitMarket(addr) -> skip
@@ -564,9 +557,11 @@ function ensuredRedeem (const p : useControllerAction; const this : address; var
 
       const response = getUserLiquidity(ensuredRedeemParams.user, ensuredRedeemParams.qToken, ensuredRedeemParams.redeemTokens, ensuredRedeemParams.borrowAmount, s);
 
-      if response.shortfail =/= 0n then
-        failwith("ShortfailNotZero")
-      else skip;
+      s.icontroller := response.shortfail;
+
+      // if response.shortfail =/= 0n then
+      //   failwith("ShortfailNotZero")
+      // else skip;
 
       operations := list [
         Tezos.transaction(
@@ -673,6 +668,8 @@ function ensuredBorrow (const p : useControllerAction; const this : address; var
       else skip;
 
       const response = getUserLiquidity(ensuredBorrowParams.user, ensuredBorrowParams.qToken, ensuredBorrowParams.redeemTokens, ensuredBorrowParams.borrowAmount, s);
+
+      s.icontroller := response.shortfail;
 
       if response.shortfail =/= 0n then
         failwith("ShortfailNotZero")

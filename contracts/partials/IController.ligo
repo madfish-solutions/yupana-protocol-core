@@ -3,23 +3,22 @@
 type market is record [
   collateralFactor      : nat;
   lastPrice             : nat;
-  // oracle                : address;
   exchangeRate          : nat;
-  // oraclePairName        : string; // !!!!
 ]
 
 type controllerStorage is record [
   factory               : address;
   admin                 : address;
   qTokens               : set(address);
-  oraclePairs           : big_map(address, string); // !!!!
-  oracleStringPairs     : big_map(string, address); // !!!!
+  oraclePairs           : big_map(address, string);
+  oracleStringPairs     : big_map(string, address);
   pairs                 : big_map(address, address);
   accountBorrows        : big_map((address * address), nat);
   accountTokens         : big_map((address * address), nat);
   markets               : big_map(address, market);
   accountMembership     : big_map(address, membershipParams);
-  oracle                : address; // !!!!
+  oracle                : address;
+  icontroller           : nat;
 ]
 
 [@inline] const noOperations : list (operation) = nil
