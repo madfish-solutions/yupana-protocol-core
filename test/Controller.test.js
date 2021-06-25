@@ -74,7 +74,7 @@ contract("Controller", async () => {
     };
     XTZInstance = await tezos.contract.at((await XTZ.new(XTZStorage)).address);
 
-    let oraclePrice = 100;
+    let oraclePrice = 0;
 
     fa.push(XTZInstance.address);
     console.log("Created FA1.2 token:", XTZInstance.address);
@@ -346,37 +346,37 @@ contract("Controller", async () => {
     });
 
 
-    // it("Safe Redeem 20 for account 0", async () => {
-    //   tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
-    //   var amount = 10;
+    it("Safe Redeem 20 for account 0", async () => {
+      tezos.setSignerProvider(await new InMemorySigner.fromSecretKey(accountsMap.get(accounts[0])));
+      var amount = 10;
 
-    //   const operation = await cInstance.methods.useController(
-    //     "safeRedeem",
-    //     amount,
-    //     qTokens[qTokens.length - 5]
-    //   ).send();
-    //   await confirmOperation(tezos, operation.hash)
+      const operation = await cInstance.methods.useController(
+        "safeRedeem",
+        amount,
+        qTokens[qTokens.length - 5]
+      ).send();
+      await confirmOperation(tezos, operation.hash)
 
-    //   let token = await qT.at(qTokens[qTokens.length - 5]);
-    //   let res = await token.storage();
-    //   let aB = await res.storage.accountBorrows.get(accounts[0]);
+      let token = await qT.at(qTokens[qTokens.length - 5]);
+      let res = await token.storage();
+      let aB = await res.storage.accountBorrows.get(accounts[0]);
 
-    //   console.log("Account Borrows amount: ", await aB.amount);
-    //   console.log(
-    //     "Account Tokens amount: ",
-    //     await res.storage.accountTokens.get(accounts[0])
-    //   );
+      console.log("Account Borrows amount: ", await aB.amount);
+      console.log(
+        "Account Tokens amount: ",
+        await res.storage.accountTokens.get(accounts[0])
+      );
 
-    //   let x = await XTZ.at(fa[fa.length - 5]);
-    //   let xRes = await x.storage();
-    //   let xB = await xRes.ledger.get(accounts[0]);
-    //   console.log("Balance in XTZ:", await xB.balance);
+      let x = await XTZ.at(fa[fa.length - 5]);
+      let xRes = await x.storage();
+      let xB = await xRes.ledger.get(accounts[0]);
+      console.log("Balance in XTZ:", await xB.balance);
 
-    //   const MStorage = await cInstance.storage();
+      const MStorage = await cInstance.storage();
 
-    //   console.log("iCONTR",await MStorage.storage.icontroller);
+      console.log("iCONTR",await MStorage.storage.icontroller);
 
-    // });
+    });
   });
 
   describe("safeRepay", async () => {
@@ -652,16 +652,16 @@ contract("Controller", async () => {
       var borrower = accounts[0];
       var amount = 0;
 
-      const operation = cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send();
-      await confirmOperation(tezos, operation.hash);
-      // await rejects(cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send(), (err) => {
-      //   ok(
-      //     err.message == "BorrowerCannotBeLiquidator",
-      //     "Error message mismatch"
-      //   );
+      // const operation = cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send();
+      // await confirmOperation(tezos, operation.hash);
+      await rejects(cInstance.methods.useController("safeLiquidate", borrower, amount, qTokens[qTokens.length - 6]).send(), (err) => {
+        ok(
+          err.message == "BorrowerCannotBeLiquidator",
+          "Error message mismatch"
+        );
 
-      //   return true;
-      // });
+        return true;
+      });
     });
 
     it("Safe Liquidate. Liquidator doesnt have borrower token", async () => {
