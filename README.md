@@ -1,7 +1,7 @@
 # BasicLendingProtocol
 
 # Description
-Landing Protocol contracts are under development. In this repository, you can follow the development and changes.
+Lending Protocol contracts are under development. In this repository, you can follow the development and changes.
 
 # Architecture
 
@@ -45,18 +45,18 @@ Landing Protocol contracts are under development. In this repository, you can fo
 The Ligo interfaces of the contracts can be found in `contracts/partials/I__CONTRACT_NAME__.ligo`
 
 ## Wrapped XTZ
-Extended FA1.2 token with mint/withdraw functions, analog for WETH.
+Extended FA1.2 token with mint/withdraw functions, analog to WETH.
 
 ## qToken
 The main token with the following main features that have already been implemented:
-- mint is a function to add a token as a collateral. It is she who allows you to add a token to our system.
-- borrow - a function for borrowing a token. Implemented the logic of freezing collatiral tokens when borrowing a token.
+- mint is a function to add a token as a collateral. It allows you to add a token to our system.
+- borrow - a function for borrowing a token. Implemented the logic of freezing collateral tokens when borrowing a token.
 - repay - a function designed to repay debt.
 - redeem - the function is designed to withdraw tokens from the platform.
 - liquidate - the function allows another user to liquidate someone's debt.
 
 ## Controller
-The contract is responsible for the verification all the actions that can be done over the **qToken**.
+The contract is responsible for the verification of all the actions that can be done over the **qToken**.
 
 ## Factory
 A contract that allows you to wrap a token (for example, wrapped XTZ) into our qXTZ token.
