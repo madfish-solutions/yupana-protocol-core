@@ -21,11 +21,30 @@ type tokenStorage is record [
 type return is list (operation) * tokenStorage
 [@inline] const noOperations : list (operation) = nil;
 
-type transferParams is michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
-type transferType is TransferOuttside of michelson_pair(address, "from", michelson_pair(address, "to", nat, "value"), "")
-type approveParams is michelson_pair(address, "spender", nat, "value")
-type balanceParams is michelson_pair(address, "owner", contract(nat), "")
-type allowanceParams is michelson_pair(michelson_pair(address, "owner", address, "spender"), "", contract(nat), "")
+type transferParams is [@layout:comb] record [
+  [@annot:from] from_ : address;
+  [@annot:to] to_ : address;
+  value : nat;
+]
+
+type transferType is TransferOutside of transferParams
+
+type approveParams is [@layout:comb] record [
+  spender : address;
+  value : nat;
+]
+
+type balanceParams is [@layout:comb] record [
+  owner : address;
+  [@annot:] receiver : contract(nat);
+]
+
+type allowanceParams is [@layout:comb] record [
+  owner : address;
+  spender : address;
+  [@annot:] receiver : contract(nat);
+]
+
 type totalSupplyParams is (unit * contract(nat))
 
 type liquidateParams is record [
@@ -67,20 +86,27 @@ type membershipParams is record [
   collateralToken       : address;
 ]
 
+type ensuredExitMarketParams is record [
+  user                  : address;
+  borrowerToken         : address;
+  collateralToken       : address;
+]
+
 
 type updateParams is record [
   qToken                : address;
   price                 : nat;
 ]
 
-type setOracleParams is record [
-  qToken                : address;
-  oracle                : address;
-]
+type contrParam is (string * (timestamp * nat))
+type updParams is (string * contract(contrParam))
+
+type setOracleParams is address
 
 type registerParams is record [
   qToken                : address;
   token                 : address;
+  pairName              : string;
 ]
 
 type updateQTokenParams is [@layout:comb] record [
@@ -112,13 +138,6 @@ type safeRedeemParams is record [
   amount                : nat;
 ]
 
-type redeemMiddleParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
-
 type redeemType is record [
   user                  : address;
   amount                : nat;
@@ -137,13 +156,6 @@ type safeBorrowParams is [@layout:comb] record [
   borrowerToken         : address;
 ]
 
-type borrowMiddleParams is record [
-  user                  : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-]
-
 type borrowParams is record [
   user                  : address;
   amount                : nat;
@@ -158,10 +170,17 @@ type ensuredBorrowParams is record [
   user                  : address;
   qToken                : address;
   redeemTokens          : nat;
-  borrowAmount          : nat; 
+  borrowAmount          : nat;
 ]
 
+
 type safeRepayParams is record [
+  qToken                : address;
+  amount                : nat;
+]
+
+type ensuredRepayParams is record [
+  user                  : address;
   qToken                : address;
   amount                : nat;
 ]
@@ -170,15 +189,6 @@ type safeLiquidateParams is [@layout:comb] record [
   borrower              : address;
   amount                : nat;
   qToken                : address;
-]
-
-type liquidateMiddleParams is record [
-  user                  : address;
-  borrower              : address;
-  qToken                : address;
-  redeemTokens          : nat;
-  borrowAmount          : nat;
-  collateralToken       : address;
 ]
 
 type ensuredLiquidateParams is record [
@@ -190,12 +200,6 @@ type ensuredLiquidateParams is record [
   collateralToken       : address;
 ]
 
-type safeSeizeParams is [@layout:comb] record [
-  liquidator            : address;
-  borrower              : address;
-  amount                : nat;
-  collateralToken       : address;
-]
 // CONTROLLERS PARAMS END
 
 type useAction is
@@ -224,24 +228,23 @@ type entryAction is
   | GetTotalSupply of totalSupplyParams
   | Use of useAction
 
-type useControllerAction is 
-  | UpdatePrice of updateParams
+type useControllerAction is
+  | UpdatePrice of contrParam
+  | SendToOracle of address
   | SetOracle of setOracleParams
   | Register of registerParams
   | UpdateQToken of updateQTokenParams
-  | ExitMarket of membershipParams
+  | ExitMarket of address
+  | EnsuredExitMarket of ensuredExitMarketParams
   | SafeMint of safeMintParams
   | SafeRedeem of safeRedeemParams
-  | RedeemMiddle of redeemMiddleParams
   | EnsuredRedeem of ensuredRedeemParams
   | SafeBorrow of safeBorrowParams
-  | BorrowMiddle of borrowMiddleParams
   | EnsuredBorrow of ensuredBorrowParams
   | SafeRepay of safeRepayParams
+  | EnsuredRepay of ensuredRepayParams
   | SafeLiquidate of safeLiquidateParams
-  | LiquidateMiddle of liquidateMiddleParams
   | EnsuredLiquidate of ensuredLiquidateParams
-  | SafeSeize of safeSeizeParams
 
 type useFunc is (useAction * tokenStorage * address) -> return
 type tokenFunc is (tokenAction * tokenStorage) -> return

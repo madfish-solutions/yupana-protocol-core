@@ -33,12 +33,12 @@ function getLigo(isDockerizedLigo) {
 
 module.exports = async function (deployer, network) {
   tezos = new TezosToolkit(tezos.rpc.url);
-  if (network == "development") return;
+  if (network == "development" || network == "development_server") return;
   const secretKey = accountsMap.get(accounts[0]);
-  
+
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 500,
+      confirmationPollingTimeoutSecond: 5000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
@@ -80,7 +80,7 @@ module.exports = async function (deployer, network) {
   //       value: JSON.parse(stdout.toString()).args[0].args[0],
   //     },
   //   });
-  //   await operation.confirmation();
+  //   await confirmOperation(tezos, operation.hash)
   // }
   // for (useFunction of functions.use) {
   //   const stdout = execSync(
@@ -95,7 +95,7 @@ module.exports = async function (deployer, network) {
   //       value: JSON.parse(stdout.toString()).args[0].args[0],
   //     },
   //   });
-  //   await operation.confirmation();
+  //   await confirmOperation(tezos, operation.hash)
   // }
 
   var XTZInstance = null;

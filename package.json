@@ -18,10 +18,15 @@
     "mocha": "^8.1.1"
   },
   "scripts": {
-    "start-sandbox": "ganache-cli --flavor tezos --seed alice --hardfork edo",
+    "clean": "rm -rf ./build",
+    "start-sandbox": "docker run --rm --name my-sandbox -e flextesa_node_cors_origin=\"*\" --detach -p 8732:20000 tqtezos/flextesa:20210316 flobox start",
     "compile-qToken": "node scripts/cli.js build-qToken --no-json -o contracts",
-    "compile": "truffle compile",
-    "test": "truffle test",
+    "migrate": "yarn clean && yarn truffle migrate",
+    "migrate-s": "yarn clean && yarn truffle migrate --network development_server",
+    "migrate-edonet": "yarn clean && yarn truffle migrate --network edonet",
+    "compile": "yarn clean && yarn truffle compile",
+    "test": "yarn truffle test",
+    "test-s": "yarn truffle test --network development_server",
     "postinstall": "patch-package"
   },
   "repository": {

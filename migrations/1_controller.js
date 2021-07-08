@@ -5,6 +5,7 @@ const { TezosToolkit } = require("@taquito/taquito");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
+const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
 
 function getLigo(isDockerizedLigo) {
@@ -31,22 +32,27 @@ function getLigo(isDockerizedLigo) {
 module.exports = async function (deployer) {
   tezos = new TezosToolkit(tezos.rpc.url);
   const secretKey = accountsMap.get(accounts[0]);
-  
+
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 500,
+      confirmationPollingTimeoutSecond: 5000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
+
   const controllerStorage = {
     factory: accounts[0],
     admin: accounts[0],
     qTokens: [],
+    oraclePairs: new MichelsonMap(),
+    oracleStringPairs: new MichelsonMap(),
     pairs: new MichelsonMap(),
     accountBorrows: new MichelsonMap(),
     accountTokens: new MichelsonMap(),
     markets: new MichelsonMap(),
     accountMembership: new MichelsonMap(),
+    oracle: accounts[0],
+    icontroller : "0",
   };
 
   const fullControllerStorage = {
@@ -58,11 +64,11 @@ module.exports = async function (deployer) {
   const ControllerInstance = await Controller.deployed();
 
   let ligo = getLigo(true);
-
   for (useControllerFunction of functions.useController) {
+    console.log(useControllerFunction.name);
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Controller.ligo main 'SetUseAction(record index =${useControllerFunction.index}n; func = ${useControllerFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
+      { maxBuffer: 1024 * 1000 }
     );
     const operation = await tezos.contract.transfer({
       to: ControllerInstance.address,
@@ -72,6 +78,6 @@ module.exports = async function (deployer) {
         value: JSON.parse(stdout.toString()).args[0].args[0],
       },
     });
-    await operation.confirmation();
+    await confirmOperation(tezos, operation.hash)
   }
 };

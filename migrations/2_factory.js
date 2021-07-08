@@ -4,6 +4,7 @@ const { accountsMap } = require('../scripts/sandbox/accounts');
 const { TezosToolkit } = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
+const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
 
 const Factory = artifacts.require("Factory");
@@ -33,10 +34,10 @@ function getLigo(isDockerizedLigo) {
 module.exports = async function (deployer, network) {
   tezos = new TezosToolkit(tezos.rpc.url);
   const secretKey = accountsMap.get(accounts[0]);
-  
+
   tezos.setProvider({
     config: {
-      confirmationPollingTimeoutSecond: 500,
+      confirmationPollingTimeoutSecond: 5000,
     },
     signer: await InMemorySigner.fromSecretKey(secretKey),
   });
@@ -56,34 +57,36 @@ module.exports = async function (deployer, network) {
   let ligo = getLigo(true);
 
   for (tokenFunction of functions.token) {
+    console.log(tokenFunction.name);
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetTokenFunction(record index =${tokenFunction.index}n; func =${tokenFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
+      { maxBuffer: 1024 * 4000 }
     );
     const operation = await tezos.contract.transfer({
       to: factoryInstance.address,
       amount: 0,
       parameter: {
         entrypoint: "setTokenFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
+        value: JSON.parse(stdout.toString()).args[0].args[0].args[0],
       },
     });
-    await operation.confirmation();
+    await confirmOperation(tezos, operation.hash)
   }
 
   for (useFunction of functions.use) {
+    console.log(useFunction.name);
     const stdout = execSync(
       `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Factory.ligo main 'SetUseFunction(record index =${useFunction.index}n; func = ${useFunction.name}; end)'`,
-      { maxBuffer: 1024 * 500 }
+      { maxBuffer: 1024 * 3000 }
     );
     const operation = await tezos.contract.transfer({
       to: factoryInstance.address,
       amount: 0,
       parameter: {
         entrypoint: "setUseFunction",
-        value: JSON.parse(stdout.toString()).args[0].args[0],
+        value: JSON.parse(stdout.toString()).args[0],
       },
     });
-    await operation.confirmation();
+    await confirmOperation(tezos, operation.hash)
   }
 };
