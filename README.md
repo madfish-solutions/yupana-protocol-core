@@ -1,4 +1,4 @@
-# BasicLendingProtocol
+# Lending protocol
 
 # Description
 Lending Protocol contracts are under development. In this repository, you can follow the development and changes.
