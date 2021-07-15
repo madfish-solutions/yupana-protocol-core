@@ -1,7 +1,10 @@
 #include "../partials/IXTZ.ligo"
 
 (* Helper function to get account *)
-function getAccount (const addr : address; const s : storage) : account is
+function getAccount(
+  const addr            : address;
+  const s               : storage)
+                        : account is
   block {
     var acct : account :=
       record [
@@ -15,16 +18,24 @@ function getAccount (const addr : address; const s : storage) : account is
   } with acct
 
 (* Helper function to get allowance for an account *)
-function getAllowance (const ownerAccount : account; const spender : address; const s : storage) : amt is
+function getAllowance(
+  const ownerAccount    : account;
+  const spender         : address;
+  const s               : storage)
+                        : amt is
   case ownerAccount.allowances[spender] of
     Some (amt) -> amt
   | None -> 0n
   end;
 
 (* Transfer token to another account *)
-function transfer (const from_ : address; const to_ : address; const value : amt; var s : storage) : return is
+function transfer(
+  const from_           : address;
+  const to_             : address;
+  const value           : amt;
+  var s                 : storage)
+                        : return is
   block {
-
     (* Retrieve sender account from storage *)
     const senderAccount : account = getAccount(from_, s);
 
@@ -34,13 +45,17 @@ function transfer (const from_ : address; const to_ : address; const value : amt
     else skip;
 
     (* Check this address can spend the tokens *)
-    if from_ =/= Tezos.sender then block {
-      const spenderAllowance : amt = getAllowance(senderAccount, Tezos.sender, s);
+    if from_ =/= Tezos.sender
+    then block {
+      const spenderAllowance : amt = getAllowance(
+        senderAccount,
+        Tezos.sender,
+        s
+      );
 
-      // if spenderAllowance < value then
-      //   failwith("NotEnoughAllowance")
-      // else skip;
-
+      if spenderAllowance < value
+      then failwith("NotEnoughAllowance")
+      else skip;
       (* Decrease any allowances *)
       senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - value);
     } else skip;
@@ -63,7 +78,11 @@ function transfer (const from_ : address; const to_ : address; const value : amt
   } with (noOperations, s)
 
 (* Approve an amt to be spent by another address in the name of the sender *)
-function approve (const spender : address; const value : amt; var s : storage) : return is
+function approve(
+  const spender         : address;
+  const value           : amt;
+  var s                 : storage)
+                        : return is
   block {
 
     (* Create or get sender account *)
@@ -73,9 +92,9 @@ function approve (const spender : address; const value : amt; var s : storage) :
     const spenderAllowance : amt = getAllowance(senderAccount, spender, s);
 
     (* Prevent a corresponding attack vector *)
-    // if spenderAllowance > 0n and value > 0n then
-    //   failwith("UnsafeAllowanceChange")
-    // else skip;
+    if spenderAllowance > 0n and value > 0n
+    then failwith("UnsafeAllowanceChange")
+    else skip;
 
     (* Set spender allowance *)
     senderAccount.allowances[spender] := value;
@@ -86,20 +105,33 @@ function approve (const spender : address; const value : amt; var s : storage) :
   } with (noOperations, s)
 
 (* View function that forwards the balance of source to a contract *)
-function getBalance (const owner : address; const contr : contract(amt); var s : storage) : return is
+function getBalance(
+  const owner           : address;
+  const contr           : contract(amt);
+  var s                 : storage)
+                        : return is
   block {
     const ownerAccount : account = getAccount(owner, s);
   } with (list [transaction(ownerAccount.balance, 0tz, contr)], s)
 
-(* View function that forwards the allowance amt of spender in the name of tokenOwner to a contract *)
-function getAllowance (const owner : address; const spender : address; const contr : contract(amt); var s : storage) : return is
+(* View function that forwards the allowance amt of spender
+  in the name of tokenOwner to a contract *)
+function getAllowance (
+  const owner           : address;
+  const spender         : address;
+  const contr           : contract(amt);
+  var s                 : storage)
+                        : return is
   block {
     const ownerAccount : account = getAccount(owner, s);
     const spenderAllowance : amt = getAllowance(ownerAccount, spender, s);
   } with (list [transaction(spenderAllowance, 0tz, contr)], s)
 
 (* View function that forwards the totalSupply to a contract *)
-function getTotalSupply (const contr : contract(amt); var s : storage) : return is
+function getTotalSupply(
+  const contr           : contract(amt);
+  var s                 : storage)
+                        : return is
   block {
     skip
   } with (list [transaction(s.totalSupply, 0tz, contr)], s)
@@ -111,7 +143,10 @@ function mint (var s : storage) : return is
     s.ledger[Tezos.sender] := senderAccount;
   } with (noOperations, s)
 
-function withdraw (const value : amt; var s : storage) : return is
+function withdraw(
+  const value           : amt;
+  var s                 : storage)
+                        : return is
   block {
     const senderAccount : account = getAccount(Tezos.sender, s);
     if senderAccount.balance < value then
@@ -120,10 +155,17 @@ function withdraw (const value : amt; var s : storage) : return is
 
     senderAccount.balance := abs(senderAccount.balance - value);
     s.ledger[Tezos.sender] := senderAccount;
-  } with (list [Tezos.transaction(unit, value * 1mutez, (get_contract(Tezos.sender) : contract(unit)))], s)
+  } with (list [Tezos.transaction(
+      unit,
+      value * 1mutez,
+      (get_contract(Tezos.sender) : contract(unit))
+    )], s)
 
 (* Main entrypoint *)
-function main (const action : entryAction; var s : storage) : return is
+function main (
+  const action          : entryAction;
+  var s                 : storage)
+                        : return is
   block {
     skip
   } with case action of

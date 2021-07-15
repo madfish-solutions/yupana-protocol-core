@@ -8,7 +8,11 @@ type factoryStorage is record [
   useLambdas          : big_map(nat, useFunc);
 ]
 
-type createContrFunc is (option(key_hash) * tez * fullTokenStorage) -> (operation * address)
+type createContrFunc is (
+  option(key_hash) *
+  tez *
+  fullTokenStorage
+) -> (operation * address)
 
 type launchTokenParams is record [
   token           : address;

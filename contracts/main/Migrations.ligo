@@ -3,7 +3,10 @@ type migrations is record
   last_completed_migration : int;
 end
 
-function main (const completed_migration: int ; var migrations : migrations) : (list(operation) * migrations) is
+function main(
+  const completed_migration: int;
+  var migrations        : migrations)
+                        : (list(operation) * migrations) is
   block {
     if sender =/= migrations.owner
     then
