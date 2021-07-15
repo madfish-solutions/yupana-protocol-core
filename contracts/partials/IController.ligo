@@ -23,7 +23,11 @@ type controllerStorage is record [
 
 [@inline] const noOperations : list (operation) = nil
 type return is list (operation) * controllerStorage
-type useControllerFunc is (useControllerAction  * address * controllerStorage) -> return
+type useControllerFunc is (
+  useControllerAction *
+  address *
+  controllerStorage
+) -> return
 const accuracy : nat = 1000000000000000000n; //1e+18
 type updateControllerStateType is QUpdateControllerState of address
 
