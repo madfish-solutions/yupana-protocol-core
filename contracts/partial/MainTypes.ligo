@@ -1,29 +1,29 @@
-type borrows is record [
-    amount           : nat;
-    lastBorrowIndex  : nat;
-    allowances       : map (address, nat);
+type user is record [
+  amount                : nat;
+  allowances            : map(address, nat);
+  borrowAmount          : nat;
+  lastBorrowIndex       : nat;
 ]
 
 type tokenStorage is record [
-    owner           : address;
-    admin           : address;
-    token           : address;
-    lastUpdateTime  : timestamp;
-    totalBorrows    : nat;
-    totalLiquid     : nat;
-    totalSupply     : nat;
-    totalReserves   : nat;
-    borrowIndex     : nat;
-    accountBorrows  : big_map(address, borrows);
-    accountTokens   : big_map(address, nat);
+    owner               : address;
+    admin               : address;
+    account             : big_map(address, user);
+    token               : address;
+    lastUpdateTime      : timestamp;
+    totalBorrows        : nat;
+    totalLiquid         : nat;
+    totalSupply         : nat;
+    totalReserves       : nat;
+    borrowIndex         : nat;
 ]
 
 type return is list (operation) * tokenStorage
 [@inline] const noOperations : list (operation) = nil;
 
 type transferParams is [@layout:comb] record [
-  [@annot:from] from_ : address;
-  [@annot:to] to_ : address;
+  [@annot:from] from_   : address;
+  [@annot:to] to_       : address;
   value : nat;
 ]
 
@@ -36,48 +36,48 @@ type approveParams is [@layout:comb] record [
 
 type balanceParams is [@layout:comb] record [
   owner : address;
-  [@annot:] receiver : contract(nat);
+  [@annot:] receiver    : contract(nat);
 ]
 
 type allowanceParams is [@layout:comb] record [
-  owner : address;
-  spender : address;
-  [@annot:] receiver : contract(nat);
+  owner                 : address;
+  spender               : address;
+  [@annot:] receiver    : contract(nat);
 ]
 
 type totalSupplyParams is (unit * contract(nat))
 
 type liquidateParams is record [
-  liquidator       : address;
-  borrower         : address;
-  amount           : nat;
-  collateralToken  : address;
+  liquidator            : address;
+  borrower              : address;
+  amount                : nat;
+  collateralToken       : address;
 ]
 
 type mintParams is record [
-  user             : address;
-  amount           : nat;
+  user                  : address;
+  amount                : nat;
 ]
 
 type redeemParams is record [
-  user             : address;
-  amount           : nat;
+  user                  : address;
+  amount                : nat;
 ]
 
 type borrowParams is record [
-  user             : address;
-  amount           : nat;
+  user                  : address;
+  amount                : nat;
 ]
 
 type repayParams is record [
-  user             : address;
-  amount           : nat;
+  user                  : address;
+  amount                : nat;
 ]
 
 type seizeParams is record [
-  liquidator       : address;
-  borrower         : address;
-  amount           : nat;
+  liquidator            : address;
+  borrower              : address;
+  amount                : nat;
 ]
 
 // CONTROLLER PARAMS START
@@ -234,7 +234,7 @@ type useControllerAction is
   | SetOracle of setOracleParams
   | Register of registerParams
   | UpdateQToken of updateQTokenParams
-  | ExitMarket of address
+  | ExitMarket of unit
   | EnsuredExitMarket of ensuredExitMarketParams
   | SafeMint of safeMintParams
   | SafeRedeem of safeRedeemParams
@@ -254,9 +254,9 @@ type useParam is useAction
 type useControllerParam is useControllerAction
 
 type fullTokenStorage is record [
-  storage            : tokenStorage;
-  tokenLambdas       : big_map(nat, tokenFunc);
-  useLambdas         : big_map(nat, useFunc);
+  storage               : tokenStorage;
+  tokenLambdas          : big_map(nat, tokenFunc);
+  useLambdas            : big_map(nat, useFunc);
 ]
 
 type fullReturn is list (operation) * fullTokenStorage

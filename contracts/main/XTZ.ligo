@@ -1,4 +1,4 @@
-#include "../partials/IXTZ.ligo"
+#include "../partial/IXTZ.ligo"
 
 (* Helper function to get account *)
 function getAccount(
@@ -20,8 +20,7 @@ function getAccount(
 (* Helper function to get allowance for an account *)
 function getAllowance(
   const ownerAccount    : account;
-  const spender         : address;
-  const s               : storage)
+  const spender         : address)
                         : amt is
   case ownerAccount.allowances[spender] of
     Some (amt) -> amt
@@ -37,7 +36,7 @@ function transfer(
                         : return is
   block {
     (* Retrieve sender account from storage *)
-    const senderAccount : account = getAccount(from_, s);
+    var senderAccount : account := getAccount(from_, s);
 
     (* Balance check *)
     if senderAccount.balance < value then
@@ -49,8 +48,7 @@ function transfer(
     then block {
       const spenderAllowance : amt = getAllowance(
         senderAccount,
-        Tezos.sender,
-        s
+        Tezos.sender
       );
 
       if spenderAllowance < value
@@ -89,7 +87,7 @@ function approve(
     var senderAccount : account := getAccount(Tezos.sender, s);
 
     (* Get current spender allowance *)
-    const spenderAllowance : amt = getAllowance(senderAccount, spender, s);
+    const spenderAllowance : amt = getAllowance(senderAccount, spender);
 
     (* Prevent a corresponding attack vector *)
     if spenderAllowance > 0n and value > 0n
@@ -124,7 +122,7 @@ function getAllowance (
                         : return is
   block {
     const ownerAccount : account = getAccount(owner, s);
-    const spenderAllowance : amt = getAllowance(ownerAccount, spender, s);
+    const spenderAllowance : amt = getAllowance(ownerAccount, spender);
   } with (list [transaction(spenderAllowance, 0tz, contr)], s)
 
 (* View function that forwards the totalSupply to a contract *)
@@ -138,7 +136,7 @@ function getTotalSupply(
 
 function mint (var s : storage) : return is
   block {
-    const senderAccount : account = getAccount(Tezos.sender, s);
+    var senderAccount : account := getAccount(Tezos.sender, s);
     senderAccount.balance := senderAccount.balance + Tezos.amount / 1mutez;
     s.ledger[Tezos.sender] := senderAccount;
   } with (noOperations, s)
@@ -148,7 +146,7 @@ function withdraw(
   var s                 : storage)
                         : return is
   block {
-    const senderAccount : account = getAccount(Tezos.sender, s);
+    var senderAccount : account := getAccount(Tezos.sender, s);
     if senderAccount.balance < value then
       failwith("NotEnoughBalance")
     else skip;

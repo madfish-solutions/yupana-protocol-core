@@ -1,5 +1,5 @@
-#include "../partials/IFactory.ligo"
-#include "../partials/qTokenMethods.ligo"
+#include "../partial/IFactory.ligo"
+#include "../partial/qTokenMethods.ligo"
 
 const createContr : createContrFunc =
 [%Michelson ( {| { UNPPAIIR ;
@@ -12,12 +12,12 @@ const createContr : createContrFunc =
 function setTokenFunction(
   const idx             : nat;
   const f               : tokenFunc;
-  const s               : factoryStorage)
+  var s                 : factoryStorage)
                         : fullFactoryReturn is
   block {
     if Tezos.sender = s.owner
     then case s.tokenLambdas[idx] of
-        Some(n) -> failwith("FactoryTokenFunctionSet")
+        Some(_n) -> failwith("FactoryTokenFunctionSet")
         | None -> s.tokenLambdas[idx] := f
       end;
     else failwith("YouNotOwner(FactoryTokenFunction)")
@@ -26,12 +26,12 @@ function setTokenFunction(
 function setUseFunction(
   const idx             : nat;
   const f               : useFunc;
-  const s               : factoryStorage)
+  var s                 : factoryStorage)
                         : fullFactoryReturn is
   block {
     if Tezos.sender = s.owner
     then case s.useLambdas[idx] of
-        Some(n) -> failwith("FactoryUseFunctionSet")
+        Some(_n) -> failwith("FactoryUseFunctionSet")
         | None -> s.useLambdas[idx] := f
       end;
     else failwith("YouNotOwner(FactoryUseFunction)")
@@ -83,13 +83,14 @@ function launchToken(
     else skip;
 
     case s.tokenList[token] of
-    Some(t) -> failwith("SimularToken")
+    Some(_t) -> failwith("SimularToken")
     | None -> skip
     end;
 
     const storage : tokenStorage = record [
         owner = s.owner;
         admin = s.admin;
+        account = (big_map [] : big_map(address, user));
         token = token;
         lastUpdateTime = Tezos.now;
         totalBorrows = 0n;
@@ -97,8 +98,6 @@ function launchToken(
         totalSupply = 0n;
         totalReserves = 0n;
         borrowIndex = 0n;
-        accountBorrows = (big_map [] : big_map(address, borrows));
-        accountTokens = (big_map [] : big_map(address, nat));
     ];
 
     const fullStorage : fullTokenStorage = record [

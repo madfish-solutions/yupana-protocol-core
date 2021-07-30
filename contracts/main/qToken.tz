@@ -19,14 +19,15 @@
                (address %updateControllerState)))) ;
   storage
     (pair (pair (pair %storage
-                   (pair (pair (pair (big_map %accountBorrows
+                   (pair (pair (pair (big_map %account
                                         address
-                                        (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
-                                     (big_map %accountTokens address nat))
-                               (pair (address %admin) (nat %borrowIndex)))
-                         (pair (pair (timestamp %lastUpdateTime) (address %owner))
-                               (pair (address %token) (nat %totalBorrows))))
-                   (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply)))
+                                        (pair (pair (map %allowances address nat) (nat %amount))
+                                              (pair (nat %borrowAmount) (nat %lastBorrowIndex))))
+                                     (address %admin))
+                               (pair (nat %borrowIndex) (timestamp %lastUpdateTime)))
+                         (pair (pair (address %owner) (address %token))
+                               (pair (nat %totalBorrows) (nat %totalLiquid))))
+                   (pair (nat %totalReserves) (nat %totalSupply)))
                 (big_map %tokenLambdas
                    nat
                    (lambda
@@ -37,23 +38,25 @@
                                     (or (pair %iGetBalance (address %owner) (contract %receiver nat))
                                         (pair %iGetTotalSupply unit (contract nat))))
                                 (pair %iTransfer (address %from) (pair (address %to) (nat %value))))
-                            (pair (pair (pair (pair (big_map %accountBorrows
+                            (pair (pair (pair (pair (big_map %account
                                                        address
-                                                       (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
-                                                    (big_map %accountTokens address nat))
-                                              (pair (address %admin) (nat %borrowIndex)))
-                                        (pair (pair (timestamp %lastUpdateTime) (address %owner))
-                                              (pair (address %token) (nat %totalBorrows))))
-                                  (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))
+                                                       (pair (pair (map %allowances address nat) (nat %amount))
+                                                             (pair (nat %borrowAmount) (nat %lastBorrowIndex))))
+                                                    (address %admin))
+                                              (pair (nat %borrowIndex) (timestamp %lastUpdateTime)))
+                                        (pair (pair (address %owner) (address %token))
+                                              (pair (nat %totalBorrows) (nat %totalLiquid))))
+                                  (pair (nat %totalReserves) (nat %totalSupply))))
                       (pair (list operation)
-                            (pair (pair (pair (pair (big_map %accountBorrows
+                            (pair (pair (pair (pair (big_map %account
                                                        address
-                                                       (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
-                                                    (big_map %accountTokens address nat))
-                                              (pair (address %admin) (nat %borrowIndex)))
-                                        (pair (pair (timestamp %lastUpdateTime) (address %owner))
-                                              (pair (address %token) (nat %totalBorrows))))
-                                  (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply)))))))
+                                                       (pair (pair (map %allowances address nat) (nat %amount))
+                                                             (pair (nat %borrowAmount) (nat %lastBorrowIndex))))
+                                                    (address %admin))
+                                              (pair (nat %borrowIndex) (timestamp %lastUpdateTime)))
+                                        (pair (pair (address %owner) (address %token))
+                                              (pair (nat %totalBorrows) (nat %totalLiquid))))
+                                  (pair (nat %totalReserves) (nat %totalSupply)))))))
           (big_map %useLambdas
              nat
              (lambda
@@ -67,24 +70,26 @@
                                             (pair %seize (pair (nat %amount) (address %borrower)) (address %liquidator)))
                                         (or (address %setAdmin) (address %setOwner))))
                                 (address %updateControllerState))
-                            (pair (pair (pair (pair (big_map %accountBorrows
+                            (pair (pair (pair (pair (big_map %account
                                                        address
-                                                       (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
-                                                    (big_map %accountTokens address nat))
-                                              (pair (address %admin) (nat %borrowIndex)))
-                                        (pair (pair (timestamp %lastUpdateTime) (address %owner))
-                                              (pair (address %token) (nat %totalBorrows))))
-                                  (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))
+                                                       (pair (pair (map %allowances address nat) (nat %amount))
+                                                             (pair (nat %borrowAmount) (nat %lastBorrowIndex))))
+                                                    (address %admin))
+                                              (pair (nat %borrowIndex) (timestamp %lastUpdateTime)))
+                                        (pair (pair (address %owner) (address %token))
+                                              (pair (nat %totalBorrows) (nat %totalLiquid))))
+                                  (pair (nat %totalReserves) (nat %totalSupply))))
                       address)
                 (pair (list operation)
-                      (pair (pair (pair (pair (big_map %accountBorrows
+                      (pair (pair (pair (pair (big_map %account
                                                  address
-                                                 (pair (pair (map %allowances address nat) (nat %amount)) (nat %lastBorrowIndex)))
-                                              (big_map %accountTokens address nat))
-                                        (pair (address %admin) (nat %borrowIndex)))
-                                  (pair (pair (timestamp %lastUpdateTime) (address %owner))
-                                        (pair (address %token) (nat %totalBorrows))))
-                            (pair (pair (nat %totalLiquid) (nat %totalReserves)) (nat %totalSupply))))))) ;
+                                                 (pair (pair (map %allowances address nat) (nat %amount))
+                                                       (pair (nat %borrowAmount) (nat %lastBorrowIndex))))
+                                              (address %admin))
+                                        (pair (nat %borrowIndex) (timestamp %lastUpdateTime)))
+                                  (pair (pair (address %owner) (address %token))
+                                        (pair (nat %totalBorrows) (nat %totalLiquid))))
+                            (pair (nat %totalReserves) (nat %totalSupply))))))) ;
   code { UNPAIR ;
          SELF_ADDRESS ;
          SWAP ;
@@ -112,7 +117,7 @@
                      GET ;
                      IF_NONE
                        { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
-                       { DIG 2 ; DUP ; DUG 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -120,9 +125,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -148,7 +151,7 @@
                      GET ;
                      IF_NONE
                        { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
-                       { DIG 2 ; DUP ; DUG 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -156,9 +159,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -185,7 +186,7 @@
                      GET ;
                      IF_NONE
                        { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
-                       { DIG 2 ; DUP ; DUG 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -193,9 +194,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -221,7 +220,7 @@
                      GET ;
                      IF_NONE
                        { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
-                       { DIG 2 ; DUP ; DUG 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
+                       { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                      SWAP ;
                      DUP ;
                      DUG 2 ;
@@ -229,9 +228,7 @@
                      DIG 2 ;
                      CAR ;
                      CDR ;
-                     DIG 2 ;
-                     DUP ;
-                     DUG 3 ;
+                     DUP 3 ;
                      CDR ;
                      PAIR ;
                      PAIR ;
@@ -260,7 +257,7 @@
                  GET ;
                  IF_NONE
                    { DROP ; PUSH string "qTokenMiddleTokenFunctionNotSet" ; FAILWITH }
-                   { DIG 2 ; DUP ; DUG 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
+                   { DUP 3 ; CAR ; CAR ; DIG 2 ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;
                  DUG 2 ;
@@ -268,18 +265,14 @@
                  DIG 2 ;
                  CAR ;
                  CDR ;
-                 DIG 2 ;
-                 DUP ;
-                 DUG 3 ;
+                 DUP 3 ;
                  CDR ;
                  PAIR ;
                  PAIR ;
                  SWAP ;
                  CAR ;
                  PAIR }
-               { DIG 2 ;
-                 DUP ;
-                 DUG 3 ;
+               { DUP 3 ;
                  CDR ;
                  SWAP ;
                  DUP ;
@@ -298,7 +291,7 @@
                    { DROP 2 ;
                      PUSH string "qTokenMiddleTokenFunctionNotSetInMiddleUse" ;
                      FAILWITH }
-                   { DIG 2 ; DIG 3 ; DUP ; DUG 4 ; CAR ; CAR ; DIG 3 ; PAIR ; PAIR ; EXEC } ;
+                   { DIG 2 ; DUP 4 ; CAR ; CAR ; DIG 3 ; PAIR ; PAIR ; EXEC } ;
                  SWAP ;
                  DUP ;
                  DUG 2 ;
@@ -306,9 +299,7 @@
                  DIG 2 ;
                  CAR ;
                  CDR ;
-                 DIG 2 ;
-                 DUP ;
-                 DUG 3 ;
+                 DUP 3 ;
                  CDR ;
                  PAIR ;
                  PAIR ;

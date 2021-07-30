@@ -1,17 +1,17 @@
-#include "../partials/MainTypes.ligo"
-#include "../partials/qTokenMethods.ligo"
+#include "../partial/MainTypes.ligo"
+#include "../partial/qTokenMethods.ligo"
 
 [@inline] function middleToken(
   const p               : tokenAction;
-  const s               : fullTokenStorage)
+  var s                 : fullTokenStorage)
                         :  fullReturn is
 block {
     const idx : nat = case p of
-      | ITransfer(transferParams) -> 0n
-      | IApprove(approveParams) -> 1n
-      | IGetBalance(balanceParams) -> 2n
-      | IGetAllowance(allowanceParams) -> 3n
-      | IGetTotalSupply(totalSupplyParams) -> 4n
+      | ITransfer(_transferParams) -> 0n
+      | IApprove(_approveParams) -> 1n
+      | IGetBalance(_balanceParams) -> 2n
+      | IGetAllowance(_allowanceParams) -> 3n
+      | IGetTotalSupply(_totalSupplyParams) -> 4n
     end;
   const res : return = case s.tokenLambdas[idx] of
     Some(f) -> f(p, s.storage)
@@ -25,19 +25,19 @@ block {
 [@inline] function middleUse(
   const p               : useAction;
   const this            : address;
-  const s               : fullTokenStorage)
+  var s                 : fullTokenStorage)
                         : fullReturn is
 block {
     const idx : nat = case p of
-      | SetAdmin(addr) -> 0n
-      | SetOwner(addr) -> 1n
-      | Mint(mintParams) -> 2n
-      | Redeem(redeemParams) -> 3n
-      | Borrow(borrowParams) -> 4n
-      | Repay(repayParams) -> 5n
-      | Liquidate(liquidateParams) -> 6n
-      | Seize(seizeParams) -> 7n
-      | UpdateControllerState(addr) -> 8n
+      | SetAdmin(_addr) -> 0n
+      | SetOwner(_addr) -> 1n
+      | Mint(_mintParams) -> 2n
+      | Redeem(_redeemParams) -> 3n
+      | Borrow(_borrowParams) -> 4n
+      | Repay(_repayParams) -> 5n
+      | Liquidate(_liquidateParams) -> 6n
+      | Seize(_seizeParams) -> 7n
+      | UpdateControllerState(_addr) -> 8n
     end;
   const res : return = case s.useLambdas[idx] of
     Some(f) -> f(p, s.storage, this)

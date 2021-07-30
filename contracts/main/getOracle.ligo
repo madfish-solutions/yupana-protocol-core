@@ -1,5 +1,5 @@
 // test contract for oracle entrypoint
-#include "../partials/MainTypes.ligo"
+#include "../partial/MainTypes.ligo"
 
 type storage is record [
   lastDate        : timestamp;

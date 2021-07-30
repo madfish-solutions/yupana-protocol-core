@@ -1,61 +1,24 @@
+const { alice } = require("../scripts/sandbox/accounts");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-const { accounts } = require("../scripts/sandbox/accounts");
-const { accountsMap } = require('../scripts/sandbox/accounts');
-const { TezosToolkit } = require("@taquito/taquito");
-const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
-const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
+const { migrate, getLigo } = require("../scripts/helpers");
+const { confirmOperation } = require("../scripts/confirmation");
+const Controller = require("../build/Controller.json");
 
-const Factory = artifacts.require("Factory");
-const Controller = artifacts.require("Controller");
-
-function getLigo(isDockerizedLigo) {
-  let path = "ligo";
-  if (isDockerizedLigo) {
-    path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.11.0";
-    try {
-      execSync(`${path}  --help`);
-    } catch (err) {
-      path = "ligo";
-      execSync(`${path}  --help`);
-    }
-  } else {
-    try {
-      execSync(`${path}  --help`);
-    } catch (err) {
-      path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.11.0";
-      execSync(`${path}  --help`);
-    }
-  }
-  return path;
-}
-
-module.exports = async function (deployer, network) {
-  tezos = new TezosToolkit(tezos.rpc.url);
-  const secretKey = accountsMap.get(accounts[0]);
-
-  tezos.setProvider({
-    config: {
-      confirmationPollingTimeoutSecond: 5000,
-    },
-    signer: await InMemorySigner.fromSecretKey(secretKey),
+module.exports = async (tezos) => {
+  const controllerAddress = await Controller["networks"]["development"][
+    "Controller"
+  ];
+  const factoryAddress = await migrate(tezos, "Factory", {
+    tokenList: MichelsonMap.fromLiteral({}),
+    owner: alice.pkh,
+    admin: controllerAddress,
+    tokenLambdas: MichelsonMap.fromLiteral({}),
+    useLambdas: MichelsonMap.fromLiteral({}),
   });
 
-  const ControllerInstance = await Controller.deployed();
-
-  const storage = {
-    tokenList: new MichelsonMap(),
-    owner: accounts[0],
-    admin: ControllerInstance.address,
-    tokenLambdas: new MichelsonMap(),
-    useLambdas: new MichelsonMap(),
-  };
-  await deployer.deploy(Factory, storage);
-  const factoryInstance = await Factory.deployed();
-
   let ligo = getLigo(true);
-
   for (tokenFunction of functions.token) {
     console.log(tokenFunction.name);
     const stdout = execSync(
@@ -63,14 +26,14 @@ module.exports = async function (deployer, network) {
       { maxBuffer: 1024 * 4000 }
     );
     const operation = await tezos.contract.transfer({
-      to: factoryInstance.address,
+      to: factoryAddress,
       amount: 0,
       parameter: {
         entrypoint: "setTokenFunction",
         value: JSON.parse(stdout.toString()).args[0].args[0].args[0],
       },
     });
-    await confirmOperation(tezos, operation.hash)
+    await confirmOperation(tezos, operation.hash);
   }
 
   for (useFunction of functions.use) {
@@ -80,13 +43,15 @@ module.exports = async function (deployer, network) {
       { maxBuffer: 1024 * 3000 }
     );
     const operation = await tezos.contract.transfer({
-      to: factoryInstance.address,
+      to: factoryAddress,
       amount: 0,
       parameter: {
         entrypoint: "setUseFunction",
         value: JSON.parse(stdout.toString()).args[0],
       },
     });
-    await confirmOperation(tezos, operation.hash)
+    await confirmOperation(tezos, operation.hash);
   }
+
+  console.log(`Factory: ${factoryAddress}`);
 };

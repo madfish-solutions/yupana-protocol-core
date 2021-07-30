@@ -1,6 +1,7 @@
 # BasicLendingProtocol
 
 # Description
+
 Lending Protocol contracts are under development. In this repository, you can follow the development and changes.
 
 # Architecture
@@ -27,7 +28,7 @@ Lending Protocol contracts are under development. In this repository, you can fo
 ├───────────────────  qToken
 ├───────────────────  qToken.tz
 ├───────────────────  XTZ
-├──────────  partials/ # the code parts imported by main contracts
+├──────────  partial/ # the code parts imported by main contracts
 ├───────────────────  IController
 ├───────────────────  IFactory
 ├───────────────────  IXTZ
@@ -42,13 +43,16 @@ Lending Protocol contracts are under development. In this repository, you can fo
 
 # Contracts
 
-The Ligo interfaces of the contracts can be found in `contracts/partials/I__CONTRACT_NAME__.ligo`
+The Ligo interfaces of the contracts can be found in `contracts/partial/I__CONTRACT_NAME__.ligo`
 
 ## Wrapped XTZ
+
 Extended FA1.2 token with mint/withdraw functions, analog to WETH.
 
 ## qToken
+
 The main token with the following main features that have already been implemented:
+
 - mint is a function to add a token as a collateral. It allows you to add a token to our system.
 - borrow - a function for borrowing a token. Implemented the logic of freezing collateral tokens when borrowing a token.
 - repay - a function designed to repay debt.
@@ -56,10 +60,13 @@ The main token with the following main features that have already been implement
 - liquidate - the function allows another user to liquidate someone's debt.
 
 ## Controller
+
 The contract is responsible for the verification of all the actions that can be done over the **qToken**.
 
 ## Factory
+
 A contract that allows you to wrap a token (for example, wrapped XTZ) into our qXTZ token.
 
 ## getOracle
+
 Implemented to send data on the price of a token (similar to harbinger contracts). This will allow us to test the entire project locally and use the token prices we want to deliver.

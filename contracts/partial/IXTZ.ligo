@@ -35,8 +35,8 @@ type balanceParams is michelson_pair(address, "owner", contract(amt), "")
 type allowanceParams is michelson_pair(michelson_pair(
     address,
     "owner",
-    trusted,"
-    spender"
+    trusted,
+    "spender"
   ), "", contract(amt), "")
 type totalSupplyParams is (unit * contract(amt))
 type withdrawParams is (nat * unit)

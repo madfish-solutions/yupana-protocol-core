@@ -8,16 +8,16 @@ let tokenFunctions = [
     name: "approve",
   },
   {
-      index: 2,
-      name: "getBalance",
+    index: 2,
+    name: "getBalance",
   },
   {
-      index: 3,
-      name: "getAllowance",
+    index: 3,
+    name: "getAllowance",
   },
   {
-      index: 4,
-      name: "getTotalSupply",
+    index: 4,
+    name: "getTotalSupply",
   },
 ];
 
@@ -57,7 +57,7 @@ let useFunctions = [
   {
     index: 8,
     name: "updateControllerState",
-  }
+  },
 ];
 
 let useControllerFunctions = [
@@ -124,11 +124,11 @@ let useControllerFunctions = [
   {
     index: 15,
     name: "ensuredLiquidate",
-  }
+  },
 ];
 
 module.exports.functions = {
   token: tokenFunctions,
   use: useFunctions,
-  useController: useControllerFunctions
+  useController: useControllerFunctions,
 };
