@@ -48,13 +48,13 @@ function setUseAction(
       | UpdateQToken(_updateQTokenParams) -> 4n
       | ExitMarket -> 5n
       | EnsuredExitMarket(_ensuredExitMarketParams) -> 6n
-      | SafeMint(_safeMintParams) -> 7n
-      | SafeRedeem(_safeRedeemParams) -> 8n
-      | EnsuredRedeem(_ensuredRedeemParams) -> 9n
-      | SafeBorrow(_safeBorrowParams) -> 10n
-      | EnsuredBorrow(_ensuredBorrowParams) -> 11n
-      | SafeRepay(_safeRepayParams) -> 12n
-      | EnsuredRepay(_ensuredRepayParams) -> 13n
+      | SafeMint(_safemainParams) -> 7n
+      | SafeRedeem(_safemainParams) -> 8n
+      | EnsuredRedeem(_ensuredmainParams) -> 9n
+      | SafeBorrow(_safemainParams) -> 10n
+      | EnsuredBorrow(_ensuredmainParams) -> 11n
+      | SafeRepay(_safemainParams) -> 12n
+      | EnsuredRepay(_ensuredmainParams) -> 13n
       | SafeLiquidate(_safeLiquidateParams) -> 14n
       | EnsuredLiquidate(_ensuredLiquidateParams) -> 15n
     end;
@@ -144,43 +144,43 @@ function getUpdateControllerStateEntrypoint(
 
 [@inline] function getEnsuredRedeemEntrypoint(
   const tokenAddress    : address)
-                        : contract(ensuredRedeemParams) is
+                        : contract(ensuredmainParams) is
   case (
     Tezos.get_entrypoint_opt("%ensuredRedeem", tokenAddress)
-                        : option(contract(ensuredRedeemParams))
+                        : option(contract(ensuredmainParams))
   ) of
     Some(contr) -> contr
     | None -> (
       failwith("CantGetEnsuredRedeemEntrypoint")
-                        : contract(ensuredRedeemParams)
+                        : contract(ensuredmainParams)
     )
   end;
 
 [@inline] function getEnsuredBorrowEntrypoint(
   const tokenAddress    : address)
-                        : contract(ensuredBorrowParams) is
+                        : contract(ensuredmainParams) is
   case (
     Tezos.get_entrypoint_opt("%ensuredBorrow", tokenAddress)
-                        : option(contract(ensuredBorrowParams))
+                        : option(contract(ensuredmainParams))
   ) of
     Some(contr) -> contr
     | None -> (
       failwith("CantGetEnsuredBorrowEntrypoint")
-                        : contract(ensuredBorrowParams)
+                        : contract(ensuredmainParams)
     )
   end;
 
 [@inline] function getEnsuredRepayEntrypoint(
   const tokenAddress    : address)
-                        : contract(ensuredRepayParams) is
+                        : contract(ensuredmainParams) is
   case (
     Tezos.get_entrypoint_opt("%ensuredRepay", tokenAddress)
-                        : option(contract(ensuredRepayParams))
+                        : option(contract(ensuredmainParams))
   ) of
     Some(contr) -> contr
     | None -> (
       failwith("CantGetEnsuredRepayEntrypoint")
-                        : contract(ensuredRepayParams)
+                        : contract(ensuredmainParams)
     )
   end;
 
@@ -506,17 +506,17 @@ function safeMint(
   block {
     var operations : list(operation) := list[];
     case p of
-      SafeMint(safeMintParams) -> {
-        mustContainsQTokens(safeMintParams.qToken, s);
+      SafeMint(safemainParams) -> {
+        mustContainsQTokens(safemainParams.qToken, s);
 
         operations := list [
           Tezos.transaction(
             Mint(record [
               user    = Tezos.sender;
-              amount  = safeMintParams.amount;
+              amount  = safemainParams.amount;
             ]),
             0mutez,
-            getUseEntrypoint(safeMintParams.qToken)
+            getUseEntrypoint(safemainParams.qToken)
           )
         ];
       }
@@ -532,12 +532,12 @@ function safeRedeem(
   block {
     var operations : list(operation) := list[];
     case p of
-      SafeRedeem(safeRedeemParams) -> {
-        mustContainsQTokens(safeRedeemParams.qToken, s);
+      SafeRedeem(safemainParams) -> {
+        mustContainsQTokens(safemainParams.qToken, s);
 
         var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-        if tokens.collateralToken = safeRedeemParams.qToken
+        if tokens.collateralToken = safemainParams.qToken
         then block {
           operations := list [
             Tezos.transaction(
@@ -553,10 +553,10 @@ function safeRedeem(
             Tezos.transaction(
               record [
                 user         = Tezos.sender;
-                qToken       = safeRedeemParams.qToken;
-                redeemTokens = safeRedeemParams.amount;
+                qToken       = safemainParams.qToken;
+                redeemTokens = safemainParams.amount;
                 borrowAmount = getAccountBorrows(
-                  Tezos.sender, safeRedeemParams.qToken, s
+                  Tezos.sender, safemainParams.qToken, s
                 );
               ],
               0mutez,
@@ -568,10 +568,10 @@ function safeRedeem(
           Tezos.transaction(
             Redeem(record [
               user = Tezos.sender;
-              amount  = safeRedeemParams.amount;
+              amount  = safemainParams.amount;
             ]),
             0mutez,
-            getUseEntrypoint(safeRedeemParams.qToken)
+            getUseEntrypoint(safemainParams.qToken)
           )
         ];
       }
@@ -587,16 +587,16 @@ function ensuredRedeem(
   block {
     var operations : list(operation) := list[];
     case p of
-      EnsuredRedeem(ensuredRedeemParams) -> {
+      EnsuredRedeem(ensuredmainParams) -> {
         if Tezos.sender =/= this
         then failwith("NotSelfAddress")
         else skip;
 
         const response = getUserLiquidity(
-          ensuredRedeemParams.user,
-          ensuredRedeemParams.qToken,
-          ensuredRedeemParams.redeemTokens,
-          ensuredRedeemParams.borrowAmount,
+          ensuredmainParams.user,
+          ensuredmainParams.qToken,
+          ensuredmainParams.redeemTokens,
+          ensuredmainParams.borrowAmount,
           s
         );
 
@@ -609,11 +609,11 @@ function ensuredRedeem(
         operations := list [
           Tezos.transaction(
             Redeem(record [
-              user    = ensuredRedeemParams.user;
-              amount  = ensuredRedeemParams.redeemTokens;
+              user    = ensuredmainParams.user;
+              amount  = ensuredmainParams.redeemTokens;
             ]),
             0mutez,
-            getUseEntrypoint(ensuredRedeemParams.qToken)
+            getUseEntrypoint(ensuredmainParams.qToken)
           )
         ];
       }
@@ -629,22 +629,22 @@ function safeBorrow(
   block {
     var operations : list(operation) := list[];
     case p of
-      SafeBorrow(safeBorrowParams) -> {
-        mustContainsQTokens(safeBorrowParams.qToken, s);
-        mustContainsQTokens(safeBorrowParams.borrowerToken, s);
+      SafeBorrow(safemainParams) -> {
+        mustContainsQTokens(safemainParams.qToken, s);
+        mustContainsQTokens(safemainParams.borrowerToken, s);
 
         var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
-        if tokens.collateralToken = safeBorrowParams.qToken then
+        if tokens.collateralToken = safemainParams.qToken then
           failwith("AlreadyEnteredToMarket")
         else skip;
 
-        if safeBorrowParams.qToken = safeBorrowParams.borrowerToken then
+        if safemainParams.qToken = safemainParams.borrowerToken then
           failwith("SimularCollateralAndBorrowerToken")
         else skip;
 
-        tokens.collateralToken := safeBorrowParams.qToken;
-        tokens.borrowerToken := safeBorrowParams.borrowerToken;
+        tokens.collateralToken := safemainParams.qToken;
+        tokens.borrowerToken := safemainParams.borrowerToken;
 
         s.accountMembership[Tezos.sender] := tokens;
 
@@ -662,9 +662,9 @@ function safeBorrow(
           Tezos.transaction(
             record [
               user         = Tezos.sender;
-              qToken       = safeBorrowParams.borrowerToken;
+              qToken       = safemainParams.borrowerToken;
               redeemTokens = 0n;
-              borrowAmount = safeBorrowParams.amount;
+              borrowAmount = safemainParams.amount;
             ],
             0mutez,
             getEnsuredBorrowEntrypoint(this)
@@ -683,16 +683,16 @@ function ensuredBorrow(
   block {
     var operations : list(operation) := list[];
     case p of
-      EnsuredBorrow(ensuredBorrowParams) -> {
+      EnsuredBorrow(ensuredmainParams) -> {
         if Tezos.sender =/= this
         then failwith("NotSelfAddress")
         else skip;
 
         const response = getUserLiquidity(
-          ensuredBorrowParams.user,
-          ensuredBorrowParams.qToken,
-          ensuredBorrowParams.redeemTokens,
-          ensuredBorrowParams.borrowAmount,
+          ensuredmainParams.user,
+          ensuredmainParams.qToken,
+          ensuredmainParams.redeemTokens,
+          ensuredmainParams.borrowAmount,
           s
         );
 
@@ -705,11 +705,11 @@ function ensuredBorrow(
         operations := list [
           Tezos.transaction(
             Borrow(record [
-              user   = ensuredBorrowParams.user;
-              amount = ensuredBorrowParams.borrowAmount;
+              user   = ensuredmainParams.user;
+              amount = ensuredmainParams.borrowAmount;
             ]),
             0mutez,
-            getUseEntrypoint(ensuredBorrowParams.qToken)
+            getUseEntrypoint(ensuredmainParams.qToken)
           )
         ];
       }
@@ -725,8 +725,8 @@ function safeRepay(
   block {
     var operations : list(operation) := list[];
     case p of
-      SafeRepay(safeRepayParams) -> {
-        mustContainsQTokens(safeRepayParams.qToken, s);
+      SafeRepay(safemainParams) -> {
+        mustContainsQTokens(safemainParams.qToken, s);
         var tokens : membershipParams := getAccountMembership(Tezos.sender, s);
 
         operations := list [
@@ -743,8 +743,8 @@ function safeRepay(
           Tezos.transaction(
             record [
               user    = Tezos.sender;
-              qToken  = safeRepayParams.qToken;
-              amount  = safeRepayParams.amount;
+              qToken  = safemainParams.qToken;
+              amount  = safemainParams.amount;
             ],
             0mutez,
             getEnsuredRepayEntrypoint(this)
@@ -763,7 +763,7 @@ function ensuredRepay(
   block {
     var operations : list(operation) := list[];
     case p of
-      EnsuredRepay(ensuredRepayParams) -> {
+      EnsuredRepay(ensuredmainParams) -> {
         if Tezos.sender =/= this
         then failwith("NotSelfAddress")
         else skip;
@@ -771,11 +771,11 @@ function ensuredRepay(
         operations := list [
           Tezos.transaction(
             Repay(record [
-              user    = ensuredRepayParams.user;
-              amount  = ensuredRepayParams.amount;
+              user    = ensuredmainParams.user;
+              amount  = ensuredmainParams.amount;
             ]),
             0mutez,
-            getUseEntrypoint(ensuredRepayParams.qToken)
+            getUseEntrypoint(ensuredmainParams.qToken)
           )
         ];
       }

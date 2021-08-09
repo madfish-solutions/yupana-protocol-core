@@ -30,12 +30,12 @@ type transferParams is [@layout:comb] record [
 type transferType is TransferOutside of transferParams
 
 type approveParams is [@layout:comb] record [
-  spender : address;
-  value : nat;
+  spender               : address;
+  value                 : nat;
 ]
 
 type balanceParams is [@layout:comb] record [
-  owner : address;
+  owner                 : address;
   [@annot:] receiver    : contract(nat);
 ]
 
@@ -54,22 +54,22 @@ type liquidateParams is record [
   collateralToken       : address;
 ]
 
-type mintParams is record [
+type mainParams is record [
   user                  : address;
   amount                : nat;
 ]
 
-type redeemParams is record [
+type mainParams is record [
   user                  : address;
   amount                : nat;
 ]
 
-type borrowParams is record [
+type mainParams is record [
   user                  : address;
   amount                : nat;
 ]
 
-type repayParams is record [
+type mainParams is record [
   user                  : address;
   amount                : nat;
 ]
@@ -128,12 +128,12 @@ type getUserLiquidityReturn is record [
   shortfail             : nat;
 ]
 
-type safeMintParams is record [
+type safemainParams is record [
   qToken                : address;
   amount                : nat;
 ]
 
-type safeRedeemParams is record [
+type safemainParams is record [
   qToken                : address;
   amount                : nat;
 ]
@@ -143,30 +143,30 @@ type redeemType is record [
   amount                : nat;
 ]
 
-type ensuredRedeemParams is record [
+type ensuredmainParams is record [
   user                  : address;
   qToken                : address;
   redeemTokens          : nat;
   borrowAmount          : nat;
 ]
 
-type safeBorrowParams is [@layout:comb] record [
+type safemainParams is [@layout:comb] record [
   qToken                : address;
   amount                : nat;
   borrowerToken         : address;
 ]
 
-type borrowParams is record [
+type mainParams is record [
   user                  : address;
   amount                : nat;
 ]
 
-type repayParams is record [
+type mainParams is record [
   user                  : address;
   amount                : nat;
 ]
 
-type ensuredBorrowParams is record [
+type ensuredmainParams is record [
   user                  : address;
   qToken                : address;
   redeemTokens          : nat;
@@ -174,12 +174,12 @@ type ensuredBorrowParams is record [
 ]
 
 
-type safeRepayParams is record [
+type safemainParams is record [
   qToken                : address;
   amount                : nat;
 ]
 
-type ensuredRepayParams is record [
+type ensuredmainParams is record [
   user                  : address;
   qToken                : address;
   amount                : nat;
@@ -205,17 +205,17 @@ type ensuredLiquidateParams is record [
 type useAction is
   | SetAdmin of address
   | SetOwner of address
-  | Mint of mintParams
-  | Redeem of redeemParams
-  | Borrow of borrowParams
-  | Repay of repayParams
+  | Mint of mainParams
+  | Redeem of mainParams
+  | Borrow of mainParams
+  | Repay of mainParams
   | Liquidate of liquidateParams
   | Seize of seizeParams
   | UpdateControllerState of address
 
 type tokenAction is
   | ITransfer of transferParams
-  | IApprove of approveParams
+  | IUpdateOperators of updateOperatorParams
   | IGetBalance of balanceParams
   | IGetAllowance of allowanceParams
   | IGetTotalSupply of totalSupplyParams
@@ -236,13 +236,13 @@ type useControllerAction is
   | UpdateQToken of updateQTokenParams
   | ExitMarket of unit
   | EnsuredExitMarket of ensuredExitMarketParams
-  | SafeMint of safeMintParams
-  | SafeRedeem of safeRedeemParams
-  | EnsuredRedeem of ensuredRedeemParams
-  | SafeBorrow of safeBorrowParams
-  | EnsuredBorrow of ensuredBorrowParams
-  | SafeRepay of safeRepayParams
-  | EnsuredRepay of ensuredRepayParams
+  | SafeMint of safemainParams
+  | SafeRedeem of safemainParams
+  | EnsuredRedeem of ensuredmainParams
+  | SafeBorrow of safemainParams
+  | EnsuredBorrow of ensuredmainParams
+  | SafeRepay of safemainParams
+  | EnsuredRepay of ensuredmainParams
   | SafeLiquidate of safeLiquidateParams
   | EnsuredLiquidate of ensuredLiquidateParams
 

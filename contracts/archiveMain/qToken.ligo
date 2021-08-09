@@ -1,7 +1,7 @@
 #include "../partial/MainTypes.ligo"
 #include "../partial/qTokenMethods.ligo"
 
-[@inline] function middleToken(
+function middleToken(
   const p               : tokenAction;
   var s                 : fullTokenStorage)
                         :  fullReturn is
@@ -31,10 +31,10 @@ block {
     const idx : nat = case p of
       | SetAdmin(_addr) -> 0n
       | SetOwner(_addr) -> 1n
-      | Mint(_mintParams) -> 2n
-      | Redeem(_redeemParams) -> 3n
-      | Borrow(_borrowParams) -> 4n
-      | Repay(_repayParams) -> 5n
+      | Mint(_mainParams) -> 2n
+      | Redeem(_mainParams) -> 3n
+      | Borrow(_mainParams) -> 4n
+      | Repay(_mainParams) -> 5n
       | Liquidate(_liquidateParams) -> 6n
       | Seize(_seizeParams) -> 7n
       | UpdateControllerState(_addr) -> 8n

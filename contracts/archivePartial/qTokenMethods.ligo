@@ -277,9 +277,9 @@ function mint(
   block {
     var operations : list(operation) := list[];
       case p of
-        Mint(mintParams) -> {
+        Mint(mainParams) -> {
           mustBeAdmin(s);
-          var mintTokens : nat := mintParams.amount * accuracy;
+          var mintTokens : nat := mainParams.amount * accuracy;
 
           if s.totalSupply =/= 0n
           then block {
@@ -287,23 +287,23 @@ function mint(
             const exchangeRate : nat = abs(
               s.totalLiquid + s.totalBorrows - s.totalReserves
             ) * accuracy / s.totalSupply;
-            mintTokens := mintParams.amount * accuracy * accuracy
+            mintTokens := mainParams.amount * accuracy * accuracy
               / exchangeRate;
           }
           else skip;
 
-          var userAccount : user := getUserAccount(mintParams.user, s);
+          var userAccount : user := getUserAccount(mainParams.user, s);
 
           userAccount.amount := userAccount.amount + mintTokens;
 
-          s.account[mintParams.user] := userAccount;
+          s.account[mainParams.user] := userAccount;
           s.totalSupply := s.totalSupply + mintTokens;
-          s.totalLiquid := s.totalLiquid + mintParams.amount * accuracy;
+          s.totalLiquid := s.totalLiquid + mainParams.amount * accuracy;
 
           operations := list [
             Tezos.transaction(
               TransferOutside(record [
-                from_ = mintParams.user;
+                from_ = mainParams.user;
                 to_ = this;
                 value = mintTokens / accuracy
               ]),
@@ -324,11 +324,11 @@ function redeem(
   block {
     var operations : list(operation) := list[];
       case p of
-        Redeem(redeemParams) -> {
+        Redeem(mainParams) -> {
           mustBeAdmin(s);
           s := updateInterest(s);
 
-          var accountUser : user := getUserAccount(redeemParams.user, s);
+          var accountUser : user := getUserAccount(mainParams.user, s);
           var exchangeRate : nat := abs(
             s.totalLiquid + s.totalBorrows - s.totalReserves
           ) * accuracy / s.totalSupply;
@@ -337,7 +337,7 @@ function redeem(
           then failwith("NotEnoughTokensToSendToUser")
           else skip;
 
-          var amt : nat := redeemParams.amount;
+          var amt : nat := mainParams.amount;
 
           if amt = 0n
           then amt := accountUser.amount / accuracy;
@@ -354,7 +354,7 @@ function redeem(
           else skip;
 
           accountUser.amount := abs(accountUser.amount - burnTokens);
-          s.account[redeemParams.user] := accountUser;
+          s.account[mainParams.user] := accountUser;
           s.totalSupply := abs(s.totalSupply - burnTokens);
           s.totalLiquid := abs(s.totalLiquid - amt * accuracy);
 
@@ -362,7 +362,7 @@ function redeem(
             Tezos.transaction(
               TransferOutside(record [
                 from_ = this;
-                to_ = redeemParams.user;
+                to_ = mainParams.user;
                 value = amt / accuracy
               ]),
               0mutez,
@@ -382,9 +382,9 @@ function borrow(
   block {
     var operations : list(operation) := list[];
       case p of
-        Borrow(borrowParams) -> {
+        Borrow(mainParams) -> {
           mustBeAdmin(s);
-          var borrowAmount : nat := borrowParams.amount;
+          var borrowAmount : nat := mainParams.amount;
           borrowAmount := borrowAmount * accuracy;
 
           if s.totalLiquid < borrowAmount
@@ -393,7 +393,7 @@ function borrow(
 
           s := updateInterest(s);
 
-          var accountUser : user := getUserAccount(borrowParams.user, s);
+          var accountUser : user := getUserAccount(mainParams.user, s);
           accountUser.borrowAmount := accountUser.borrowAmount + borrowAmount;
 
           if accountUser.lastBorrowIndex =/= 0n
@@ -403,20 +403,16 @@ function borrow(
 
           accountUser.lastBorrowIndex := s.borrowIndex;
 
-          s.account[borrowParams.user] := accountUser;
+          s.account[mainParams.user] := accountUser;
           s.totalBorrows := s.totalBorrows + borrowAmount;
 
           s.totalLiquid := abs(s.totalLiquid - borrowAmount);
-          // ??? UNUSED
-          // const exchangeRate : nat = abs(
-          //   s.totalLiquid + s.totalBorrows - s.totalReserves
-          // ) / s.totalSupply;
 
           operations := list [
             Tezos.transaction(
               TransferOutside(record [
                 from_ = this;
-                to_ = borrowParams.user;
+                to_ = mainParams.user;
                 value = borrowAmount / accuracy
               ]),
               0mutez,
@@ -436,13 +432,13 @@ function repay (
   block {
     var operations : list(operation) := list[];
       case p of
-        Repay(repayParams) -> {
+        Repay(mainParams) -> {
           mustBeAdmin(s);
           s := updateInterest(s);
-          var repayAmount : nat := repayParams.amount;
+          var repayAmount : nat := mainParams.amount;
           repayAmount := repayAmount * accuracy;
 
-          var accountUser : user := getUserAccount(repayParams.user, s);
+          var accountUser : user := getUserAccount(mainParams.user, s);
 
           if accountUser.lastBorrowIndex =/= 0n
           then accountUser.borrowAmount := accountUser.borrowAmount *
@@ -462,17 +458,13 @@ function repay (
           );
           accountUser.lastBorrowIndex := s.borrowIndex;
 
-          s.account[repayParams.user] := accountUser;
+          s.account[mainParams.user] := accountUser;
           s.totalBorrows := abs(s.totalBorrows - repayAmount);
-          // ?? UNUSED
-          // const exchangeRate : nat = abs(
-          //   s.totalLiquid + s.totalBorrows - s.totalReserves
-          // ) * accuracy / s.totalSupply;
 
           operations := list [
             Tezos.transaction(
               TransferOutside(record [
-                from_ = repayParams.user;
+                from_ = mainParams.user;
                 to_ = this;
                 value = repayAmount / accuracy
               ]),
