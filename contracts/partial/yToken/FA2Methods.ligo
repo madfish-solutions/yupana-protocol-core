@@ -55,7 +55,7 @@ function getTokenContract(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("CantGetContractToken") : contract(transferType)
+      failwith("cant-get-contract-token") : contract(transferType)
     )
   end;
 
@@ -116,7 +116,7 @@ function iterateTransfer(
         (* Token id check *)
         if transfer_dst.tokenId < s.lastTokenId
         then skip
-        else failwith("FA2_TOKEN_UNDEFINED");
+        else failwith("FA2/token-undefined");
 
         (* Get source balance *)
         const src_balance : nat =
@@ -124,7 +124,7 @@ function iterateTransfer(
 
         (* Balance check *)
         if src_balance < transfer_dst.amount
-        then failwith("FA2_INSUFFICIENT_BALANCE")
+        then failwith("FA2/insufficient-balance")
         else skip;
 
         (* Update source balance *)
@@ -160,7 +160,7 @@ function iterateUpdateOperators(
       AddOperator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("FA2_NOT_OWNER")
+      then failwith("FA2/not-owner")
       else skip;
 
       (* Create or get source account *)
@@ -175,7 +175,7 @@ function iterateUpdateOperators(
     | RemoveOperator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("FA2_NOT_OWNER")
+      then failwith("FA2/not-owner")
       else skip;
 
       (* Create or get source account *)

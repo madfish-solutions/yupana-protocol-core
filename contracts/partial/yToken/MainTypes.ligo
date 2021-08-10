@@ -30,7 +30,6 @@ type tokenInfo         is [@layout:comb] record [
 ]
 
 type tokenStorage       is [@layout:comb] record [
-  owner                 : address;
   admin                 : address;
   accountInfo           : big_map(address, account);
   tokenInfo             : big_map(tokenId, tokenInfo);
@@ -57,31 +56,42 @@ type newMarketParams     is record [
   tokenMetadata         : newMetadataParams;
 ]
 
+type oracleParam is (string * (timestamp * nat))
+
+type pairParam          is record [
+  tokenId               : tokenId;
+  pairName              : string;
+]
+
 type useAction          is
   | Mint of mainParams
   | Redeem of mainParams
   | Borrow of mainParams
+  | EnsuredBorrow of mainParams
   | Repay of mainParams
   | Liquidate of liquidateParams
+  | EnsuredLiquidate of liquidateParams
   | SetAdmin of address
-  | SetOwner of address
   | WithdrawReserve of mainParams
   | AddMarket of newMarketParams
-  | SetCollaterallFactor of mainParams
-  | SetReserveFactor of mainParams
-  | SetModel of setModelParams
-  | SetCloseFactor of nat
-  | SetLiquidationIncentive of nat
-  | SetProxyAddress of address
+  | SetTokenFactors of setTokenParams
+  | SetGlobalFactors of setGlobalParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
-
+  | EnsuredExitMarket of tokenId
+  | UpdatePrice of mainParams
 
 type tokenAction        is
   | ITransfer of transferParams
   | IUpdateOperators of updateOperatorParams
   | IBalanceOf of balanceParams
   | IGetTotalSupply of totalSupplyParams
+
+type proxyAction        is
+  | UpdateAdmin of address
+  | UpdatePair of pairParam
+  | GetPrice of tokenId
+  | ReceivePrice of oracleParam
 
 type entryAction        is
   | Transfer of transferParams
@@ -93,6 +103,7 @@ type entryAction        is
 type return is list (operation) * tokenStorage
 type tokenFunc is (tokenAction * tokenStorage) -> return
 type useFunc is (useAction * tokenStorage * address) -> return
+type useParam is useAction
 
 type fullTokenStorage   is record [
   storage               : tokenStorage;
@@ -102,10 +113,18 @@ type fullTokenStorage   is record [
 
 type fullReturn is list (operation) * fullTokenStorage
 
+type contrParam is (string * (timestamp * nat))
+type updParams is (string * contract(contrParam))
+
 const maxMarkets : nat = 10n;
 
-type prms is [@layout:comb] record [
-  s   : tokenStorage;
-  res : nat;
-  userAccount   : account;
+type calcCollParams     is [@layout:comb] record [
+  s                     : tokenStorage;
+  res                   : nat;
+  userAccount           : account;
+]
+
+type oneTokenUpdParam   is [@layout:comb] record [
+  operations            : list (operation);
+  priceFeedProxy        : address;
 ]

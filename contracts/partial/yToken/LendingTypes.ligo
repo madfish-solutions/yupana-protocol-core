@@ -1,22 +1,35 @@
 type totalSupplyParams is
   michelson_pair(tokenId, "tokenId", contract(nat), "")
 
-type liquidateParams is record [
+type liquidateParams    is record [
   borrowToken           : nat;
   collateralToken       : nat;
   borrower              : address;
   amount                : nat;
 ]
 
-type mainParams is record [
+type mainParams         is record [
   tokenId               : nat;
   amount                : nat;
 ]
 
-type faTransferParams is [@layout:comb] record [
+type faTransferParams   is [@layout:comb] record [
   [@annot:from] from_   : address;
   [@annot:to] to_       : address;
   value : nat;
+]
+
+type setTokenParams     is record [
+  tokenId               : nat;
+  collateralFactor      : nat;
+  reserveFactor         : nat;
+  modelAddress          : address;
+]
+
+type setGlobalParams    is record [
+  closeFactor           : nat;
+  liqIncentive          : nat;
+  priceFeedProxy        : address;
 ]
 
 type transferType is TransferOutside of faTransferParams

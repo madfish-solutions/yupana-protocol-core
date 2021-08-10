@@ -1,20 +1,9 @@
 function mustBeAdmin(
   const s               : tokenStorage)
                         : unit is
-  block {
-    if Tezos.sender =/= s.admin
-    then failwith("NotAdmin")
-    else skip;
-  } with (unit)
-
-function mustBeOwner(
-  const s               : tokenStorage)
-                        : unit is
-  block {
-    if Tezos.sender =/= s.owner
-    then failwith("NotOwner")
-    else skip;
-  } with (unit)
+  if Tezos.sender =/= s.admin
+  then failwith("not-admin")
+  else unit
 
 function setAdmin(
   const p               : useAction;
@@ -24,23 +13,8 @@ function setAdmin(
   block {
       case p of
         SetAdmin(addr) -> {
-          mustBeOwner(s);
+          mustBeAdmin(s);
           s.admin := addr;
-        }
-      | _                         -> skip
-      end
-  } with (noOperations, s)
-
-function setOwner(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
-  block {
-      case p of
-        SetOwner(addr) -> {
-          mustBeOwner(s);
-          s.owner := addr;
         }
       | _                         -> skip
       end
@@ -58,7 +32,9 @@ function withdrawReserve(
           mustBeAdmin(s);
           var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
 
-          token.totalReserves := abs(token.totalReserves - mainParams.amount);
+          token.totalReserves := abs(
+            token.totalReserves - mainParams.amount * accuracy
+          );
           s.tokenInfo[mainParams.tokenId] := token;
 
           operations := list [
@@ -103,97 +79,37 @@ function addMarket(
     end
   } with (noOperations, s)
 
-function setCollaterallFactor(
+function setTokenFactors(
   const p               : useAction;
   var s                 : tokenStorage;
   const _this           : address)
                         : return is
   block {
     case p of
-      SetCollaterallFactor(mainParams) -> {
+      SetTokenFactors(setTokenParams) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
-        token.collateralFactor := mainParams.amount;
-        s.tokenInfo[mainParams.tokenId] := token;
+        var token : tokenInfo := getTokenInfo(setTokenParams.tokenId, s);
+        token.collateralFactor := setTokenParams.collateralFactor;
+        token.reserveFactor := setTokenParams.reserveFactor;
+        token.interstRateModel := setTokenParams.modelAddress;
+        s.tokenInfo[setTokenParams.tokenId] := token;
       }
     | _                 -> skip
     end
   } with (noOperations, s)
 
-function setReserveFactor(
+function setGlobalFactors(
   const p               : useAction;
   var s                 : tokenStorage;
   const _this           : address)
                         : return is
   block {
     case p of
-      SetReserveFactor(mainParams) -> {
+      SetGlobalFactors(setGlobalParams) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
-        token.reserveFactor := mainParams.amount;
-        s.tokenInfo[mainParams.tokenId] := token;
-      }
-    | _                 -> skip
-    end
-  } with (noOperations, s)
-
-function setModel(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
-  block {
-    case p of
-      SetModel(setModelParams) -> {
-        mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(setModelParams.tokenId, s);
-        token.interstRateModel := setModelParams.modelAddress;
-        s.tokenInfo[setModelParams.tokenId] := token;
-      }
-    | _                 -> skip
-    end
-  } with (noOperations, s)
-
-function setCloseFactor(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
-  block {
-    case p of
-      SetCloseFactor(amt) -> {
-        mustBeAdmin(s);
-        s.closeFactor := amt;
-      }
-    | _                 -> skip
-    end
-  } with (noOperations, s)
-
-function setLiquidationIncentive(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
-  block {
-    case p of
-      SetLiquidationIncentive(amt) -> {
-        mustBeAdmin(s);
-        s.liqIncentive := amt;
-      }
-      | _               -> skip
-      end
-  } with (noOperations, s)
-
-function setProxyAddress(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
-  block {
-    case p of
-      SetProxyAddress(addr) -> {
-        mustBeAdmin(s);
-        s.priceFeedProxy := addr;
+        s.closeFactor := setGlobalParams.closeFactor;
+        s.liqIncentive := setGlobalParams.liqIncentive;
+        s.priceFeedProxy := setGlobalParams.priceFeedProxy;
       }
     | _                 -> skip
     end
