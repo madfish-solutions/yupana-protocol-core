@@ -199,7 +199,7 @@ function redeem(
               TransferOutside(record [
                 from_ = this;
                 to_ = Tezos.sender;
-                value = amt
+                value = redeemAmount
               ]),
               0mutez,
               getTokenContract(token.mainToken)
