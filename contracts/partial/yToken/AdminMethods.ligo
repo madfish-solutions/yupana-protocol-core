@@ -8,11 +8,9 @@ function mustBeAdmin(
 function mustBeOwner(
   const s               : tokenStorage)
                         : unit is
-  block {
-    if Tezos.sender =/= s.owner
-    then failwith("NotOwner")
-    else skip;
-  } with (unit)
+  if Tezos.sender =/= s.owner
+  then failwith("NotOwner")
+  else unit
 
 function setAdmin(
   const p               : useAction;
