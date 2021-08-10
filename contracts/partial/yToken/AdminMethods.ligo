@@ -1,11 +1,9 @@
 function mustBeAdmin(
   const s               : tokenStorage)
                         : unit is
-  block {
-    if Tezos.sender =/= s.admin
-    then failwith("NotAdmin")
-    else skip;
-  } with (unit)
+  if Tezos.sender =/= s.admin
+  then failwith("NotAdmin")
+  else unit
 
 function mustBeOwner(
   const s               : tokenStorage)
