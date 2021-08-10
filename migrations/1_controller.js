@@ -1,67 +1,30 @@
-const Controller = artifacts.require("Controller");
-const { accounts } = require("../scripts/sandbox/accounts");
-const { accountsMap } = require('../scripts/sandbox/accounts');
-const { TezosToolkit } = require("@taquito/taquito");
+const { alice } = require("../scripts/sandbox/accounts");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-const { InMemorySigner } = require("@taquito/signer");
 const { functions } = require("../storage/Functions");
-const { confirmOperation } = require('../helpers/confirmation');
 const { execSync } = require("child_process");
+const { migrate, getLigo } = require("../scripts/helpers");
+const { confirmOperation } = require("../scripts/confirmation");
 
-function getLigo(isDockerizedLigo) {
-  let path = "ligo";
-  if (isDockerizedLigo) {
-    path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.11.0";
-    try {
-      execSync(`${path}  --help`);
-    } catch (err) {
-      path = "ligo";
-      execSync(`${path}  --help`);
-    }
-  } else {
-    try {
-      execSync(`${path}  --help`);
-    } catch (err) {
-      path = "docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.11.0";
-      execSync(`${path}  --help`);
-    }
-  }
-  return path;
-}
+const controllerStorage = {
+  factory: alice.pkh,
+  admin: alice.pkh,
+  qTokens: [],
+  oraclePairs: MichelsonMap.fromLiteral({}),
+  oracleStringPairs: MichelsonMap.fromLiteral({}),
+  pairs: MichelsonMap.fromLiteral({}),
+  accountBorrows: MichelsonMap.fromLiteral({}),
+  accountTokens: MichelsonMap.fromLiteral({}),
+  markets: MichelsonMap.fromLiteral({}),
+  accountMembership: MichelsonMap.fromLiteral({}),
+  oracle: alice.pkh,
+  icontroller: "0",
+};
 
-module.exports = async function (deployer) {
-  tezos = new TezosToolkit(tezos.rpc.url);
-  const secretKey = accountsMap.get(accounts[0]);
-
-  tezos.setProvider({
-    config: {
-      confirmationPollingTimeoutSecond: 5000,
-    },
-    signer: await InMemorySigner.fromSecretKey(secretKey),
-  });
-
-  const controllerStorage = {
-    factory: accounts[0],
-    admin: accounts[0],
-    qTokens: [],
-    oraclePairs: new MichelsonMap(),
-    oracleStringPairs: new MichelsonMap(),
-    pairs: new MichelsonMap(),
-    accountBorrows: new MichelsonMap(),
-    accountTokens: new MichelsonMap(),
-    markets: new MichelsonMap(),
-    accountMembership: new MichelsonMap(),
-    oracle: accounts[0],
-    icontroller : "0",
-  };
-
-  const fullControllerStorage = {
+module.exports = async (tezos) => {
+  const controllerAddress = await migrate(tezos, "Controller", {
     storage: controllerStorage,
     useControllerLambdas: MichelsonMap.fromLiteral({}),
-  };
-
-  await deployer.deploy(Controller, fullControllerStorage);
-  const ControllerInstance = await Controller.deployed();
+  });
 
   let ligo = getLigo(true);
   for (useControllerFunction of functions.useController) {
@@ -71,13 +34,14 @@ module.exports = async function (deployer) {
       { maxBuffer: 1024 * 1000 }
     );
     const operation = await tezos.contract.transfer({
-      to: ControllerInstance.address,
+      to: controllerAddress,
       amount: 0,
       parameter: {
         entrypoint: "setUseAction",
         value: JSON.parse(stdout.toString()).args[0].args[0],
       },
     });
-    await confirmOperation(tezos, operation.hash)
+    await confirmOperation(tezos, operation.hash);
   }
+  console.log(`Controller: ${controllerAddress}`);
 };
