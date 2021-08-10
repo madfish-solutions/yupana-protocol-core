@@ -54,7 +54,7 @@ function withdrawReserve(
           mustBeAdmin(s);
           var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
 
-          token.totalReserves := abs(token.totalReserves - mainParams.amount);
+          token.totalReserves := abs(token.totalReserves - mainParams.amount * accurancy);
           s.tokenInfo[mainParams.tokenId] := token;
 
           operations := list [
