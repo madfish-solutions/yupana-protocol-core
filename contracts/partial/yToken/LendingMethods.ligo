@@ -148,19 +148,14 @@ function redeem(
           s := updateInterest(mainParams.tokenId, s);
 
           var accountUser : account := getAccount(Tezos.sender, s);
-          var userBalance : nat := getMapInfo(
-            accountUser.balances,
-            mainParams.tokenId
-          );
-
           if Set.mem(mainParams.tokenId, accountUser.markets)
           then failwith("TokenTakenAsCollateral")
           else skip;
 
-          if userBalance = 0n
-          then failwith("NotEnoughTokens");
-          else skip;
-
+          var userBalance : nat := getMapInfo(
+            accountUser.balances,
+            mainParams.tokenId
+          );
           var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
 
           const liquidity : nat = abs(
