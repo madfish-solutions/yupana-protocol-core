@@ -272,7 +272,6 @@ function redeem(
 
           var burnTokens : nat := redeemAmount * accuracy *
             token.totalSupply / liquidity;
-
           if userBalance < burnTokens
           then failwith("NotEnoughTokensToBurn")
           else skip;
