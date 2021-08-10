@@ -163,26 +163,18 @@ function redeem(
 
           var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
 
-          var exchangeRate : nat := abs(
-            token.totalLiquid + token.totalBorrows - token.totalReserves
-          ) * accuracy / token.totalSupply;
+          const liquidity : nat = abs(
+              token.totalLiquid + token.totalBorrows - token.totalReserves);
+          const redeemAmount : nat = if mainParams.amount = 0n
+          then userBalance * liquidity / token.totalSupply / accuracy
+          else mainParams.amount;
 
-          if exchangeRate = 0n
-          then failwith("NotEnoughTokensToSendToUser")
-          else skip;
-
-          var amt : nat := mainParams.amount;
-
-          if amt = 0n
-          then amt := userBalance / accuracy;
-          else skip;
-
-          if token.totalLiquid < amt * accuracy
+          if token.totalLiquid < redeemAmount
           then failwith("NotEnoughLiquid")
           else skip;
 
-          var burnTokens : nat := amt * accuracy / exchangeRate;
-
+          var burnTokens : nat := redeemAmount * accuracy *
+            token.totalSupply / liquidity;
           if userBalance < burnTokens
           then failwith("NotEnoughTokensToBurn")
           else skip;
@@ -191,7 +183,8 @@ function redeem(
           accountUser.balances[mainParams.tokenId] := userBalance;
           s.accountInfo[Tezos.sender] := accountUser;
           token.totalSupply := abs(token.totalSupply - burnTokens);
-          token.totalLiquid := abs(token.totalLiquid - amt);
+          token.totalLiquid := abs(token.totalLiquid - redeemAmount *
+            accuracy);
           s.tokenInfo[mainParams.tokenId] := token;
 
           operations := list [
