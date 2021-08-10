@@ -99,10 +99,9 @@ function mint(
           if token.totalSupply =/= 0n
           then block {
             s := updateInterest(mainParams.tokenId, s);
-            const exchangeRate : nat = abs(
+            mintTokens := mainParams.amount * token.totalSupply * accuracy / abs(
               token.totalLiquid + token.totalBorrows - token.totalReserves
-            ) * accuracy / token.totalSupply;
-            mintTokens := mainParams.amount * accuracy / exchangeRate;
+            );
           }
           else skip;
 
