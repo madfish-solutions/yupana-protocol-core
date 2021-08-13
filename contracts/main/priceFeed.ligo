@@ -1,4 +1,4 @@
-#include "../partial/Proxy/PriceFeedTypes.ligo"
+#include "../partial/MainTypes.ligo"
 #include "../partial/Proxy/PriceFeedMethods.ligo"
 
 [@inline] function middleProxy(
@@ -7,12 +7,12 @@
   var s                 : fullProxyStorage)
                         : fullProxyReturn is
   block {
-      const idx : nat = case p of
-        | UpdateAdmin(_addr) -> 0n
-        | UpdatePair(_pairParam) -> 1n
-        | GetPrice(_tokenId) -> 2n
-        | ReceivePrice(_oracleParam) -> 3n
-      end;
+    const idx : nat = case p of
+      | UpdateAdmin(_addr) -> 0n
+      | UpdatePair(_pairParam) -> 1n
+      | GetPrice(_tokenId) -> 2n
+      | ReceivePrice(_oracleParam) -> 3n
+    end;
     const res : proxyReturn = case s.proxyLambdas[idx] of
       Some(f) -> f(p, s.storage, this)
       | None -> (

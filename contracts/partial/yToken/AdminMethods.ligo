@@ -67,6 +67,7 @@ function addMarket(
         token.mainToken := newMarketParams.assetAddress;
         token.collateralFactor := newMarketParams.collateralFactor;
         token.reserveFactor := newMarketParams.reserveFactor;
+        token.maxBorrowRate := newMarketParams.maxBorrowRate;
 
         s.tokenMetadata[s.lastTokenId] := record [
           tokenId = s.lastTokenId;
@@ -91,7 +92,8 @@ function setTokenFactors(
         var token : tokenInfo := getTokenInfo(setTokenParams.tokenId, s);
         token.collateralFactor := setTokenParams.collateralFactor;
         token.reserveFactor := setTokenParams.reserveFactor;
-        token.interstRateModel := setTokenParams.modelAddress;
+        token.interstRateModel := setTokenParams.interstRateModel;
+        token.maxBorrowRate := setTokenParams.maxBorrowRate;
         s.tokenInfo[setTokenParams.tokenId] := token;
       }
     | _                 -> skip

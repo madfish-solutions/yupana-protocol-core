@@ -29,6 +29,48 @@
     )
   end;
 
+[@inline] function getEnsuredInterestEntrypoint(
+  const selfAddress     : address)
+                        : contract(entryAction) is
+  case (
+    Tezos.get_entrypoint_opt("%ensuredUpdateInterest", selfAddress)
+                        : option(contract(entryAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-ensuredInterest-entrypoint")
+                        : contract(entryAction)
+    )
+  end;
+
+[@inline] function getUpdateInterestEntrypoint(
+  const selfAddress     : address)
+                        : contract(entryAction) is
+  case (
+    Tezos.get_entrypoint_opt("%updateInterest", selfAddress)
+                        : option(contract(entryAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-updateInterest-entrypoint")
+                        : contract(entryAction)
+    )
+  end;
+
+[@inline] function getFuncsMiddleUseEntrypoint(
+  const selfAddress     : address)
+                        : contract(entryAction) is
+  case (
+    Tezos.get_entrypoint_opt("%funcsUse", selfAddress)
+                        : option(contract(entryAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-funcsMiddleUse-entrypoint")
+                        : contract(entryAction)
+    )
+  end;
+
 [@inline] function getEnsuredLiquidateEntrypoint(
   const selfAddress     : address)
                         : contract(useAction) is
@@ -53,6 +95,45 @@ function getProxyContract(
     Some(contr) -> contr
     | None -> (
       failwith("cant-get-contract-proxy") : contract(proxyAction)
+    )
+  end;
+
+function getUpdResrveRateContract(
+  const rateAddress     : address)
+                        : contract(rateAction) is
+  case(
+    Tezos.get_entrypoint_opt("%updReserveFactor", rateAddress)
+                        : option(contract(rateAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-interestRate-contract") : contract(rateAction)
+    )
+  end;
+
+function getUpdateBorrowRateContract(
+  const selfAddress     : address)
+                        : contract(useAction) is
+  case(
+    Tezos.get_entrypoint_opt("%updateBorrowRate", selfAddress)
+                        : option(contract(useAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-updateBorrowRate-contract") : contract(useAction)
+    )
+  end;
+
+function getBorrowRateContract(
+  const rateAddress     : address)
+                        : contract(rateAction) is
+  case(
+    Tezos.get_entrypoint_opt("%getBorrowRate", rateAddress)
+                        : option(contract(rateAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-interestRate-contract") : contract(rateAction)
     )
   end;
 
@@ -134,10 +215,37 @@ function calculateOutstandingBorrowInUSD(
 
 function updateInterest(
   var tokenId           : nat;
-  var s                 : tokenStorage)
-                        : tokenStorage is
+  const this            : address;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
+    block {
+      var token : tokenInfo := getTokenInfo(tokenId, s.storage);
+      var operations : list(operation) := list[
+        Tezos.transaction(
+          GetBorrowRate(record[
+            tokenId = tokenId;
+            borrows = token.totalBorrows;
+            cash = token.totalLiquid;
+            reserves = token.totalReserves;
+            contract = getUpdateBorrowRateContract(this); // ????
+          ]),
+          0mutez,
+          getBorrowRateContract(token.interstRateModel)
+        );
+        Tezos.transaction(
+          EnsuredUpdateInterest(tokenId, s.storage),
+          0mutez,
+          getEnsuredInterestEntrypoint(this)
+        );
+      ];
+    } with (operations, s)
+
+function ensuredUpdateInterest(
+  var tokenId           : nat;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
   block {
-    var token : tokenInfo := getTokenInfo(tokenId, s);
+    var token : tokenInfo := getTokenInfo(tokenId, s.storage);
     if token.lastUpdateTime = Tezos.now
     then failwith("yToken/simular-time")
     else skip;
@@ -147,13 +255,11 @@ function updateInterest(
     const _reservesPrior : nat = token.totalReserves;
     const _borrowIndexPrior : nat = token.borrowIndex;
 
-    // ???
-    var borrowRate : nat := 0n;
-    // var borrowRate = token.interestRateModel.getBorrowRate(cashPrior, borrowsPrior, reservesPrior);
-    // if borrowRate <= borrowRateMaxMantissa
-    // then failwith("borrow rate is absurdly high");
-    // else skip;
-    // borrowRateMaxMantissa ???
+    var borrowRate : nat := token.borrowRate;
+
+    if borrowRate <= token.maxBorrowRate
+    then failwith("yToken/borrow-rate-is-absurdly-high");
+    else skip;
 
     //  Calculate the number of blocks elapsed since the last accrual
     var blockDelta : nat := abs(Tezos.now - token.lastUpdateTime);
@@ -170,8 +276,8 @@ function updateInterest(
       accuracy + token.borrowIndex;
     token.lastUpdateTime := Tezos.now;
 
-    s.tokenInfo[tokenId] := token;
-  } with s
+    s.storage.tokenInfo[tokenId] := token;
+  } with (noOperations, s)
 
 function updInterests(
   const setOfTokens     : set(tokenId);
@@ -555,7 +661,7 @@ function ensuredLiquidate(
 
           if outstandingBorrowInUSD > maxBorrowInUSD
           then skip
-          else failwith("yToken/liquidatino-not-achieved");
+          else failwith("yToken/liquidation-not-achieved");
 
           if borrowerBorrowAmount = 0n
           then failwith("yToken/debt-is-zero");
@@ -599,6 +705,10 @@ function ensuredLiquidate(
               getTokenContract(borrowToken.mainToken)
             )
           ];
+
+          if accountBorrower.markets contains liquidateParams.collateralToken
+          then skip
+          else failwith("yToken/collateralToken-not-contains-in-borrow-market");
 
           var collateralToken : tokenInfo := getTokenInfo(
             liquidateParams.collateralToken,
@@ -748,6 +858,10 @@ function updatePrice(
   block {
       case p of
         UpdatePrice(mainParams) -> {
+          if Tezos.sender =/= priceFeedProxy
+          then failwith("yToken/permition-error");
+          else skip;
+
           var token : tokenInfo := getTokenInfo(
             mainParams.tokenId,
             s
@@ -758,3 +872,53 @@ function updatePrice(
       | _                         -> skip
       end
   } with (noOperations, s)
+
+function updateBorrowRate(
+  const p               : useAction;
+  var s                 : tokenStorage;
+  const this            : address)
+                        : return is
+  block {
+      case p of
+        UpdateBorrowRate(mainParams) -> {
+          if Tezos.sender =/= this
+          then failwith("yToken/permition-error");
+          else skip;
+
+          var token : tokenInfo := getTokenInfo(
+            mainParams.tokenId,
+            s
+          );
+          token.borrowRate := mainParams.amount;
+          s.tokenInfo[mainParams.tokenId] := token;
+        }
+      | _                         -> skip
+      end
+  } with (noOperations, s)
+
+function getReserveFactor(
+  const p               : useAction;
+  var s                 : tokenStorage;
+  const _this           : address)
+                        : return is
+  block {
+      var operations : list(operation) := list[];
+      case p of
+        GetReserveFactor(tokenId) -> {
+          if Tezos.sender =/= priceFeedProxy
+          then failwith("yToken/permition-error");
+          else skip;
+
+          var token : tokenInfo := getTokenInfo(tokenId, s);
+
+          operations := list [
+            Tezos.transaction(
+              UpdReserveFactor(token.reserveFactor),
+              0mutez,
+              getUpdResrveRateContract(token.interstRateModel)
+            )
+          ];
+        }
+      | _                         -> skip
+      end
+  } with (operations, s)

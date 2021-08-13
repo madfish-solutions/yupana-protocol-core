@@ -1,5 +1,5 @@
 [@inline] function mustBeAdmin(
-  const s               : storage)
+  const s               : proxyStorage)
                         : unit is
   block {
     if Tezos.sender =/= s.admin
@@ -8,7 +8,7 @@
   } with (unit)
 
 [@inline] function mustBeYtoken(
-  const s               : storage)
+  const s               : proxyStorage)
                         : unit is
   block {
     if Tezos.sender =/= s.yToken
@@ -17,7 +17,7 @@
   } with (unit)
 
 [@inline] function mustBeOracle(
-  const s               : storage)
+  const s               : proxyStorage)
                         : unit is
   block {
     if Tezos.sender =/= s.oracle
@@ -52,7 +52,7 @@
   end;
 
 [@inline] function getYtokenContract(
-  const s               : storage)
+  const s               : proxyStorage)
                         : contract(useParam) is
   case (
     Tezos.get_entrypoint_opt("%updatePrice", s.yToken)
@@ -66,7 +66,7 @@
 
 [@inline] function checkPairName(
   const tokenId         : tokenId;
-  const s               : storage)
+  const s               : proxyStorage)
                         : string is
   case s.pairName[tokenId] of
     | Some(v) -> v
@@ -75,7 +75,7 @@
 
 [@inline] function checkPairId(
   const pairName        : string;
-  const s               : storage)
+  const s               : proxyStorage)
                         : nat is
   case s.pairId[pairName] of
     | Some(v) -> v
@@ -84,7 +84,7 @@
 
 function updateAdmin(
   const p               : proxyAction;
-  var s                 : storage;
+  var s                 : proxyStorage;
   const _this           : address)
                         : proxyReturn is
   block {
@@ -99,7 +99,7 @@ function updateAdmin(
 
 function receivePrice(
   const p               : proxyAction;
-  var s                 : storage;
+  var s                 : proxyStorage;
   const _this           : address)
                         : proxyReturn is
   block {
@@ -128,7 +128,7 @@ function receivePrice(
 
 function getPrice(
   const p               : proxyAction;
-  var s                 : storage;
+  var s                 : proxyStorage;
   const this            : address)
                         : proxyReturn is
   block {
@@ -154,7 +154,7 @@ function getPrice(
 
 function updatePair(
   const p               : proxyAction;
-  var s                 : storage;
+  var s                 : proxyStorage;
   const _this           : address)
                         : proxyReturn is
   block {

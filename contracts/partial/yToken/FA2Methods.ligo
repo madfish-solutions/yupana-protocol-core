@@ -29,6 +29,8 @@ function getTokenInfo(
       totalSupply       = 0n;
       totalReserves     = 0n;
       borrowIndex       = 0n;
+      borrowRate        = 0n;
+      maxBorrowRate     = 0n;
       collateralFactor  = 0n;
       reserveFactor     = 0n;
       lastPrice         = 0n;
