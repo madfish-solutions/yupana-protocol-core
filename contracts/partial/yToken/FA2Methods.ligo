@@ -22,6 +22,8 @@ function getTokenInfo(
   case s.tokenInfo[tokenId] of
     None -> record [
       mainToken         = zeroAddress;
+      faType            = 0n;
+      contractId        = 0n;
       interstRateModel  = zeroAddress;
       lastUpdateTime    = zeroTimestamp;
       totalBorrows      = 0n;
@@ -58,6 +60,19 @@ function getTokenContract(
     Some(contr) -> contr
     | None -> (
       failwith("cant-get-contract-token") : contract(transferType)
+    )
+  end;
+
+function getIterTranserContract(
+  const tokenAddress    : address)
+                        : contract(iterTransferType) is
+  case(
+    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
+                        : option(contract(iterTransferType))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-contract-fa2-token") : contract(iterTransferType)
     )
   end;
 

@@ -1,6 +1,20 @@
 #include "../partial/MainTypes.ligo"
 #include "../partial/Proxy/PriceFeedMethods.ligo"
 
+[@inline] function setProxyAction (
+  const idx : nat;
+  const f               : proxyFunc;
+  var s                 : fullProxyStorage)
+                        : fullProxyReturn is
+  block {
+    if Tezos.sender = s.storage.admin then
+      case s.proxyLambdas[idx] of
+        Some(_n) -> failwith("ProxyFunctionNotSet")
+        | None -> s.proxyLambdas[idx] := f
+      end;
+    else failwith("YouNotAdmin(setProxyAction)")
+  } with (noOperations, s)
+
 [@inline] function middleProxy(
   const p               : proxyAction;
   const this            : address;
@@ -30,4 +44,5 @@ function main(
     const this : address = Tezos.self_address;
   } with case p of
       | ProxyUse(params)  -> middleProxy(params, this, s)
+      | SetProxyAction(params) -> setProxyAction(params.index, params.func, s)
     end

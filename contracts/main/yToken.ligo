@@ -35,12 +35,9 @@ function middleToken(
         | Repay(_mainParams) -> 4n
         | Liquidate(_liquidateParams) -> 5n
         | EnsuredLiquidate(_liquidateParams) -> 6n
-        | SetAdmin(_addr) -> 7n
-        | WithdrawReserve(_mainParams) -> 8n
-        | AddMarket(_newMarketParams) -> 9n
-        | EnterMarket(_tokenId) -> 10n
-        | ExitMarket(_tokenId) -> 11n
-        | EnsuredExitMarket(_tokenId) -> 12n
+        | EnterMarket(_tokenId) -> 7n
+        | ExitMarket(_tokenId) -> 8n
+        | EnsuredExitMarket(_tokenId) -> 9n
       end;
     const res : return = case s.useLambdas[idx] of
       Some(f) -> f(p, s.storage, this)
@@ -67,6 +64,9 @@ function main(
       | UpdateBorrowRate(params) -> updateBorrowRate(params, this, s)
       | GetReserveFactor(params) -> getReserveFactor(params, s)
       | UpdatePrice(params) -> updatePrice(params, s)
+      | SetAdmin(params) -> setAdmin(params, s)
+      | WithdrawReserve(params) -> withdrawReserve(params, this, s)
+      | AddMarket(params) -> addMarket(params, s)
       | SetTokenFactors(params) -> setTokenFactors(params, s)
       | SetGlobalFactors(params) -> setGlobalFactors(params, s)
       | Use(params)               -> middleUse(params, this, s)

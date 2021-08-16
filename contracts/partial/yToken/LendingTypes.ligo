@@ -13,6 +13,8 @@ type account            is [@layout:comb] record [
 
 type tokenInfo         is [@layout:comb] record [
   mainToken             : address;
+  faType                : nat;
+  contractId            : nat;
   interstRateModel      : address;
   lastUpdateTime        : timestamp;
   totalBorrows          : nat;
@@ -58,7 +60,7 @@ type mainParams         is record [
 type faTransferParams   is [@layout:comb] record [
   [@annot:from] from_   : address;
   [@annot:to] to_       : address;
-  value : nat;
+  value                 : nat;
 ]
 
 type setTokenParams     is record [
@@ -89,6 +91,8 @@ type newMarketParams     is record [
   reserveFactor         : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
+  faType                : nat;
+  contractId            : nat;
 ]
 
 type oracleParam is (string * (timestamp * nat))
@@ -110,6 +114,7 @@ type oneTokenUpdParam   is [@layout:comb] record [
 ]
 
 type transferType is TransferOutside of faTransferParams
+type iterTransferType is IterateTransferOutside of transferParam
 
 type contrParam is (string * (timestamp * nat))
 type updParams is (string * contract(contrParam))

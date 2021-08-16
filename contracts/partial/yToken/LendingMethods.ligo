@@ -296,7 +296,8 @@ function mint(
           token.totalLiquid := token.totalLiquid + mainParams.amount * accuracy;
           s.tokenInfo[mainParams.tokenId] := token;
 
-          operations := list [
+          if token.faType = 1n
+          then operations := list [
             Tezos.transaction(
               TransferOutside(record [
                 from_ = Tezos.sender;
@@ -305,6 +306,22 @@ function mint(
               ]),
               0mutez,
               getTokenContract(token.mainToken)
+            )
+          ];
+          else operations := list [
+            Tezos.transaction(
+              IterateTransferOutside(record [
+                from_ = Tezos.sender;
+                txs = list[
+                  record[
+                    tokenId = token.contractId;
+                    to_ = this;
+                    amount = mainParams.amount
+                  ]
+                ]
+              ]),
+              0mutez,
+              getIterTranserContract(token.mainToken)
             )
           ];
         }
@@ -364,7 +381,8 @@ function redeem(
             accuracy);
           s.tokenInfo[mainParams.tokenId] := token;
 
-          operations := list [
+          if token.faType = 1n
+          then operations := list [
             Tezos.transaction(
               TransferOutside(record [
                 from_ = this;
@@ -374,7 +392,23 @@ function redeem(
               0mutez,
               getTokenContract(token.mainToken)
             )
-          ]
+          ];
+          else operations := list [
+            Tezos.transaction(
+              IterateTransferOutside(record [
+                from_ = this;
+                txs = list[
+                  record[
+                    tokenId = token.contractId;
+                    to_ = Tezos.sender;
+                    amount = redeemAmount
+                  ]
+                ]
+              ]),
+              0mutez,
+              getIterTranserContract(token.mainToken)
+            )
+          ];
         }
       | _               -> skip
       end
@@ -483,7 +517,8 @@ function ensuredBorrow(
           token.totalLiquid := abs(token.totalLiquid - borrowAmount);
           s.tokenInfo[mainParams.tokenId] := token;
 
-          operations := list [
+          if token.faType = 1n
+          then operations := list [
             Tezos.transaction(
               TransferOutside(record [
                 from_ = this;
@@ -493,7 +528,23 @@ function ensuredBorrow(
               0mutez,
               getTokenContract(token.mainToken)
             )
-          ]
+          ];
+          else operations := list [
+            Tezos.transaction(
+              IterateTransferOutside(record [
+                from_ = this;
+                txs = list[
+                  record[
+                    tokenId = token.contractId;
+                    to_ = Tezos.sender;
+                    amount = mainParams.amount
+                  ]
+                ]
+              ]),
+              0mutez,
+              getIterTranserContract(token.mainToken)
+            )
+          ];
         }
       | _                         -> skip
       end
@@ -556,7 +607,8 @@ function repay (
           then value := repayAmount / accuracy + 1n
           else value := repayAmount / accuracy;
 
-          operations := list [
+          if token.faType = 1n
+          then operations := list [
             Tezos.transaction(
               TransferOutside(record [
                 from_ = Tezos.sender;
@@ -566,7 +618,23 @@ function repay (
               0mutez,
               getTokenContract(token.mainToken)
             )
-          ]
+          ];
+          else operations := list [
+            Tezos.transaction(
+              IterateTransferOutside(record [
+                from_ = Tezos.sender;
+                txs = list[
+                  record[
+                    tokenId = token.contractId;
+                    to_ = this;
+                    amount = value
+                  ]
+                ]
+              ]),
+              0mutez,
+              getIterTranserContract(token.mainToken)
+            )
+          ];
         }
       | _                         -> skip
       end
@@ -678,7 +746,8 @@ function ensuredLiquidate(
             liquidateParams.borrowToken
           ] := borrowerBorrowAmount;
 
-          operations := list [
+          if borrowToken.faType = 1n
+          then operations := list [
             Tezos.transaction(
               TransferOutside(record [
                 from_ = Tezos.sender;
@@ -687,6 +756,22 @@ function ensuredLiquidate(
               ]),
               0mutez,
               getTokenContract(borrowToken.mainToken)
+            )
+          ];
+          else operations := list [
+            Tezos.transaction(
+              IterateTransferOutside(record [
+                from_ = Tezos.sender;
+                txs = list[
+                  record[
+                    tokenId = borrowToken.contractId;
+                    to_ = this;
+                    amount = liquidateAmount
+                  ]
+                ]
+              ]),
+              0mutez,
+              getIterTranserContract(borrowToken.mainToken)
             )
           ];
 
@@ -757,11 +842,7 @@ function enterMarket(
             tokenId
           );
 
-          if userBalance = 0n
-          then failwith("yToken/not-enough-tokens-for-enter");
-          else skip;
-
-          if cardinal + 1n > maxMarkets
+          if cardinal >= maxMarkets
           then failwith("yToken/max-market-limit");
           else skip;
 

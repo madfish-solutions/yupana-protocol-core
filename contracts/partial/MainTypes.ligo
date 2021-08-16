@@ -11,9 +11,6 @@ type useAction          is
   | Repay of mainParams
   | Liquidate of liquidateParams
   | EnsuredLiquidate of liquidateParams
-  | SetAdmin of address
-  | WithdrawReserve of mainParams
-  | AddMarket of newMarketParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
   | EnsuredExitMarket of tokenId
@@ -49,6 +46,9 @@ type entryAction        is
   | UpdateBorrowRate of mainParams
   | GetReserveFactor of tokenId
   | UpdatePrice of mainParams
+  | SetAdmin of address
+  | WithdrawReserve of mainParams
+  | AddMarket of newMarketParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
   | Use of useAction
@@ -68,12 +68,20 @@ type fullTokenStorage   is record [
 type fullReturn is list (operation) * fullTokenStorage
 
 //Proxy
-type getType is Get of string * contract(oracleParam)
 
-type entryProxyAction is ProxyUse of proxyAction
+type getType is Get of string * contract(oracleParam)
 
 type proxyReturn is list (operation) * proxyStorage
 type proxyFunc is (proxyAction * proxyStorage * address) -> proxyReturn
+
+type setProxyParams is record [
+  index                 : nat;
+  func                  : proxyFunc;
+]
+
+type entryProxyAction   is
+| ProxyUse of proxyAction
+| SetProxyAction of setProxyParams
 
 type fullProxyStorage   is record [
   storage               : proxyStorage;

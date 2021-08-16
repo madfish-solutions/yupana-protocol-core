@@ -127,8 +127,28 @@ let useControllerFunctions = [
   },
 ];
 
+let proxyFunctions = [
+  {
+    index: 0,
+    name: "updateAdmin",
+  },
+  {
+    index: 1,
+    name: "updatePair",
+  },
+  {
+    index: 2,
+    name: "getPrice",
+  },
+  {
+    index: 3,
+    name: "receivePrice",
+  },
+];
+
 module.exports.functions = {
   token: tokenFunctions,
   use: useFunctions,
   useController: useControllerFunctions,
+  proxy: proxyFunctions,
 };

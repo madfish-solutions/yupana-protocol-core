@@ -6,78 +6,82 @@ function mustBeAdmin(
   else unit
 
 function setAdmin(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
+  const newAdmin        : address;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
   block {
-      case p of
-        SetAdmin(addr) -> {
-          mustBeAdmin(s);
-          s.admin := addr;
-        }
-      | _                         -> skip
-      end
+    mustBeAdmin(s.storage);
+    s.storage.admin := newAdmin;
   } with (noOperations, s)
 
 function withdrawReserve(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
-                        : return is
+  const params          : mainParams;
+  const this            : address;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
   block {
-    var operations : list(operation) := list[];
-      case p of
-        WithdrawReserve(mainParams) -> {
-          mustBeAdmin(s);
-          var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
+    mustBeAdmin(s.storage);
+    var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
 
-          token.totalReserves := abs(
-            token.totalReserves - mainParams.amount * accuracy
-          );
-          s.tokenInfo[mainParams.tokenId] := token;
+    token.totalReserves := abs(
+      token.totalReserves - params.amount * accuracy
+    );
+    s.storage.tokenInfo[params.tokenId] := token;
 
-          operations := list [
-            Tezos.transaction(
-              TransferOutside(record [
-                from_ = this;
-                to_ = Tezos.sender;
-                value = mainParams.amount / accuracy
-              ]),
-              0mutez,
-              getTokenContract(token.mainToken)
-            )
+    var operations : list(operation) := list [];
+
+    if token.faType = 1n
+    then operations := list [
+      Tezos.transaction(
+        TransferOutside(record [
+          from_ = this;
+          to_ = Tezos.sender;
+          value = params.amount / accuracy
+        ]),
+        0mutez,
+        getTokenContract(token.mainToken)
+      )
+    ];
+    else operations := list [
+      Tezos.transaction(
+        IterateTransferOutside(record [
+          from_ = this;
+          txs = list[
+            record[
+              tokenId = token.contractId;
+              to_ = Tezos.sender;
+              amount = params.amount / accuracy;
+            ]
           ]
-        }
-      | _               -> skip
-      end
+        ]),
+        0mutez,
+        getIterTranserContract(token.mainToken)
+      )
+    ];
+
   } with (operations, s)
 
 function addMarket(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
+  const params          : newMarketParams;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
   block {
-    case p of
-      AddMarket(newMarketParams) -> {
-        var token : tokenInfo := getTokenInfo(s.lastTokenId, s);
+    var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
 
-        token.interstRateModel := newMarketParams.interstRateModel;
-        token.mainToken := newMarketParams.assetAddress;
-        token.collateralFactor := newMarketParams.collateralFactor;
-        token.reserveFactor := newMarketParams.reserveFactor;
-        token.maxBorrowRate := newMarketParams.maxBorrowRate;
+    token.interstRateModel := params.interstRateModel;
+    token.mainToken := params.assetAddress;
+    token.collateralFactor := params.collateralFactor;
+    token.reserveFactor := params.reserveFactor;
+    token.maxBorrowRate := params.maxBorrowRate;
+    token.faType := params.faType;
+    token.contractId := params.contractId;
 
-        s.tokenMetadata[s.lastTokenId] := record [
-          tokenId = s.lastTokenId;
-          tokenInfo = newMarketParams.tokenMetadata;
-        ];
-        s.tokenInfo[s.lastTokenId] := token;
-        s.lastTokenId := s.lastTokenId + 1n;
-      }
-    | _                 -> skip
-    end
+    s.storage.tokenMetadata[s.storage.lastTokenId] := record [
+      tokenId = s.storage.lastTokenId;
+      tokenInfo = params.tokenMetadata;
+    ];
+    s.storage.tokenInfo[s.storage.lastTokenId] := token;
+    s.storage.lastTokenId := s.storage.lastTokenId + 1n;
   } with (noOperations, s)
 
 function setTokenFactors(
