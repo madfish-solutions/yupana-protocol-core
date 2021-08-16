@@ -53,14 +53,14 @@
 
 [@inline] function getYtokenContract(
   const s               : proxyStorage)
-                        : contract(useParam) is
+                        : contract(entryAction) is
   case (
     Tezos.get_entrypoint_opt("%updatePrice", s.yToken)
-                        : option(contract(useParam))
+                        : option(contract(entryAction))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-yToken-entrypoint") : contract(useParam)
+      failwith("cant-get-yToken-entrypoint") : contract(entryAction)
     )
   end;
 
@@ -109,14 +109,13 @@ function receivePrice(
           mustBeOracle(s);
 
           const tokenId : nat = checkPairId(oracleParam.0, s);
-          const param : mainParams = record [
-            tokenId = tokenId;
-            amount = oracleParam.1.1;
-          ];
 
           operations := list[
             Tezos.transaction(
-              UpdatePrice(param),
+              UpdatePrice(record [
+                tokenId = tokenId;
+                amount = oracleParam.1.1;
+              ]),
               0mutez,
               getYtokenContract(s)
             )

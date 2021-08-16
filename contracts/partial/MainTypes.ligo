@@ -14,13 +14,9 @@ type useAction          is
   | SetAdmin of address
   | WithdrawReserve of mainParams
   | AddMarket of newMarketParams
-  | SetTokenFactors of setTokenParams
-  | SetGlobalFactors of setGlobalParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
   | EnsuredExitMarket of tokenId
-  | UpdatePrice of mainParams
-  | GetReserveFactor of tokenId
 
 type tokenAction        is
   | ITransfer of transferParams
@@ -50,7 +46,11 @@ type entryAction        is
   | GetTotalSupply of totalSupplyParams
   | UpdateInterest of tokenId
   | EnsuredUpdateInterest of tokenId
-  | FuncsUse of useAction
+  | UpdateBorrowRate of mainParams
+  | GetReserveFactor of tokenId
+  | UpdatePrice of mainParams
+  | SetTokenFactors of setTokenParams
+  | SetGlobalFactors of setGlobalParams
   | Use of useAction
 
 // yToken

@@ -1,13 +1,13 @@
 [@inline] function getYtokenContract(
   const yToken          : address)
-                        : contract(useParam) is
+                        : contract(entryAction) is
   case (
     Tezos.get_entrypoint_opt("%updateBorrowRate", yToken)
-                        : option(contract(useParam))
+                        : option(contract(entryAction))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-yToken-entrypoint") : contract(useParam)
+      failwith("cant-get-yToken-entrypoint") : contract(entryAction)
     )
   end;
 
@@ -94,8 +94,10 @@ function getUtilizationRate(
           const utilizationRate : nat = rateParams.borrows /
             abs(rateParams.cash + rateParams.borrows - rateParams.reserves);
           operations := list[
-            Tezos.transaction(
-              utilizationRate,
+            Tezos.transaction(record[
+                tokenId = rateParams.tokenId;
+                amount = utilizationRate;
+              ],
               0mutez,
               rateParams.contract
             )
@@ -122,8 +124,10 @@ function getBorrowRate(
           );
 
           operations := list[
-            Tezos.transaction(
-              (tokenId, borrowRate),
+            Tezos.transaction(record[
+                tokenId = rateParams.tokenId;
+                amount = borrowRate;
+              ],
               0mutez,
               rateParams.contract
             )
@@ -150,6 +154,7 @@ function getSupplyRate(
             );
             Tezos.transaction(
               EnsuredSupplyRate(record [
+                  tokenId = supplyRateParams.tokenId;
                   borrows = supplyRateParams.borrows;
                   cash = supplyRateParams.cash;
                   reserves = supplyRateParams.reserves;
@@ -185,8 +190,10 @@ function ensuredSupplyRate(
             abs(1n - s.reserveFactor);
 
           operations := list[
-            Tezos.transaction(
-              supplyRate,
+            Tezos.transaction(record[
+                tokenId = rateParams.tokenId;
+                amount = supplyRate;
+              ],
               0mutez,
               rateParams.contract
             )

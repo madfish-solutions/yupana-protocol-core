@@ -15,19 +15,19 @@ type setCoeffParams     is record [
   jumpMultiplier        : nat;
 ]
 
-type rateParams         is record [
+type rateParams         is [@layout:comb] record [
   tokenId               : nat;
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
-  contract              : contract(tokenId * nat);
+  contract              : contract(mainParams);
 ]
 
-type supplyRateParams   is record [
+type supplyRateParams   is [@layout:comb] record [
   tokenId               : nat;
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
-  contract              : contract(tokenId * nat);
+  contract              : contract(mainParams);
 ]
 

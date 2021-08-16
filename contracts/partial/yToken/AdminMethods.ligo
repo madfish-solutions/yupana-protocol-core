@@ -81,38 +81,26 @@ function addMarket(
   } with (noOperations, s)
 
 function setTokenFactors(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
+  const params          : setTokenParams;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
   block {
-    case p of
-      SetTokenFactors(setTokenParams) -> {
-        mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(setTokenParams.tokenId, s);
-        token.collateralFactor := setTokenParams.collateralFactor;
-        token.reserveFactor := setTokenParams.reserveFactor;
-        token.interstRateModel := setTokenParams.interstRateModel;
-        token.maxBorrowRate := setTokenParams.maxBorrowRate;
-        s.tokenInfo[setTokenParams.tokenId] := token;
-      }
-    | _                 -> skip
-    end
+    mustBeAdmin(s.storage);
+    var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+    token.collateralFactor := params.collateralFactor;
+    token.reserveFactor := params.reserveFactor;
+    token.interstRateModel := params.interstRateModel;
+    token.maxBorrowRate := params.maxBorrowRate;
+    s.storage.tokenInfo[params.tokenId] := token;
   } with (noOperations, s)
 
 function setGlobalFactors(
-  const p               : useAction;
-  var s                 : tokenStorage;
-  const _this           : address)
-                        : return is
+  const params          : setGlobalParams;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
   block {
-    case p of
-      SetGlobalFactors(setGlobalParams) -> {
-        mustBeAdmin(s);
-        s.closeFactor := setGlobalParams.closeFactor;
-        s.liqIncentive := setGlobalParams.liqIncentive;
-        s.priceFeedProxy := setGlobalParams.priceFeedProxy;
-      }
-    | _                 -> skip
-    end
+    mustBeAdmin(s.storage);
+    s.storage.closeFactor := params.closeFactor;
+    s.storage.liqIncentive := params.liqIncentive;
+    s.storage.priceFeedProxy := params.priceFeedProxy;
   } with (noOperations, s)
