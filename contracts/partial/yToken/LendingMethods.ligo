@@ -275,8 +275,8 @@ function mint(
             if token.lastUpdateTime =/= Tezos.now
             then failwith("yToken/need-update-interestRate")
             else skip;
-            mintTokens := mainParams.amount * token.totalSupply * accuracy /
-              abs(token.totalLiquid + token.totalBorrows - token.totalReserves);  (* !!! optimize calculations *)
+            mintTokens := mintTokens * token.totalSupply /
+              abs(token.totalLiquid + token.totalBorrows - token.totalReserves);
           }
           else skip;
 
@@ -824,17 +824,12 @@ function enterMarket(
         EnterMarket(tokenId) -> {
           var userAccount : account := getAccount(Tezos.sender,s);
           const cardinal : nat = Set.size(userAccount.markets);
-          var userBalance : nat := getMapInfo(
-            userAccount.balances,
-            tokenId
-          ); (* !!!! ?*)
 
           if cardinal >= maxMarkets
           then failwith("yToken/max-market-limit");
           else skip;
 
           userAccount.markets := Set.add(tokenId, userAccount.markets);
-          userAccount.balances[tokenId] := userBalance;
           s.accountInfo[Tezos.sender] := userAccount;
         }
       | _                         -> skip

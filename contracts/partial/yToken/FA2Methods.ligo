@@ -128,7 +128,12 @@ function iterateTransfer(
       block {
         (* Create or get source account *)
         var src_account : account := getAccount(params.from_, s);
-        (* !!! check the entered markets *)
+
+        (* Check the entered markets *)
+        if Set.mem(transfer_dst.tokenId, src_account.markets)
+        then failwith("yToken/token-taken-as-collateral")
+        else skip;
+
         (* Token id check *)
         if transfer_dst.tokenId < s.lastTokenId
         then skip

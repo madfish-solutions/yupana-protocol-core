@@ -27,9 +27,7 @@ function withdrawReserve(
     );
     s.storage.tokenInfo[params.tokenId] := token;
 
-    var operations : list(operation) := list [];
-
-    operations := list [
+    var operations : list(operation) := list [
         case token.faType of
         | FA12 -> Tezos.transaction(
             TransferOutside(record [
