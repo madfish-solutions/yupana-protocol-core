@@ -23,7 +23,6 @@ function middleToken(
 
 [@inline] function middleUse(
   const p               : useAction;
-  const this            : address;
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
@@ -40,7 +39,7 @@ function middleToken(
         | EnsuredExitMarket(_tokenId) -> 9n
       end;
     const res : return = case s.useLambdas[idx] of
-      Some(f) -> f(p, s.storage, this)
+      Some(f) -> f(p, s.storage)
       | None -> (
         failwith("yToken/middle-function-not-set-in-middleUse") : return
       )
@@ -52,22 +51,20 @@ function main(
   const p               : entryAction;
   const s               : fullTokenStorage)
                         : fullReturn is
-  block {
-     const this : address = Tezos.self_address;
-  } with case p of
-      | Transfer(params)          -> middleToken(ITransfer(params), s)
-      | UpdateOperators(params)   -> middleToken(IUpdateOperators(params), s)
-      | BalanceOf(params)         -> middleToken(IBalanceOf(params), s)
-      | GetTotalSupply(params)    -> middleToken(IGetTotalSupply(params), s)
-      | UpdateInterest(params)   -> updateInterest(params, this, s)
-      | EnsuredUpdateInterest(params) -> ensuredUpdateInterest(params, s)
-      | UpdateBorrowRate(params) -> updateBorrowRate(params, this, s)
-      | GetReserveFactor(params) -> getReserveFactor(params, s)
-      | UpdatePrice(params) -> updatePrice(params, s)
-      | SetAdmin(params) -> setAdmin(params, s)
-      | WithdrawReserve(params) -> withdrawReserve(params, this, s)
-      | AddMarket(params) -> addMarket(params, s)
-      | SetTokenFactors(params) -> setTokenFactors(params, s)
-      | SetGlobalFactors(params) -> setGlobalFactors(params, s)
-      | Use(params)               -> middleUse(params, this, s)
-    end
+  case p of
+    | Transfer(params)          -> middleToken(ITransfer(params), s)
+    | UpdateOperators(params)   -> middleToken(IUpdateOperators(params), s)
+    | BalanceOf(params)         -> middleToken(IBalanceOf(params), s)
+    | GetTotalSupply(params)    -> middleToken(IGetTotalSupply(params), s)
+    | UpdateInterest(params)   -> updateInterest(params, s)
+    | EnsuredUpdateInterest(params) -> ensuredUpdateInterest(params, s)
+    | UpdateBorrowRate(params) -> updateBorrowRate(params, s)
+    | GetReserveFactor(params) -> getReserveFactor(params, s)
+    | UpdatePrice(params) -> updatePrice(params, s)
+    | SetAdmin(params) -> setAdmin(params, s)
+    | WithdrawReserve(params) -> withdrawReserve(params, s)
+    | AddMarket(params) -> addMarket(params, s)
+    | SetTokenFactors(params) -> setTokenFactors(params, s)
+    | SetGlobalFactors(params) -> setGlobalFactors(params, s)
+    | Use(params)               -> middleUse(params, s)
+  end

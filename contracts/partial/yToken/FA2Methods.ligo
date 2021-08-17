@@ -22,8 +22,7 @@ function getTokenInfo(
   case s.tokenInfo[tokenId] of
     None -> record [
       mainToken         = zeroAddress;
-      faType            = 0n;
-      contractId        = 0n;
+      faType            = FA12(unit);
       interstRateModel  = zeroAddress;
       lastUpdateTime    = zeroTimestamp;
       totalBorrows      = 0n;
@@ -129,7 +128,7 @@ function iterateTransfer(
       block {
         (* Create or get source account *)
         var src_account : account := getAccount(params.from_, s);
-
+        (* !!! check the entered markets *)
         (* Token id check *)
         if transfer_dst.tokenId < s.lastTokenId
         then skip

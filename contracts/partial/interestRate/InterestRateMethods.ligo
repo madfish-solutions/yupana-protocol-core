@@ -139,8 +139,7 @@ function getBorrowRate(
 
 function getSupplyRate(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const this            : address)
+  var s                 : rateStorage)
                         : rateReturn is
   block {
     var operations : list(operation) := list[];
@@ -161,7 +160,7 @@ function getSupplyRate(
                   contract = supplyRateParams.contract;
               ]),
               0mutez,
-              getEnsuredSupplyRateEntrypoint(this)
+              getEnsuredSupplyRateEntrypoint(Tezos.self_address)
             )
           ];
         }

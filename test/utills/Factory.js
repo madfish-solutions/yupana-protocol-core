@@ -12,8 +12,8 @@ class Factory {
   tezos;
 
   constructor(contract, tezos) {
-    this.contract = contract;
-    this.tezos = tezos;
+    Tezos.self_address.contract = contract;
+    Tezos.self_address.tezos = tezos;
   }
 
   static async init(qsAddress, tezos) {
@@ -42,8 +42,8 @@ class Factory {
   }
 
   async updateStorage(maps = {}) {
-    let storage = await this.contract.storage();
-    this.storage = {
+    let storage = await Tezos.self_address.contract.storage();
+    Tezos.self_address.storage = {
       tokenList: storage.tokenList,
       owner: storage.owner,
       admin: storage.admin,
@@ -52,57 +52,62 @@ class Factory {
     };
 
     for (const key in maps) {
-      this.storage[key] = await maps[key].reduce(async (prev, current) => {
-        try {
-          return {
-            ...(await prev),
-            [current]: await storage[key].get(current),
-          };
-        } catch (ex) {
-          return {
-            ...(await prev),
-            [current]: 0,
-          };
-        }
-      }, Promise.resolve({}));
+      Tezos.self_address.storage[key] = await maps[key].reduce(
+        async (prev, current) => {
+          try {
+            return {
+              ...(await prev),
+              [current]: await storage[key].get(current),
+            };
+          } catch (ex) {
+            return {
+              ...(await prev),
+              [current]: 0,
+            };
+          }
+        },
+        Promise.resolve({})
+      );
     }
   }
 
   async setFactoryAdmin(newAdmin) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .setFactoryAdmin(newAdmin)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async setNewOwner(newOwner) {
-    const operation = await this.contract.methods.setNewOwner(newOwner).send();
-    await confirmOperation(this.tezos, operation.hash);
+    const operation = await Tezos.self_address.contract.methods
+      .setNewOwner(newOwner)
+      .send();
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async launchToken(tokenAddress, oralcePairName) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .launchToken(oralcePairName, tokenAddress)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async setTokenFunction(idx, f) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .setTokenFunction(idx, f)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async setUseFunction(idx, f) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .setUseFunction(idx, f)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 }

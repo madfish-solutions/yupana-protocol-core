@@ -16,7 +16,6 @@ function setAdmin(
 
 function withdrawReserve(
   const params          : mainParams;
-  const this            : address;
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
@@ -30,35 +29,33 @@ function withdrawReserve(
 
     var operations : list(operation) := list [];
 
-    if token.faType = 1n
-    then operations := list [
-      Tezos.transaction(
-        TransferOutside(record [
-          from_ = this;
-          to_ = Tezos.sender;
-          value = params.amount / accuracy
-        ]),
-        0mutez,
-        getTokenContract(token.mainToken)
-      )
-    ];
-    else operations := list [
-      Tezos.transaction(
-        IterateTransferOutside(record [
-          from_ = this;
-          txs = list[
-            record[
-              tokenId = token.contractId;
+    operations := list [
+        case token.faType of
+        | FA12 -> Tezos.transaction(
+            TransferOutside(record [
+              from_ = Tezos.self_address;
               to_ = Tezos.sender;
-              amount = params.amount / accuracy;
-            ]
-          ]
-        ]),
-        0mutez,
-        getIterTranserContract(token.mainToken)
-      )
+              value = params.amount
+            ]),
+            0mutez,
+            getTokenContract(token.mainToken)
+          )
+        | FA2(assetId) -> Tezos.transaction(
+            IterateTransferOutside(record [
+              from_ = Tezos.self_address;
+              txs = list[
+                record[
+                  tokenId = assetId;
+                  to_ = Tezos.sender;
+                  amount = params.amount / accuracy;
+                ]
+              ]
+            ]),
+            0mutez,
+            getIterTranserContract(token.mainToken)
+          )
+        end
     ];
-
   } with (operations, s)
 
 function addMarket(
@@ -74,7 +71,6 @@ function addMarket(
     token.reserveFactor := params.reserveFactor;
     token.maxBorrowRate := params.maxBorrowRate;
     token.faType := params.faType;
-    token.contractId := params.contractId;
 
     s.storage.tokenMetadata[s.storage.lastTokenId] := record [
       tokenId = s.storage.lastTokenId;

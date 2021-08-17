@@ -56,7 +56,7 @@ type entryAction        is
 // yToken
 type return is list (operation) * tokenStorage
 type tokenFunc is (tokenAction * tokenStorage) -> return
-type useFunc is (useAction * tokenStorage * address) -> return
+type useFunc is (useAction * tokenStorage) -> return
 type useParam is useAction
 
 type fullTokenStorage   is record [
@@ -72,7 +72,7 @@ type fullReturn is list (operation) * fullTokenStorage
 type getType is Get of string * contract(oracleParam)
 
 type proxyReturn is list (operation) * proxyStorage
-type proxyFunc is (proxyAction * proxyStorage * address) -> proxyReturn
+type proxyFunc is (proxyAction * proxyStorage) -> proxyReturn
 
 type setProxyParams is record [
   index                 : nat;
@@ -94,7 +94,7 @@ type fullProxyReturn is list (operation) * fullProxyStorage
 type entryRateAction is RateUse of rateAction
 
 type rateReturn is list (operation) * rateStorage
-type rateFunc is (rateAction * rateStorage * address) -> rateReturn
+type rateFunc is (rateAction * rateStorage) -> rateReturn
 
 type fullRateStorage    is record [
   storage               : rateStorage;

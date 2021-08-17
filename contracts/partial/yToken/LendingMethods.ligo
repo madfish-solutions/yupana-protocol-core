@@ -187,7 +187,6 @@ function calculateOutstandingBorrowInUSD(
 
 function updateInterest(
   var tokenId           : nat;
-  const this            : address;
   var s                 : fullTokenStorage)
                         : fullReturn is
     block {
@@ -200,7 +199,7 @@ function updateInterest(
             borrows = token.totalBorrows;
             cash = token.totalLiquid;
             reserves = token.totalReserves;
-            contract = getUpdateBorrowRateContract(this);
+            contract = getUpdateBorrowRateContract(Tezos.self_address);
           ]),
           0mutez,
           getBorrowRateContract(token.interstRateModel)
@@ -208,7 +207,7 @@ function updateInterest(
         Tezos.transaction(
           EnsuredUpdateInterest(tokenId),
           0mutez,
-          getEnsuredInterestEntrypoint(this)
+          getEnsuredInterestEntrypoint(Tezos.self_address)
         );
       ];
     } with (operations, s)
@@ -262,8 +261,7 @@ function updInterests(
 
 function mint(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -278,7 +276,7 @@ function mint(
             then failwith("yToken/need-update-interestRate")
             else skip;
             mintTokens := mainParams.amount * token.totalSupply * accuracy /
-              abs(token.totalLiquid + token.totalBorrows - token.totalReserves);
+              abs(token.totalLiquid + token.totalBorrows - token.totalReserves);  (* !!! optimize calculations *)
           }
           else skip;
 
@@ -296,33 +294,32 @@ function mint(
           token.totalLiquid := token.totalLiquid + mainParams.amount * accuracy;
           s.tokenInfo[mainParams.tokenId] := token;
 
-          if token.faType = 1n
-          then operations := list [
-            Tezos.transaction(
-              TransferOutside(record [
-                from_ = Tezos.sender;
-                to_ = this;
-                value = mainParams.amount
-              ]),
-              0mutez,
-              getTokenContract(token.mainToken)
-            )
-          ];
-          else operations := list [
-            Tezos.transaction(
-              IterateTransferOutside(record [
-                from_ = Tezos.sender;
-                txs = list[
-                  record[
-                    tokenId = token.contractId;
-                    to_ = this;
-                    amount = mainParams.amount
-                  ]
-                ]
-              ]),
-              0mutez,
-              getIterTranserContract(token.mainToken)
-            )
+          operations := list [
+              case token.faType of
+              | FA12 -> Tezos.transaction(
+                  TransferOutside(record [
+                    from_ = Tezos.sender;
+                    to_ = Tezos.self_address;
+                    value = mainParams.amount
+                  ]),
+                  0mutez,
+                  getTokenContract(token.mainToken)
+                )
+              | FA2(assetId) -> Tezos.transaction(
+                  IterateTransferOutside(record [
+                    from_ = Tezos.sender;
+                    txs = list[
+                      record[
+                        tokenId = assetId;
+                        to_ = Tezos.self_address;
+                        amount = mainParams.amount
+                      ]
+                    ]
+                  ]),
+                  0mutez,
+                  getIterTranserContract(token.mainToken)
+                )
+              end
           ];
         }
       | _                         -> skip
@@ -331,8 +328,7 @@ function mint(
 
 function redeem(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -364,7 +360,7 @@ function redeem(
           else mainParams.amount;
 
           if token.totalLiquid < redeemAmount
-          then failwith("NotEnoughLiquid")
+          then failwith("NotEnoughLiquid") (* Error msg *)
           else skip;
 
           var burnTokens : nat := redeemAmount * accuracy *
@@ -381,33 +377,32 @@ function redeem(
             accuracy);
           s.tokenInfo[mainParams.tokenId] := token;
 
-          if token.faType = 1n
-          then operations := list [
-            Tezos.transaction(
-              TransferOutside(record [
-                from_ = this;
-                to_ = Tezos.sender;
-                value = redeemAmount
-              ]),
-              0mutez,
-              getTokenContract(token.mainToken)
-            )
-          ];
-          else operations := list [
-            Tezos.transaction(
-              IterateTransferOutside(record [
-                from_ = this;
-                txs = list[
-                  record[
-                    tokenId = token.contractId;
+          operations := list [
+              case token.faType of
+              | FA12 -> Tezos.transaction(
+                  TransferOutside(record [
+                    from_ = Tezos.self_address;
                     to_ = Tezos.sender;
-                    amount = redeemAmount
-                  ]
-                ]
-              ]),
-              0mutez,
-              getIterTranserContract(token.mainToken)
-            )
+                    value = redeemAmount
+                  ]),
+                  0mutez,
+                  getTokenContract(token.mainToken)
+                )
+              | FA2(assetId) -> Tezos.transaction(
+                  IterateTransferOutside(record [
+                    from_ = Tezos.self_address;
+                    txs = list[
+                      record[
+                        tokenId = assetId;
+                        to_ = Tezos.sender;
+                        amount = redeemAmount
+                      ]
+                    ]
+                  ]),
+                  0mutez,
+                  getIterTranserContract(token.mainToken)
+                )
+              end
           ];
         }
       | _               -> skip
@@ -416,8 +411,7 @@ function redeem(
 
 function borrow(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -427,7 +421,7 @@ function borrow(
           operations := Tezos.transaction(
             EnsuredBorrow(mainParams),
             0mutez,
-            getEnsuredBorrowEntrypoint(this)
+            getEnsuredBorrowEntrypoint(Tezos.self_address)
           ) # operations;
           var borrowSet : set(tokenId) := addToSet(accountUser.borrowAmount);
           var marketSet : set(tokenId) := Set.add(
@@ -451,14 +445,13 @@ function borrow(
 
 function ensuredBorrow(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
       case p of
         EnsuredBorrow(mainParams) -> {
-          if Tezos.sender =/= this
+          if Tezos.sender =/= Tezos.self_address
           then failwith("yToken/not-self-address")
           else skip;
 
@@ -517,33 +510,32 @@ function ensuredBorrow(
           token.totalLiquid := abs(token.totalLiquid - borrowAmount);
           s.tokenInfo[mainParams.tokenId] := token;
 
-          if token.faType = 1n
-          then operations := list [
-            Tezos.transaction(
-              TransferOutside(record [
-                from_ = this;
-                to_ = Tezos.sender;
-                value = mainParams.amount
-              ]),
-              0mutez,
-              getTokenContract(token.mainToken)
-            )
-          ];
-          else operations := list [
-            Tezos.transaction(
-              IterateTransferOutside(record [
-                from_ = this;
-                txs = list[
-                  record[
-                    tokenId = token.contractId;
+          operations := list [
+              case token.faType of
+              | FA12 -> Tezos.transaction(
+                  TransferOutside(record [
+                    from_ = Tezos.self_address;
                     to_ = Tezos.sender;
-                    amount = mainParams.amount
-                  ]
-                ]
-              ]),
-              0mutez,
-              getIterTranserContract(token.mainToken)
-            )
+                    value = mainParams.amount
+                  ]),
+                  0mutez,
+                  getTokenContract(token.mainToken)
+                )
+              | FA2(assetId) -> Tezos.transaction(
+                  IterateTransferOutside(record [
+                    from_ = Tezos.self_address;
+                    txs = list[
+                      record[
+                        tokenId = assetId;
+                        to_ = Tezos.sender;
+                        amount = mainParams.amount
+                      ]
+                    ]
+                  ]),
+                  0mutez,
+                  getIterTranserContract(token.mainToken)
+                )
+              end
           ];
         }
       | _                         -> skip
@@ -552,8 +544,7 @@ function ensuredBorrow(
 
 function repay (
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -607,33 +598,32 @@ function repay (
           then value := repayAmount / accuracy + 1n
           else value := repayAmount / accuracy;
 
-          if token.faType = 1n
-          then operations := list [
-            Tezos.transaction(
-              TransferOutside(record [
-                from_ = Tezos.sender;
-                to_ = this;
-                value = value
-              ]),
-              0mutez,
-              getTokenContract(token.mainToken)
-            )
-          ];
-          else operations := list [
-            Tezos.transaction(
-              IterateTransferOutside(record [
-                from_ = Tezos.sender;
-                txs = list[
-                  record[
-                    tokenId = token.contractId;
-                    to_ = this;
-                    amount = value
-                  ]
-                ]
-              ]),
-              0mutez,
-              getIterTranserContract(token.mainToken)
-            )
+          operations := list [
+              case token.faType of
+              | FA12 -> Tezos.transaction(
+                  TransferOutside(record [
+                    from_ = Tezos.sender;
+                    to_ = Tezos.self_address;
+                    value = value
+                  ]),
+                  0mutez,
+                  getTokenContract(token.mainToken)
+                )
+              | FA2(assetId) -> Tezos.transaction(
+                  IterateTransferOutside(record [
+                    from_ = Tezos.self_address;
+                    txs = list[
+                      record[
+                        tokenId = assetId;
+                        to_ = Tezos.self_address;
+                        amount = value
+                      ]
+                    ]
+                  ]),
+                  0mutez,
+                  getIterTranserContract(token.mainToken)
+                )
+              end
           ];
         }
       | _                         -> skip
@@ -642,8 +632,7 @@ function repay (
 
 function liquidate(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -656,7 +645,7 @@ function liquidate(
           operations := Tezos.transaction(
             EnsuredLiquidate(liquidateParams),
             0mutez,
-            getEnsuredLiquidateEntrypoint(this)
+            getEnsuredLiquidateEntrypoint(Tezos.self_address)
           ) # operations;
           operations := updPrice(
             accountBorrower.markets,
@@ -670,8 +659,7 @@ function liquidate(
 
 function ensuredLiquidate(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -746,33 +734,32 @@ function ensuredLiquidate(
             liquidateParams.borrowToken
           ] := borrowerBorrowAmount;
 
-          if borrowToken.faType = 1n
-          then operations := list [
-            Tezos.transaction(
-              TransferOutside(record [
-                from_ = Tezos.sender;
-                to_ = this;
-                value = liquidateAmount
-              ]),
-              0mutez,
-              getTokenContract(borrowToken.mainToken)
-            )
-          ];
-          else operations := list [
-            Tezos.transaction(
-              IterateTransferOutside(record [
-                from_ = Tezos.sender;
-                txs = list[
-                  record[
-                    tokenId = borrowToken.contractId;
-                    to_ = this;
-                    amount = liquidateAmount
-                  ]
-                ]
-              ]),
-              0mutez,
-              getIterTranserContract(borrowToken.mainToken)
-            )
+          operations := list [
+              case borrowToken.faType of
+              | FA12 -> Tezos.transaction(
+                  TransferOutside(record [
+                    from_ = Tezos.sender;
+                    to_ = Tezos.self_address;
+                    value = liquidateAmount
+                  ]),
+                  0mutez,
+                  getTokenContract(borrowToken.mainToken)
+                )
+              | FA2(assetId) -> Tezos.transaction(
+                  IterateTransferOutside(record [
+                    from_ = Tezos.self_address;
+                    txs = list[
+                      record[
+                        tokenId = assetId;
+                        to_ = Tezos.self_address;
+                        amount = liquidateAmount
+                      ]
+                    ]
+                  ]),
+                  0mutez,
+                  getIterTranserContract(borrowToken.mainToken)
+                )
+              end
           ];
 
           if accountBorrower.markets contains liquidateParams.collateralToken
@@ -840,7 +827,7 @@ function enterMarket(
           var userBalance : nat := getMapInfo(
             userAccount.balances,
             tokenId
-          );
+          ); (* !!!! ?*)
 
           if cardinal >= maxMarkets
           then failwith("yToken/max-market-limit");
@@ -856,21 +843,20 @@ function enterMarket(
 
 function exitMarket(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
       case p of
         ExitMarket(tokenId) -> {
           var userAccount : account := getAccount(Tezos.sender,s);
-          var borrowSet : set(tokenId) := addToSet(userAccount.borrowAmount);
+          var borrowSet : set(tokenId) := addToSet(userAccount.borrowAmount); (* what ?*)
           s := updInterests(userAccount.markets, s);
           s := updInterests(borrowSet, s);
           operations := Tezos.transaction(
             EnsuredExitMarket(tokenId),
             0mutez,
-            getEnsuredExitMarketEntrypoint(this)
+            getEnsuredExitMarketEntrypoint(Tezos.self_address)
           ) # operations;
           operations := updPrice(
             userAccount.markets,
@@ -884,14 +870,13 @@ function exitMarket(
 
 function ensuredExitMarket(
   const p               : useAction;
-  var s                 : tokenStorage;
-  const this            : address)
+  var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
       case p of
         EnsuredExitMarket(tokenId) -> {
-          if Tezos.sender =/= this
+          if Tezos.sender =/= Tezos.self_address
           then failwith("yToken/not-self-address")
           else skip;
 
@@ -934,11 +919,10 @@ function updatePrice(
 
 function updateBorrowRate(
   const params          : mainParams;
-  const this            : address;
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
-    if Tezos.sender =/= this
+    if Tezos.sender =/= Tezos.self_address
     then failwith("yToken/permition-error");
     else skip;
 

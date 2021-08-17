@@ -3,7 +3,6 @@
 
 [@inline] function middleRate(
   const p               : rateAction;
-  const this            : address;
   var s                 : fullRateStorage)
                         : fullRateReturn is
   block {
@@ -17,7 +16,7 @@
       | UpdReserveFactor(_amt) -> 6n
     end;
     const res : rateReturn = case s.rateLambdas[idx] of
-      Some(f) -> f(p, s.storage, this)
+      Some(f) -> f(p, s.storage)
       | None -> (
         failwith(
             "interestRate/middle-function-not-set-in-middleInterestRate"
@@ -32,8 +31,6 @@ function main(
   const p               : entryRateAction;
   const s               : fullRateStorage)
                         : fullRateReturn is
-  block {
-    const this : address = Tezos.self_address;
-  } with case p of
-      | RateUse(params)  -> middleRate(params, this, s)
-    end
+  case p of
+    | RateUse(params)  -> middleRate(params, s)
+  end

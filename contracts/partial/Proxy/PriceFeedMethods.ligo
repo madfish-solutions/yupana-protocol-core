@@ -127,8 +127,7 @@ function receivePrice(
 
 function getPrice(
   const p               : proxyAction;
-  var s                 : proxyStorage;
-  const this            : address)
+  var s                 : proxyStorage)
                         : proxyReturn is
   block {
     var operations : list(operation) := list[];
@@ -137,7 +136,7 @@ function getPrice(
           mustBeYtoken(s);
 
           const strName : string = checkPairName(tokenId, s);
-          var param : contract(oracleParam) := getReceivePriceEntrypoint(this);
+          var param : contract(oracleParam) := getReceivePriceEntrypoint(Tezos.self_address);
 
           operations := list[
             Tezos.transaction(

@@ -1,3 +1,7 @@
+type assetType          is
+| FA12
+| FA2                     of nat
+
 type allowanceAmount    is [@layout:comb] record [
   src                   : address;
   amount                : nat;
@@ -13,8 +17,7 @@ type account            is [@layout:comb] record [
 
 type tokenInfo         is [@layout:comb] record [
   mainToken             : address;
-  faType                : nat;
-  contractId            : nat;
+  faType                : assetType;
   interstRateModel      : address;
   lastUpdateTime        : timestamp;
   totalBorrows          : nat;
@@ -43,7 +46,7 @@ type tokenStorage       is [@layout:comb] record [
 ]
 
 type totalSupplyParams is
-  michelson_pair(tokenId, "tokenId", contract(nat), "")
+  michelson_pair(tokenId, "tokenId", contract(nat), "") (* !!! naming*)
 
 type liquidateParams    is record [
   borrowToken           : nat;
@@ -91,8 +94,7 @@ type newMarketParams     is record [
   reserveFactor         : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
-  faType                : nat;
-  contractId            : nat;
+  faType                : assetType;
 ]
 
 type oracleParam is (string * (timestamp * nat))
