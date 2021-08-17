@@ -2,7 +2,7 @@
 #include "../partial/Proxy/PriceFeedMethods.ligo"
 
 [@inline] function setProxyAction (
-  const idx : nat;
+  const idx             : nat;
   const f               : proxyFunc;
   var s                 : fullProxyStorage)
                         : fullProxyReturn is

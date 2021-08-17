@@ -50,10 +50,8 @@ describe("Proxy tests", async () => {
 
   it("set Proxy admin", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
-    console.log("@!!@!@!@!@")
-    console.log(await proxy.contract.methods);
     await proxy.updateAdmin(bob.pkh);
     await proxy.updateStorage();
-    strictEqual(proxy.storage.admin, controllerContractAddress);
+    strictEqual(proxy.storage.storage.admin, bob.pkh);
   });
 });

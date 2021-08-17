@@ -41,9 +41,10 @@ require("ts-node").register({
 
       let ligo = getLigo(true);
       console.log("Start setting lambdas");
+      let proxyFunction = 0;
       for (proxyFunction of functions.proxy) {
         const stdout = execSync(
-          `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Controller.ligo main 'SetUseAction(record index =${proxyFunction.index}n; func = ${proxyFunction.name}; end)'`,
+          `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/priceFeed.ligo main 'SetProxyAction(record index =${proxyFunction.index}n; func = ${proxyFunction.name}; end)'`,
           { maxBuffer: 1024 * 1000 }
         );
         const operation2 = await tezos.contract.transfer({
@@ -51,7 +52,7 @@ require("ts-node").register({
           amount: 0,
           parameter: {
             entrypoint: "setProxyAction",
-            value: JSON.parse(stdout.toString()).args[0].args[0],
+            value: JSON.parse(stdout.toString()).args[0],
           },
         });
         await confirmOperation(tezos, operation2.hash);

@@ -147,8 +147,5 @@ let proxyFunctions = [
 ];
 
 module.exports.functions = {
-  token: tokenFunctions,
-  use: useFunctions,
-  useController: useControllerFunctions,
   proxy: proxyFunctions,
 };
