@@ -36,7 +36,6 @@ function middleToken(
         | EnsuredLiquidate(_liquidateParams) -> 6n
         | EnterMarket(_tokenId) -> 7n
         | ExitMarket(_tokenId) -> 8n
-        | EnsuredExitMarket(_tokenId) -> 9n
       end;
     const res : return = case s.useLambdas[idx] of
       Some(f) -> f(p, s.storage)

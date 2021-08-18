@@ -109,7 +109,7 @@
     )
   end;
 
-function addToSet(
+function convertToSet(
   const fullMap         : map(tokenId, nat))
                         : set(tokenId) is
     block {
@@ -121,7 +121,7 @@ function addToSet(
           Set.add(currPair.0, res);
     } with Map.fold(add, fullMap, res);
 
-function updPrice(
+function prepareOracleRequests(
   const tokenSet        : set(tokenId);
   var operations        : list(operation);
   var priceFeedProxy    : address)
@@ -146,7 +146,7 @@ function updPrice(
   } with res.operations
 
 function calculateMaxCollaterallInUSD(
-  var userAccount       : account;
+  const userAccount     : account;
   var params            : calcCollParams)
                         : nat is
   block {
@@ -155,8 +155,15 @@ function calculateMaxCollaterallInUSD(
       var tokenId       : tokenId)
                         : calcCollParams is
       block {
+        var userBalance : nat := getMapInfo(
+          userAccount.balances,
+          tokenId
+        );
         var token : tokenInfo := getTokenInfo(tokenId, param.s);
-        param.res := param.res + (token.lastPrice * token.reserveFactor);
+        (* sum += collateralFactor * exchangeRate * oraclePrice * balance *)
+        param.res := param.res + userBalance * token.lastPrice * token.collateralFactor
+          * abs(token.totalLiquid + token.totalBorrows - token.totalReserves)
+          / token.totalSupply / accuracy;
       } with param;
     var result : calcCollParams := Set.fold(
       oneToken,
@@ -176,6 +183,7 @@ function calculateOutstandingBorrowInUSD(
                         : calcCollParams is
       block {
         var token : tokenInfo := getTokenInfo(borrowMap.0, param.s);
+        (* sum += oraclePrice * balance *)
         param.res := param.res + (borrowMap.1 * token.lastPrice);
       } with param;
     var result : calcCollParams := Map.fold(
@@ -220,15 +228,15 @@ function ensuredUpdateInterest(
     var token : tokenInfo := getTokenInfo(tokenId, s.storage);
     var borrowRate : nat := token.borrowRate;
 
-    if borrowRate <= token.maxBorrowRate
+    if borrowRate <= token.maxBorrowRate (* !!! ? *)
     then failwith("yToken/borrow-rate-is-absurdly-high");
     else skip;
 
     //  Calculate the number of blocks elapsed since the last accrual
     var blockDelta : nat := abs(Tezos.now - token.lastUpdateTime);
 
-    const simpleInterestFactor : nat = borrowRate * blockDelta;
-    const interestAccumulated : nat = simpleInterestFactor * token.totalBorrows;
+    const simpleInterestFactor : nat = borrowRate * blockDelta; // multiplyed by accuracy
+    const interestAccumulated : nat = simpleInterestFactor * token.totalBorrows / accuracy; // multiplyed by accuracy
 
     token.totalBorrows := interestAccumulated + token.totalBorrows;
     // one mult operation with float require accuracy division
@@ -242,7 +250,7 @@ function ensuredUpdateInterest(
     s.storage.tokenInfo[tokenId] := token;
   } with (noOperations, s)
 
-function updInterests(
+function verifyUpdatedRates(
   const setOfTokens     : set(tokenId);
   var s                 : tokenStorage)
                         : tokenStorage is
@@ -255,6 +263,23 @@ function updInterests(
         var token : tokenInfo := getTokenInfo(tokenId, s);
         if token.lastUpdateTime =/= Tezos.now
         then failwith("yToken/need-update-interestRate")
+        else skip;
+      } with s
+  } with Set.fold(updInterest, setOfTokens, s)
+
+function verifyUpdatedPrices(
+  const setOfTokens     : set(tokenId);
+  var s                 : tokenStorage)
+                        : tokenStorage is
+  block {
+    function updInterest(
+      var s             : tokenStorage;
+      const tokenId     : tokenId)
+                        : tokenStorage is
+      block {
+        var token : tokenInfo := getTokenInfo(tokenId, s);
+        if token.priceUpdateTime =/= Tezos.now
+        then failwith("yToken/need-update-price")
         else skip;
       } with s
   } with Set.fold(updInterest, setOfTokens, s)
@@ -423,17 +448,17 @@ function borrow(
             0mutez,
             getEnsuredBorrowEntrypoint(Tezos.self_address)
           ) # operations;
-          var borrowSet : set(tokenId) := addToSet(accountUser.borrowAmount);
+          var borrowSet : set(tokenId) := convertToSet(accountUser.borrowAmount);
           var marketSet : set(tokenId) := Set.add(
             mainParams.tokenId,
             accountUser.markets
           );
-          operations := updPrice(
+          operations := prepareOracleRequests(
             borrowSet,
             operations,
             s.priceFeedProxy
           );
-          operations := updPrice(
+          operations := prepareOracleRequests(
             marketSet,
             operations,
             s.priceFeedProxy
@@ -647,7 +672,7 @@ function liquidate(
             0mutez,
             getEnsuredLiquidateEntrypoint(Tezos.self_address)
           ) # operations;
-          operations := updPrice(
+          operations := prepareOracleRequests(
             accountBorrower.markets,
             operations,
             s.priceFeedProxy
@@ -844,40 +869,15 @@ function exitMarket(
     var operations : list(operation) := list[];
       case p of
         ExitMarket(tokenId) -> {
-          var userAccount : account := getAccount(Tezos.sender,s);
-          var borrowSet : set(tokenId) := addToSet(userAccount.borrowAmount); (* what ?*)
-          s := updInterests(userAccount.markets, s);
-          s := updInterests(borrowSet, s);
-          operations := Tezos.transaction(
-            EnsuredExitMarket(tokenId),
-            0mutez,
-            getEnsuredExitMarketEntrypoint(Tezos.self_address)
-          ) # operations;
-          operations := updPrice(
-            userAccount.markets,
-            operations,
-            s.priceFeedProxy
-          );
-        }
-      | _                         -> skip
-      end
-  } with (operations, s)
+          var userAccount : account := getAccount(Tezos.sender, s);
+          var borrowSet : set(tokenId) := convertToSet(userAccount.borrowAmount);
 
-function ensuredExitMarket(
-  const p               : useAction;
-  var s                 : tokenStorage)
-                        : return is
-  block {
-    var operations : list(operation) := list[];
-      case p of
-        EnsuredExitMarket(tokenId) -> {
-          if Tezos.sender =/= Tezos.self_address
-          then failwith("yToken/not-self-address")
-          else skip;
+          s := verifyUpdatedRates(userAccount.markets, s);
+          s := verifyUpdatedRates(borrowSet, s);
+          s := verifyUpdatedPrices(userAccount.markets, s);
+          s := verifyUpdatedPrices(borrowSet, s);
 
-          var userAccount : account := getAccount(Tezos.sender,s);
           userAccount.markets := Set.remove(tokenId, userAccount.markets);
-
           var maxBorrowInUSD : nat := calculateMaxCollaterallInUSD(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
@@ -909,6 +909,7 @@ function updatePrice(
       s.storage
     );
     token.lastPrice := params.amount;
+    token.priceUpdateTime := Tezos.now;
     s.storage.tokenInfo[params.tokenId] := token;
   } with (noOperations, s)
 

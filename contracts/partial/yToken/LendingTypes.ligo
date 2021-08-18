@@ -10,7 +10,7 @@ type allowanceAmount    is [@layout:comb] record [
 type account            is [@layout:comb] record [
   balances              : map(tokenId, nat); // in yToken
   allowances            : set(address);
-  borrowAmount          : map(tokenId, nat); // in asset
+  borrowAmount          : map(tokenId, nat); // in asset (* !!! confusing name*)
   lastBorrowIndex       : map(tokenId, nat);
   markets               : set(tokenId);
 ]
@@ -20,6 +20,7 @@ type tokenInfo         is [@layout:comb] record [
   faType                : assetType;
   interstRateModel      : address;
   lastUpdateTime        : timestamp;
+  priceUpdateTime       : timestamp;
   totalBorrows          : nat;
   totalLiquid           : nat;
   totalSupply           : nat;
@@ -30,7 +31,6 @@ type tokenInfo         is [@layout:comb] record [
   collateralFactor      : nat;
   reserveFactor         : nat;
   lastPrice             : nat;
-  exchangeRate          : nat;
 ]
 
 type tokenStorage       is [@layout:comb] record [

@@ -24,6 +24,7 @@ function getTokenInfo(
       mainToken         = zeroAddress;
       faType            = FA12(unit);
       interstRateModel  = zeroAddress;
+      priceUpdateTime   = zeroTimestamp;
       lastUpdateTime    = zeroTimestamp;
       totalBorrows      = 0n;
       totalLiquid       = 0n;
@@ -35,7 +36,6 @@ function getTokenInfo(
       collateralFactor  = 0n;
       reserveFactor     = 0n;
       lastPrice         = 0n;
-      exchangeRate      = 0n;
     ]
   | Some(v) -> v
   end

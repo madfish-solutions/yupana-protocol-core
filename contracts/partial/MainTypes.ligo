@@ -13,7 +13,6 @@ type useAction          is
   | EnsuredLiquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
-  | EnsuredExitMarket of tokenId
 
 type tokenAction        is
   | ITransfer of transferParams
