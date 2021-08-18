@@ -7,10 +7,8 @@ type useAction          is
   | Mint of mainParams
   | Redeem of mainParams
   | Borrow of mainParams
-  | EnsuredBorrow of mainParams
   | Repay of mainParams
   | Liquidate of liquidateParams
-  | EnsuredLiquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
 

@@ -30,10 +30,8 @@ function middleToken(
         | Mint(_mainParams) -> 0n
         | Redeem(_mainParams) -> 1n
         | Borrow(_mainParams) -> 2n
-        | EnsuredBorrow(_mainParams) -> 3n
         | Repay(_mainParams) -> 4n
         | Liquidate(_liquidateParams) -> 5n
-        | EnsuredLiquidate(_liquidateParams) -> 6n
         | EnterMarket(_tokenId) -> 7n
         | ExitMarket(_tokenId) -> 8n
       end;

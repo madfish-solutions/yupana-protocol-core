@@ -443,54 +443,22 @@ function borrow(
       case p of
         Borrow(mainParams) -> {
           var accountUser : account := getAccount(Tezos.sender, s);
-          operations := Tezos.transaction(
-            EnsuredBorrow(mainParams),
-            0mutez,
-            getEnsuredBorrowEntrypoint(Tezos.self_address)
-          ) # operations;
           var borrowSet : set(tokenId) := convertToSet(accountUser.borrowAmount);
-          var marketSet : set(tokenId) := Set.add(
-            mainParams.tokenId,
-            accountUser.markets
-          );
-          operations := prepareOracleRequests(
-            borrowSet,
-            operations,
-            s.priceFeedProxy
-          );
-          operations := prepareOracleRequests(
-            marketSet,
-            operations,
-            s.priceFeedProxy
-          );
-        }
-      | _               -> skip
-      end
-  } with (operations, s)
+          var marketSet : set(tokenId) := accountUser.markets;
 
-function ensuredBorrow(
-  const p               : useAction;
-  var s                 : tokenStorage)
-                        : return is
-  block {
-    var operations : list(operation) := list[];
-      case p of
-        EnsuredBorrow(mainParams) -> {
-          if Tezos.sender =/= Tezos.self_address
-          then failwith("yToken/not-self-address")
-          else skip;
+          s := verifyUpdatedRates(marketSet, s);
+          s := verifyUpdatedRates(borrowSet, s);
+          s := verifyUpdatedPrices(marketSet, s);
+          s := verifyUpdatedPrices(borrowSet, s);
 
           var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
 
           if token.lastUpdateTime =/= Tezos.now
           then failwith("yToken/need-update-interestRate")
           else skip;
-
           if token.totalLiquid < mainParams.amount
           then failwith("yToken/amount-too-big")
           else skip;
-
-          var accountUser : account := getAccount(Tezos.sender, s);
 
           var maxBorrowInUSD : nat := calculateMaxCollaterallInUSD(
             accountUser,
@@ -521,11 +489,11 @@ function ensuredBorrow(
 
           const borrowAmount : nat = mainParams.amount * accuracy;
 
-          userBorrowAmount := userBorrowAmount + borrowAmount;
-
-          if maxBorrowXAmount > userBorrowAmount
+          if maxBorrowXAmount > borrowAmount
           then failwith("yToken/more-then-available-borrow")
           else skip;
+
+          userBorrowAmount := userBorrowAmount + borrowAmount;
 
           lastBorrowIndex := token.borrowIndex;
           accountUser.borrowAmount[mainParams.tokenId] := userBorrowAmount;
@@ -602,7 +570,7 @@ function repay (
           then repayAmount := userBorrowAmount;
           else skip;
 
-          if userBorrowAmount < repayAmount
+          if userBorrowAmount <= repayAmount
           then failwith("yToken/amount-should-be-less-or-equal")
           else skip;
 
@@ -667,46 +635,23 @@ function liquidate(
             liquidateParams.borrower,
             s
           );
-          operations := Tezos.transaction(
-            EnsuredLiquidate(liquidateParams),
-            0mutez,
-            getEnsuredLiquidateEntrypoint(Tezos.self_address)
-          ) # operations;
-          operations := prepareOracleRequests(
-            accountBorrower.markets,
-            operations,
-            s.priceFeedProxy
-          );
-        }
-      | _                         -> skip
-      end
-  } with (operations, s)
+          var borrowSet : set(tokenId) := convertToSet(accountBorrower.borrowAmount);
+          var marketSet : set(tokenId) := accountBorrower.markets;
 
-function ensuredLiquidate(
-  const p               : useAction;
-  var s                 : tokenStorage)
-                        : return is
-  block {
-    var operations : list(operation) := list[];
-      case p of
-        EnsuredLiquidate(liquidateParams) -> {
+          s := verifyUpdatedRates(marketSet, s);
+          s := verifyUpdatedRates(borrowSet, s);
+          s := verifyUpdatedPrices(marketSet, s);
+          s := verifyUpdatedPrices(borrowSet, s);
+
           var borrowToken : tokenInfo := getTokenInfo(
             liquidateParams.borrowToken,
             s
           );
 
-          if borrowToken.lastUpdateTime =/= Tezos.now
-          then failwith("yToken/need-update-interestRate")
-          else skip;
-
           if Tezos.sender = liquidateParams.borrower
           then failwith("yToken/borrower-cannot-be-liquidator")
           else skip;
 
-          var accountBorrower : account := getAccount(
-            liquidateParams.borrower,
-            s
-          );
           var borrowerBorrowAmount : nat := getMapInfo(
             accountBorrower.borrowAmount,
             liquidateParams.borrowToken
@@ -732,7 +677,7 @@ function ensuredLiquidate(
           then failwith("yToken/debt-is-zero");
           else skip;
 
-          var liquidateAmount : nat := liquidateParams.amount;
+          var liquidateAmount : nat := liquidateParams.amount * accuracy;
 
           if borrowerLastBorrowIndex =/= 0n
           then borrowerBorrowAmount := borrowerBorrowAmount *
@@ -740,9 +685,13 @@ function ensuredLiquidate(
             borrowerLastBorrowIndex;
           else skip;
 
-          if borrowerBorrowAmount < liquidateAmount
-          then failwith("yToken/amount-should-be-less-or-equal")
-          else skip;
+          (* liquidate amount can't be more than allowed close factor *)
+          const maxClose : nat = borrowerBorrowAmount * s.closeFactor
+            / accuracy;
+
+          if liquidateAmount <= maxClose
+          then skip
+          else failwith("yToken/too-much-repay");
 
           borrowerBorrowAmount := abs(
             borrowerBorrowAmount - liquidateAmount
@@ -791,17 +740,21 @@ function ensuredLiquidate(
           then skip
           else failwith("yToken/collateralToken-not-contains-in-borrow-market");
 
+
           var collateralToken : tokenInfo := getTokenInfo(
             liquidateParams.collateralToken,
             s
           );
 
+          (* seizeAmount = actualRepayAmount * liquidationIncentive * priceBorrowed / priceCollateral
+           seizeTokens = seizeAmount / exchangeRate *)
           const exchangeRateFloat : nat = abs(
             collateralToken.totalLiquid + collateralToken.totalBorrows -
               collateralToken.totalReserves
           ) * accuracy / collateralToken.totalSupply;
-          const seizeTokensFloat : nat = liquidateParams.amount * accuracy /
-            exchangeRateFloat;
+          const seizeTokensFloat : nat = liquidateAmount * s.liqIncentive
+            * borrowToken.lastPrice /
+            exchangeRateFloat / collateralToken.lastPrice;
 
           var liquidatorAccount : account := getAccount(
             Tezos.sender,
@@ -812,15 +765,15 @@ function ensuredLiquidate(
             accountBorrower.balances,
             liquidateParams.collateralToken
           );
-          var liquidatorBalance : nat := getMapInfo(
-            liquidatorAccount.balances,
-            liquidateParams.collateralToken
-          );
 
           if borrowerBalance < seizeTokensFloat
           then failwith("yToken/seize/not-enough-tokens")
           else skip;
 
+          var liquidatorBalance : nat := getMapInfo(
+            liquidatorAccount.balances,
+            liquidateParams.collateralToken
+          );
           borrowerBalance := abs(borrowerBalance - seizeTokensFloat);
           liquidatorBalance := liquidatorBalance + seizeTokensFloat;
 
