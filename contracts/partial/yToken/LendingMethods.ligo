@@ -145,7 +145,7 @@ function prepareOracleRequests(
       );
   } with res.operations
 
-function calculateMaxCollaterallInUSD(
+function calculateMaxCollaterallInCU(
   const userAccount     : account;
   var params            : calcCollParams)
                         : nat is
@@ -172,7 +172,7 @@ function calculateMaxCollaterallInUSD(
     );
   } with result.res
 
-function calculateOutstandingBorrowInUSD(
+function calculateOutstandingBorrowInCU(
   var userAccount       : account;
   var params            : calcCollParams)
                         : nat is
@@ -188,7 +188,7 @@ function calculateOutstandingBorrowInUSD(
       } with param;
     var result : calcCollParams := Map.fold(
       oneToken,
-      userAccount.borrowAmount,
+      userAccount.borrows,
       params
     );
   } with result.res
@@ -443,7 +443,7 @@ function borrow(
       case p of
         Borrow(mainParams) -> {
           var accountUser : account := getAccount(Tezos.sender, s);
-          var borrowSet : set(tokenId) := convertToSet(accountUser.borrowAmount);
+          var borrowSet : set(tokenId) := convertToSet(accountUser.borrows);
           var marketSet : set(tokenId) := accountUser.markets;
 
           s := verifyUpdatedRates(marketSet, s);
@@ -460,21 +460,21 @@ function borrow(
           then failwith("yToken/amount-too-big")
           else skip;
 
-          var maxBorrowInUSD : nat := calculateMaxCollaterallInUSD(
+          var maxBorrowInCU : nat := calculateMaxCollaterallInCU(
             accountUser,
             record[s = s; res = 0n; userAccount = accountUser]
           );
-          var outstandingBorrowInUSD : nat := calculateOutstandingBorrowInUSD(
+          var outstandingBorrowInCU : nat := calculateOutstandingBorrowInCU(
             accountUser,
             record[s = s; res = 0n; userAccount = accountUser]
           );
-          var availableToBorrowInXtz : nat := abs(
-            maxBorrowInUSD - outstandingBorrowInUSD
+          var availableToBorrowInCU : nat := abs(
+            maxBorrowInCU - outstandingBorrowInCU
           );
-          var maxBorrowXAmount : nat := availableToBorrowInXtz / token.lastPrice;
+          var maxBorrowXAmount : nat := availableToBorrowInCU / token.lastPrice;
 
           var userBorrowAmount : nat := getMapInfo(
-            accountUser.borrowAmount,
+            accountUser.borrows,
             mainParams.tokenId
           );
           var lastBorrowIndex : nat := getMapInfo(
@@ -487,20 +487,20 @@ function borrow(
               token.borrowIndex / lastBorrowIndex;
           else skip;
 
-          const borrowAmount : nat = mainParams.amount * accuracy;
+          const borrows : nat = mainParams.amount * accuracy;
 
-          if maxBorrowXAmount > borrowAmount
+          if maxBorrowXAmount > borrows
           then failwith("yToken/more-then-available-borrow")
           else skip;
 
-          userBorrowAmount := userBorrowAmount + borrowAmount;
+          userBorrowAmount := userBorrowAmount + borrows;
 
           lastBorrowIndex := token.borrowIndex;
-          accountUser.borrowAmount[mainParams.tokenId] := userBorrowAmount;
+          accountUser.borrows[mainParams.tokenId] := userBorrowAmount;
           accountUser.lastBorrowIndex[mainParams.tokenId] := lastBorrowIndex;
           s.accountInfo[Tezos.sender] := accountUser;
-          token.totalBorrows := token.totalBorrows + borrowAmount;
-          token.totalLiquid := abs(token.totalLiquid - borrowAmount);
+          token.totalBorrows := token.totalBorrows + borrows;
+          token.totalLiquid := abs(token.totalLiquid - borrows);
           s.tokenInfo[mainParams.tokenId] := token;
 
           operations := list [
@@ -557,7 +557,7 @@ function repay (
             mainParams.tokenId
           );
           var userBorrowAmount : nat := getMapInfo(
-            accountUser.borrowAmount,
+            accountUser.borrows,
             mainParams.tokenId
           );
 
@@ -580,7 +580,7 @@ function repay (
           lastBorrowIndex := token.borrowIndex;
 
           accountUser.lastBorrowIndex[mainParams.tokenId] := lastBorrowIndex;
-          accountUser.borrowAmount[mainParams.tokenId] := userBorrowAmount;
+          accountUser.borrows[mainParams.tokenId] := userBorrowAmount;
           s.accountInfo[Tezos.sender] := accountUser;
           token.totalBorrows := abs(token.totalBorrows - repayAmount);
           s.tokenInfo[mainParams.tokenId] := token;
@@ -635,7 +635,7 @@ function liquidate(
             liquidateParams.borrower,
             s
           );
-          var borrowSet : set(tokenId) := convertToSet(accountBorrower.borrowAmount);
+          var borrowSet : set(tokenId) := convertToSet(accountBorrower.borrows);
           var marketSet : set(tokenId) := accountBorrower.markets;
 
           s := verifyUpdatedRates(marketSet, s);
@@ -653,23 +653,23 @@ function liquidate(
           else skip;
 
           var borrowerBorrowAmount : nat := getMapInfo(
-            accountBorrower.borrowAmount,
+            accountBorrower.borrows,
             liquidateParams.borrowToken
           );
           var borrowerLastBorrowIndex : nat := getMapInfo(
             accountBorrower.lastBorrowIndex,
             liquidateParams.borrowToken
           );
-          var maxBorrowInUSD : nat := calculateMaxCollaterallInUSD(
+          var maxBorrowInCU : nat := calculateMaxCollaterallInCU(
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
-          var outstandingBorrowInUSD : nat := calculateOutstandingBorrowInUSD(
+          var outstandingBorrowInCU : nat := calculateOutstandingBorrowInCU(
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
 
-          if outstandingBorrowInUSD > maxBorrowInUSD
+          if outstandingBorrowInCU > maxBorrowInCU
           then skip
           else failwith("yToken/liquidation-not-achieved");
 
@@ -704,7 +704,7 @@ function liquidate(
           accountBorrower.lastBorrowIndex[
             liquidateParams.borrowToken
           ] := borrowerLastBorrowIndex;
-          accountBorrower.borrowAmount[
+          accountBorrower.borrows[
             liquidateParams.borrowToken
           ] := borrowerBorrowAmount;
 
@@ -823,7 +823,7 @@ function exitMarket(
       case p of
         ExitMarket(tokenId) -> {
           var userAccount : account := getAccount(Tezos.sender, s);
-          var borrowSet : set(tokenId) := convertToSet(userAccount.borrowAmount);
+          var borrowSet : set(tokenId) := convertToSet(userAccount.borrows);
 
           s := verifyUpdatedRates(userAccount.markets, s);
           s := verifyUpdatedRates(borrowSet, s);
@@ -831,16 +831,16 @@ function exitMarket(
           s := verifyUpdatedPrices(borrowSet, s);
 
           userAccount.markets := Set.remove(tokenId, userAccount.markets);
-          var maxBorrowInUSD : nat := calculateMaxCollaterallInUSD(
+          var maxBorrowInCU : nat := calculateMaxCollaterallInCU(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
-          var outstandingBorrowInUSD : nat := calculateOutstandingBorrowInUSD(
+          var outstandingBorrowInCU : nat := calculateOutstandingBorrowInCU(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
 
-          if outstandingBorrowInUSD < maxBorrowInUSD
+          if outstandingBorrowInCU < maxBorrowInCU
           then s.accountInfo[Tezos.sender] := userAccount;
           else failwith("yToken/debt-not-repaid");
         }

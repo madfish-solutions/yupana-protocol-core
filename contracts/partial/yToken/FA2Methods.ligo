@@ -7,7 +7,7 @@ function getAccount(
     None -> record [
       balances          = (Map.empty : map(tokenId, nat));
       allowances        = (set [] : set(address));
-      borrowAmount      = (Map.empty : map(tokenId, nat));
+      borrows      = (Map.empty : map(tokenId, nat));
       lastBorrowIndex   = (Map.empty : map(tokenId, nat));
       markets           = (set [] : set(tokenId));
     ]

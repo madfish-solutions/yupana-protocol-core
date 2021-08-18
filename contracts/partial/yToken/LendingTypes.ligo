@@ -10,7 +10,7 @@ type allowanceAmount    is [@layout:comb] record [
 type account            is [@layout:comb] record [
   balances              : map(tokenId, nat); // in yToken
   allowances            : set(address);
-  borrowAmount          : map(tokenId, nat); // in asset (* !!! confusing name*)
+  borrows          : map(tokenId, nat); // in asset (* !!! confusing name*)
   lastBorrowIndex       : map(tokenId, nat);
   markets               : set(tokenId);
 ]
