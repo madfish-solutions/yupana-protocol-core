@@ -1,26 +1,40 @@
 #include "../partial/MainTypes.ligo"
 #include "../partial/InterestRate/InterestRateMethods.ligo"
 
+[@inline] function setInterestAction (
+  const idx             : nat;
+  const f               : rateFunc;
+  var s                 : fullRateStorage)
+                        : fullRateReturn is
+  block {
+    if Tezos.sender = s.storage.admin then
+      case s.rateLambdas[idx] of
+        Some(_n) -> failwith("interest/interestRate-function-not-set")
+        | None -> s.rateLambdas[idx] := f
+      end;
+    else failwith("interest/you-not-admin")
+  } with (noOperations, s)
+
 [@inline] function middleRate(
   const p               : rateAction;
-  const this            : address;
   var s                 : fullRateStorage)
                         : fullRateReturn is
   block {
     const idx : nat = case p of
       | UpdateRateAdmin(_addr) -> 0n
-      | SetCoefficients(_setCoeffParams) -> 1n
-      | GetBorrowRate(_rateParams) -> 2n
-      | GetUtilizationRate(_rateParams) -> 3n
-      | GetSupplyRate(_rateParams) -> 4n
-      | EnsuredSupplyRate(_rateParams) -> 5n
-      | UpdReserveFactor(_amt) -> 6n
+      | UpdateRateYToken(_addr) -> 1n
+      | SetCoefficients(_setCoeffParams) -> 2n
+      | GetBorrowRate(_rateParams) -> 3n
+      | GetUtilizationRate(_rateParams) -> 4n
+      | GetSupplyRate(_rateParams) -> 5n
+      | EnsuredSupplyRate(_rateParams) -> 6n
+      | UpdReserveFactor(_amt) -> 7n
     end;
     const res : rateReturn = case s.rateLambdas[idx] of
-      Some(f) -> f(p, s.storage, this)
+      Some(f) -> f(p, s.storage)
       | None -> (
         failwith(
-            "interestRate/middle-function-not-set-in-middleInterestRate"
+            "interestRate/middle-function-not-set"
         ) : rateReturn
       )
     end;
@@ -32,8 +46,7 @@ function main(
   const p               : entryRateAction;
   const s               : fullRateStorage)
                         : fullRateReturn is
-  block {
-    const this : address = Tezos.self_address;
-  } with case p of
-      | RateUse(params)  -> middleRate(params, this, s)
-    end
+  case p of
+    | RateUse(params)  -> middleRate(params, s)
+    | SetInterestAction(params) -> setInterestAction(params.index, params.func, s)
+  end

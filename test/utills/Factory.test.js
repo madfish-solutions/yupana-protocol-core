@@ -15,7 +15,6 @@ const { migrate } = require("../scripts/helpers");
 const env = require("../env");
 const { confirmOperation } = require("../scripts/confirmation");
 
-
 async function getTezosFor(secretKey) {
   const networkConfig = env.networks[defaultNetwork];
   let tz = new TezosToolkit(networkConfig.rpc);
@@ -83,7 +82,7 @@ describe("Factory tests", async () => {
 
     await factory.launchToken(XTZInstance, "XTZ-BTC");
     await factory.updateStorage();
-    if (await factory.storage.tokenList.get(XTZInstance) != undefined)
+    if ((await factory.storage.tokenList.get(XTZInstance)) != undefined)
       console.log("Token found");
     else console.log("Token not found");
   });

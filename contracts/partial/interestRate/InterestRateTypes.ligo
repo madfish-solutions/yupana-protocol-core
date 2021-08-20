@@ -8,7 +8,7 @@ type rateStorage        is [@layout:comb] record [
   reserveFactor         : nat;
 ]
 
-type setCoeffParams     is record [
+type setCoeffParams     is [@layout:comb] record [
   kickRate              : nat;
   baseRate              : nat;
   multiplier            : nat;
@@ -22,12 +22,3 @@ type rateParams         is [@layout:comb] record [
   reserves              : nat;
   contract              : contract(mainParams);
 ]
-
-type supplyRateParams   is [@layout:comb] record [
-  tokenId               : nat;
-  borrows               : nat;
-  cash                  : nat;
-  reserves              : nat;
-  contract              : contract(mainParams);
-]
-

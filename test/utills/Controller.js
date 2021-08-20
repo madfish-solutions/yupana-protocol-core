@@ -91,9 +91,7 @@ class Controller {
   }
 
   async setFactory(newFactory) {
-    const operation = await this.contract.methods
-      .setFactory(newFactory)
-      .send();
+    const operation = await this.contract.methods.setFactory(newFactory).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }

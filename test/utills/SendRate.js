@@ -4,9 +4,9 @@ require("ts-node").register({
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/Factory");
+const storage = require("../../storage/SendRate");
 
-class Factory {
+class SendRate {
   contract;
   storage;
   tezos;
@@ -17,12 +17,12 @@ class Factory {
   }
 
   static async init(qsAddress, tezos) {
-    return new Factory(await tezos.contract.at(qsAddress), tezos);
+    return new SendRate(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/Factory.json`)
+      fs.readFileSync(`${env.buildDir}/getInterests.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -35,7 +35,7 @@ class Factory {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-    return new Factory(
+    return new SendRate(
       await tezos.contract.at(operation.contractAddress),
       tezos
     );
@@ -44,11 +44,10 @@ class Factory {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      tokenList: storage.tokenList,
-      owner: storage.owner,
-      admin: storage.admin,
-      tokenLambdas: storage.tokenLambdas,
-      useLambdas: storage.useLambdas,
+      utilRate: storage.utilRate,
+      borrowRate: storage.borrowRate,
+      supplyRate: storage.supplyRate,
+      interestAddress: storage.interestAddress,
     };
 
     for (const key in maps) {
@@ -68,41 +67,37 @@ class Factory {
     }
   }
 
-  async setFactoryAdmin(newAdmin) {
+  async setInterestRate(newAddress) {
     const operation = await this.contract.methods
-      .setFactoryAdmin(newAdmin)
+      .setInterestRate(newAddress)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async setNewOwner(newOwner) {
-    const operation = await this.contract.methods.setNewOwner(newOwner).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async launchToken(tokenAddress, oralcePairName) {
+  async sendUtil(tokenId, borrows, cash, reserves) {
     const operation = await this.contract.methods
-      .launchToken(oralcePairName, tokenAddress)
+      .sendUtil(tokenId, borrows, cash, reserves)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async setTokenFunction(idx, f) {
+  async sendBorrow(tokenId, borrows, cash, reserves) {
     const operation = await this.contract.methods
-      .setTokenFunction(idx, f)
+      .sendBorrow(tokenId, borrows, cash, reserves)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async setUseFunction(idx, f) {
-    const operation = await this.contract.methods.setUseFunction(idx, f).send();
+  async sendSupply(tokenId, borrows, cash, reserves) {
+    const operation = await this.contract.methods
+      .sendSupply(tokenId, borrows, cash, reserves)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.Factory = Factory;
+module.exports.SendRate = SendRate;

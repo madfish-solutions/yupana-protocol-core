@@ -7,7 +7,7 @@ function getAccount(
     None -> record [
       balances          = (Map.empty : map(tokenId, nat));
       allowances        = (set [] : set(address));
-      borrowAmount      = (Map.empty : map(tokenId, nat));
+      borrows           = (Map.empty : map(tokenId, nat));
       lastBorrowIndex   = (Map.empty : map(tokenId, nat));
       markets           = (set [] : set(tokenId));
     ]
@@ -22,9 +22,9 @@ function getTokenInfo(
   case s.tokenInfo[tokenId] of
     None -> record [
       mainToken         = zeroAddress;
-      faType            = 0n;
-      contractId        = 0n;
+      faType            = FA12(unit);
       interstRateModel  = zeroAddress;
+      priceUpdateTime   = zeroTimestamp;
       lastUpdateTime    = zeroTimestamp;
       totalBorrows      = 0n;
       totalLiquid       = 0n;
@@ -36,7 +36,6 @@ function getTokenInfo(
       collateralFactor  = 0n;
       reserveFactor     = 0n;
       lastPrice         = 0n;
-      exchangeRate      = 0n;
     ]
   | Some(v) -> v
   end
@@ -59,7 +58,7 @@ function getTokenContract(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-contract-token") : contract(transferType)
+      failwith("token/cant-get-contract-token") : contract(transferType)
     )
   end;
 
@@ -72,7 +71,7 @@ function getIterTranserContract(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-contract-fa2-token") : contract(iterTransferType)
+      failwith("token/cant-get-contract-fa2-token") : contract(iterTransferType)
     )
   end;
 
@@ -84,8 +83,8 @@ function getTotalSupply(
     var operations : list(operation) := list[];
       case p of
         IGetTotalSupply(args) -> {
-          const res : tokenInfo = getTokenInfo(args.0, s);
-          operations := list [Tezos.transaction(res.totalSupply, 0tz, args.1)];
+          const res : tokenInfo = getTokenInfo(args.token_id, s);
+          operations := list [Tezos.transaction(res.totalSupply, 0tz, args.receiver)];
         }
       | _                         -> skip
       end
@@ -129,6 +128,11 @@ function iterateTransfer(
       block {
         (* Create or get source account *)
         var src_account : account := getAccount(params.from_, s);
+
+        (* Check the entered markets *)
+        if Set.mem(transfer_dst.tokenId, src_account.markets)
+        then failwith("yToken/token-taken-as-collateral")
+        else skip;
 
         (* Token id check *)
         if transfer_dst.tokenId < s.lastTokenId
@@ -227,7 +231,7 @@ function getBalance(
               const user : account = getAccount(request.owner, s);
 
               (* Form the response *)
-              var response : balanceOfResponse := record [
+              const response : balanceOfResponse = record [
                   request = request;
                   balance = getBalanceByToken(user, request.tokenId);
                 ];

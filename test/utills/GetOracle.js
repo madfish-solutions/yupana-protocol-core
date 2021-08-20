@@ -4,9 +4,9 @@ require("ts-node").register({
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/Factory");
+const storage = require("../../storage/GetOracle");
 
-class Factory {
+class GetOracle {
   contract;
   storage;
   tezos;
@@ -17,12 +17,12 @@ class Factory {
   }
 
   static async init(qsAddress, tezos) {
-    return new Factory(await tezos.contract.at(qsAddress), tezos);
+    return new GetOracle(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/Factory.json`)
+      fs.readFileSync(`${env.buildDir}/getOracle.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -35,7 +35,7 @@ class Factory {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-    return new Factory(
+    return new GetOracle(
       await tezos.contract.at(operation.contractAddress),
       tezos
     );
@@ -44,11 +44,9 @@ class Factory {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      tokenList: storage.tokenList,
-      owner: storage.owner,
-      admin: storage.admin,
-      tokenLambdas: storage.tokenLambdas,
-      useLambdas: storage.useLambdas,
+      lastDate: storage.lastDate,
+      lastPrice: storage.lastPrice,
+      returnAddress: storage.returnAddress,
     };
 
     for (const key in maps) {
@@ -68,41 +66,21 @@ class Factory {
     }
   }
 
-  async setFactoryAdmin(newAdmin) {
+  async updParamsOracle(price, time) {
     const operation = await this.contract.methods
-      .setFactoryAdmin(newAdmin)
+      .updParamsOracle(price, time)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async setNewOwner(newOwner) {
-    const operation = await this.contract.methods.setNewOwner(newOwner).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async launchToken(tokenAddress, oralcePairName) {
+  async updReturnAddressOracle(addr) {
     const operation = await this.contract.methods
-      .launchToken(oralcePairName, tokenAddress)
+      .updReturnAddressOracle(addr)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async setTokenFunction(idx, f) {
-    const operation = await this.contract.methods
-      .setTokenFunction(idx, f)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async setUseFunction(idx, f) {
-    const operation = await this.contract.methods.setUseFunction(idx, f).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.Factory = Factory;
+module.exports.GetOracle = GetOracle;
