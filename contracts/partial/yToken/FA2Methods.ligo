@@ -7,7 +7,7 @@ function getAccount(
     None -> record [
       balances          = (Map.empty : map(tokenId, nat));
       allowances        = (set [] : set(address));
-      borrowAmount      = (Map.empty : map(tokenId, nat));
+      borrows      = (Map.empty : map(tokenId, nat));
       lastBorrowIndex   = (Map.empty : map(tokenId, nat));
       markets           = (set [] : set(tokenId));
     ]
@@ -22,17 +22,20 @@ function getTokenInfo(
   case s.tokenInfo[tokenId] of
     None -> record [
       mainToken         = zeroAddress;
+      faType            = FA12(unit);
       interstRateModel  = zeroAddress;
+      priceUpdateTime   = zeroTimestamp;
       lastUpdateTime    = zeroTimestamp;
       totalBorrows      = 0n;
       totalLiquid       = 0n;
       totalSupply       = 0n;
       totalReserves     = 0n;
       borrowIndex       = 0n;
+      borrowRate        = 0n;
+      maxBorrowRate     = 0n;
       collateralFactor  = 0n;
       reserveFactor     = 0n;
       lastPrice         = 0n;
-      exchangeRate      = 0n;
     ]
   | Some(v) -> v
   end
@@ -55,7 +58,20 @@ function getTokenContract(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("CantGetContractToken") : contract(transferType)
+      failwith("cant-get-contract-token") : contract(transferType)
+    )
+  end;
+
+function getIterTranserContract(
+  const tokenAddress    : address)
+                        : contract(iterTransferType) is
+  case(
+    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
+                        : option(contract(iterTransferType))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("cant-get-contract-fa2-token") : contract(iterTransferType)
     )
   end;
 
@@ -113,10 +129,15 @@ function iterateTransfer(
         (* Create or get source account *)
         var src_account : account := getAccount(params.from_, s);
 
+        (* Check the entered markets *)
+        if Set.mem(transfer_dst.tokenId, src_account.markets)
+        then failwith("yToken/token-taken-as-collateral")
+        else skip;
+
         (* Token id check *)
         if transfer_dst.tokenId < s.lastTokenId
         then skip
-        else failwith("FA2_TOKEN_UNDEFINED");
+        else failwith("FA2/token-undefined");
 
         (* Get source balance *)
         const src_balance : nat =
@@ -124,7 +145,7 @@ function iterateTransfer(
 
         (* Balance check *)
         if src_balance < transfer_dst.amount
-        then failwith("FA2_INSUFFICIENT_BALANCE")
+        then failwith("FA2/insufficient-balance")
         else skip;
 
         (* Update source balance *)
@@ -160,7 +181,7 @@ function iterateUpdateOperators(
       AddOperator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("FA2_NOT_OWNER")
+      then failwith("FA2/not-owner")
       else skip;
 
       (* Create or get source account *)
@@ -175,7 +196,7 @@ function iterateUpdateOperators(
     | RemoveOperator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("FA2_NOT_OWNER")
+      then failwith("FA2/not-owner")
       else skip;
 
       (* Create or get source account *)

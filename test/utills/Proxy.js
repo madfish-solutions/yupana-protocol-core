@@ -4,9 +4,12 @@ require("ts-node").register({
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/Factory");
+const storage = require("../../storage/Proxy");
+const { functions } = require("../../storage/Functions");
+const { getLigo } = require("../../scripts/helpers");
+const { execSync } = require("child_process");
 
-class Factory {
+class Proxy {
   contract;
   storage;
   tezos;
@@ -17,12 +20,12 @@ class Factory {
   }
 
   static async init(qsAddress, tezos) {
-    return new Factory(await tezos.contract.at(qsAddress), tezos);
+    return new Proxy(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/Factory.json`)
+      fs.readFileSync(`${env.buildDir}/priceFeed.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -35,20 +38,33 @@ class Factory {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-    return new Factory(
-      await tezos.contract.at(operation.contractAddress),
-      tezos
-    );
+
+    let ligo = getLigo(true);
+    console.log("Start setting lambdas");
+    for (proxyFunction of functions.proxy) {
+      const stdout = execSync(
+        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/Controller.ligo main 'SetUseAction(record index =${proxyFunction.index}n; func = ${proxyFunction.name}; end)'`,
+        { maxBuffer: 1024 * 1000 }
+      );
+      const operation2 = await tezos.contract.transfer({
+        to: operation.contractAddress,
+        amount: 0,
+        parameter: {
+          entrypoint: "setProxyAction",
+          value: JSON.parse(stdout.toString()).args[0].args[0],
+        },
+      });
+      await confirmOperation(tezos, operation2.hash);
+    }
+    console.log("Setting finished");
+    return new Proxy(await tezos.contract.at(operation.contractAddress), tezos);
   }
 
   async updateStorage(maps = {}) {
     let storage = await Tezos.self_address.contract.storage();
     Tezos.self_address.storage = {
-      tokenList: storage.tokenList,
-      owner: storage.owner,
-      admin: storage.admin,
-      tokenLambdas: storage.tokenLambdas,
-      useLambdas: storage.useLambdas,
+      storage: storage.storage,
+      proxyLambdas: storage.proxyLambdas,
     };
 
     for (const key in maps) {
@@ -71,45 +87,36 @@ class Factory {
     }
   }
 
-  async setFactoryAdmin(newAdmin) {
+  async updateAdmin(newAdmin) {
     const operation = await Tezos.self_address.contract.methods
-      .setFactoryAdmin(newAdmin)
+      .updateAdmin(newAdmin)
+      .send();
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
+    return operation;
+  }
+  async updatePair(tokenId, pairName) {
+    const operation = await Tezos.self_address.contract.methods
+      .updatePair(tokenId, pairName)
       .send();
     await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
-  async setNewOwner(newOwner) {
+  async getPrice(tokenId) {
     const operation = await Tezos.self_address.contract.methods
-      .setNewOwner(newOwner)
+      .getPrice(tokenId)
       .send();
     await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
-  async launchToken(tokenAddress, oralcePairName) {
+  async receivePrice(name, lastTime, amount) {
     const operation = await Tezos.self_address.contract.methods
-      .launchToken(oralcePairName, tokenAddress)
-      .send();
-    await confirmOperation(Tezos.self_address.tezos, operation.hash);
-    return operation;
-  }
-
-  async setTokenFunction(idx, f) {
-    const operation = await Tezos.self_address.contract.methods
-      .setTokenFunction(idx, f)
-      .send();
-    await confirmOperation(Tezos.self_address.tezos, operation.hash);
-    return operation;
-  }
-
-  async setUseFunction(idx, f) {
-    const operation = await Tezos.self_address.contract.methods
-      .setUseFunction(idx, f)
+      .receivePrice(name, lastTime, amount)
       .send();
     await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.Factory = Factory;
+module.exports.Proxy = Proxy;
