@@ -1,6 +1,6 @@
 #include "./FA2Methods.ligo"
 #include "./AdminMethods.ligo"
-
+(*TODO: use the postfix Float in names of the var's that are multiplied by accuracy *)
 function zeroCheck(
   const amt             : nat)
                         : unit is
@@ -8,33 +8,6 @@ function zeroCheck(
     then failwith("yToken/amount-is-zero");
     else unit
 
-[@inline] function getEnsuredExitMarketEntrypoint(
-  const selfAddress     : address)
-                        : contract(useAction) is
-  case (
-    Tezos.get_entrypoint_opt("%ensuredExitMarket", selfAddress)
-                        : option(contract(useAction))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("yToken/cant-get-exitMarket")
-                        : contract(useAction)
-    )
-  end;
-
-[@inline] function getEnsuredBorrowEntrypoint(
-  const selfAddress     : address)
-                        : contract(useAction) is
-  case (
-    Tezos.get_entrypoint_opt("%ensuredBorrow", selfAddress)
-                        : option(contract(useAction))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("yToken/cant-get-borrow")
-                        : contract(useAction)
-    )
-  end;
 
 [@inline] function getEnsuredInterestEntrypoint(
   const selfAddress     : address)
@@ -47,20 +20,6 @@ function zeroCheck(
     | None -> (
       failwith("yToken/cant-get-ensuredInterest")
                         : contract(entryAction)
-    )
-  end;
-
-[@inline] function getEnsuredLiquidateEntrypoint(
-  const selfAddress     : address)
-                        : contract(useAction) is
-  case (
-    Tezos.get_entrypoint_opt("%ensuredLiquidate", selfAddress)
-                        : option(contract(useAction))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("yToken/cant-get-ensuredLiquidate")
-                        : contract(useAction)
     )
   end;
 
@@ -214,6 +173,7 @@ function updateInterest(
             borrows = token.totalBorrows;
             cash = token.totalLiquid;
             reserves = token.totalReserves;
+            (* TODO: lets send the response directly to ensuredUpdateInterest *)
             contract = getUpdateBorrowRateContract(Tezos.self_address);
           ]),
           0mutez,
@@ -232,6 +192,7 @@ function ensuredUpdateInterest(
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
+    (* TODO: check the sender *)
     var token : tokenInfo := getTokenInfo(tokenId, s.storage);
     const borrowRate : nat = token.borrowRate;
 
@@ -817,8 +778,11 @@ function enterMarket(
       case p of
         EnterMarket(tokenId) -> {
           var userAccount : account := getAccount(Tezos.sender, s);
+          (* TODO: no need to define the const that is used in the only place;
+          call Set.size operator in the if-else constraction *)
           const cardinal : nat = Set.size(userAccount.markets);
 
+          (* TODO: move maxMarkets to storage; allow the admin to configure it *)
           if cardinal >= maxMarkets
           then failwith("yToken/max-market-limit");
           else skip;

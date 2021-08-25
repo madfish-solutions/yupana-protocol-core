@@ -20,6 +20,7 @@
   var s                 : fullProxyStorage)
                         : fullProxyReturn is
   block {
+    (* TODO: use functions instead of lambas *)
     const idx : nat = case p of
       | UpdateAdmin(_addr) -> 0n
       | UpdateOracle(_addr) -> 1n

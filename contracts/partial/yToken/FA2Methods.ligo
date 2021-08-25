@@ -120,6 +120,7 @@ function iterateTransfer(
   const params          : transferParam)
                         : tokenStorage is
   block {
+    (* TODO: ensure the sender has permission to transfer tokens *)
     (* Perform single transfer *)
     function makeTransfer(
       var s             : tokenStorage;
