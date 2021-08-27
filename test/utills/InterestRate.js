@@ -4,12 +4,12 @@ require("ts-node").register({
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/Proxy");
+const storage = require("../../storage/InterestRate");
 const { functions } = require("../../storage/Functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
-class Proxy {
+class InterestRate {
   contract;
   storage;
   tezos;
@@ -20,12 +20,12 @@ class Proxy {
   }
 
   static async init(qsAddress, tezos) {
-    return new Proxy(await tezos.contract.at(qsAddress), tezos);
+    return new InterestRate(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/priceFeed.json`)
+      fs.readFileSync(`${env.buildDir}/interestRate.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -40,32 +40,35 @@ class Proxy {
     await confirmOperation(tezos, operation.hash);
 
     let ligo = getLigo(true);
-    console.log("Start setting proxy lambdas");
-    let proxyFunction = 0;
-    for (proxyFunction of functions.proxy) {
+    console.log("Start setting interestRate lambdas");
+    let interestFunction = 0;
+    for (interestFunction of functions.interestRate) {
       const stdout = execSync(
-        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/priceFeed.ligo main 'SetProxyAction(record index =${proxyFunction.index}n; func = ${proxyFunction.name}; end)'`,
+        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/interestRate.ligo main 'SetInterestAction(record index =${interestFunction.index}n; func = ${interestFunction.name}; end)'`,
         { maxBuffer: 1024 * 1000 }
       );
       const operation2 = await tezos.contract.transfer({
         to: operation.contractAddress,
         amount: 0,
         parameter: {
-          entrypoint: "setProxyAction",
+          entrypoint: "setInterestAction",
           value: JSON.parse(stdout.toString()).args[0],
         },
       });
       await confirmOperation(tezos, operation2.hash);
     }
     console.log("Setting finished");
-    return new Proxy(await tezos.contract.at(operation.contractAddress), tezos);
+    return new InterestRate(
+      await tezos.contract.at(operation.contractAddress),
+      tezos
+    );
   }
 
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
       storage: storage.storage,
-      proxyLambdas: storage.proxyLambdas,
+      rateLambdas: storage.rateLambdas,
     };
 
     for (const key in maps) {
@@ -85,49 +88,29 @@ class Proxy {
     }
   }
 
-  async updateAdmin(newAdmin) {
-    const operation = await this.contract.methods.updateAdmin(newAdmin).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async updateOracle(newOracle) {
+  async updateRateAdmin(newAdmin) {
     const operation = await this.contract.methods
-      .updateOracle(newOracle)
+      .updateRateAdmin(newAdmin)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async updateYToken(newYToken) {
+  async updateRateYToken(newToken) {
     const operation = await this.contract.methods
-      .updateYToken(newYToken)
+      .updateRateYToken(newToken)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async updatePair(tokenId, pairName) {
+  async setCoefficients(kickRate, baseRate, multiplier, jumpMultiplier) {
     const operation = await this.contract.methods
-      .updatePair(pairName, tokenId)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async getPrice(tokenId) {
-    const operation = await this.contract.methods.getPrice(tokenId).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async receivePrice(name, lastTime, amount) {
-    const operation = await this.contract.methods
-      .receivePrice(name, lastTime, amount)
+      .setCoefficients(kickRate, baseRate, multiplier, jumpMultiplier)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.Proxy = Proxy;
+module.exports.InterestRate = InterestRate;

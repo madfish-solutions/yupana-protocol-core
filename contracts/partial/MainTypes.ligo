@@ -11,6 +11,8 @@ type useAction          is
   | Liquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
+  (* TODO: think do we even need the method? *)
+  | UpdatePrice of tokenSet
 
 type tokenAction        is
   | ITransfer of transferParams
@@ -20,18 +22,37 @@ type tokenAction        is
 
 type proxyAction        is
   | UpdateAdmin of address
+  | UpdateOracle of address
+  | UpdateYToken of address
   | UpdatePair of pairParam
   | GetPrice of tokenId
   | ReceivePrice of oracleParam
 
 type rateAction         is
   | UpdateRateAdmin of address
+  | UpdateRateYToken of address
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams
-  | GetSupplyRate of supplyRateParams
+  | GetSupplyRate of rateParams
   | EnsuredSupplyRate of rateParams
   | UpdReserveFactor of nat
+
+// yToken
+type return is list (operation) * tokenStorage
+type tokenFunc is (tokenAction * tokenStorage) -> return
+type useFunc is (useAction * tokenStorage) -> return
+type useParam is useAction
+
+type setUseParams is record [
+  index                 : nat;
+  func                  : useFunc;
+]
+
+type setUseTokenParams is record [
+  index                 : nat;
+  func                  : tokenFunc;
+]
 
 type entryAction        is
   | Transfer of transferParams
@@ -42,19 +63,15 @@ type entryAction        is
   | EnsuredUpdateInterest of tokenId
   | UpdateBorrowRate of mainParams
   | GetReserveFactor of tokenId
-  | UpdatePrice of mainParams
+  | ReturnPrice of mainParams
   | SetAdmin of address
   | WithdrawReserve of mainParams
   | AddMarket of newMarketParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
   | Use of useAction
-
-// yToken
-type return is list (operation) * tokenStorage
-type tokenFunc is (tokenAction * tokenStorage) -> return
-type useFunc is (useAction * tokenStorage) -> return
-type useParam is useAction
+  | SetUseAction of setUseParams
+  | SetTokenAction of setUseTokenParams
 
 type fullTokenStorage   is record [
   storage               : tokenStorage;
@@ -88,10 +105,19 @@ type fullProxyStorage   is record [
 type fullProxyReturn is list (operation) * fullProxyStorage
 
 // interestRate
-type entryRateAction is RateUse of rateAction
 
 type rateReturn is list (operation) * rateStorage
 type rateFunc is (rateAction * rateStorage) -> rateReturn
+
+type setRateParams is record [
+  index                 : nat;
+  func                  : rateFunc;
+]
+
+type entryRateAction   is
+| RateUse of rateAction
+| SetInterestAction of setRateParams
+
 
 type fullRateStorage    is record [
   storage               : rateStorage;

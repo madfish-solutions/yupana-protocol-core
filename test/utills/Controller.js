@@ -94,10 +94,8 @@ class Controller {
   }
 
   async setFactory(newFactory) {
-    const operation = await Tezos.self_address.contract.methods
-      .setFactory(newFactory)
-      .send();
-    await confirmOperation(Tezos.self_address.tezos, operation.hash);
+    const operation = await this.contract.methods.setFactory(newFactory).send();
+    await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 

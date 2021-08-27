@@ -3,7 +3,7 @@
                         : unit is
   block {
     if Tezos.sender =/= s.admin
-    then failwith("not-admin")
+    then failwith("proxy/not-admin")
     else skip;
   } with (unit)
 
@@ -12,7 +12,7 @@
                         : unit is
   block {
     if Tezos.sender =/= s.yToken
-    then failwith("not-yToken")
+    then failwith("proxy/not-yToken")
     else skip;
   } with (unit)
 
@@ -21,7 +21,7 @@
                         : unit is
   block {
     if Tezos.sender =/= s.oracle
-    then failwith("not-oracle")
+    then failwith("proxy/not-oracle")
     else skip;
   } with (unit)
 
@@ -34,7 +34,7 @@
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-oracle-entrypoint") : contract(getType)
+      failwith("proxy/cant-get-oracle") : contract(getType)
     )
   end;
 
@@ -47,20 +47,20 @@
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-receivePrice-entrypoint") : contract(oracleParam)
+      failwith("proxy/cant-get-receivePrice") : contract(oracleParam)
     )
   end;
 
 [@inline] function getYtokenContract(
   const s               : proxyStorage)
-                        : contract(entryAction) is
+                        : contract(mainParams) is
   case (
-    Tezos.get_entrypoint_opt("%updatePrice", s.yToken)
-                        : option(contract(entryAction))
+    Tezos.get_entrypoint_opt("%returnPrice", s.yToken)
+                        : option(contract(mainParams))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-yToken-entrypoint") : contract(entryAction)
+      failwith("proxy/cant-get-yToken") : contract(mainParams)
     )
   end;
 
@@ -84,8 +84,7 @@
 
 function updateAdmin(
   const p               : proxyAction;
-  var s                 : proxyStorage;
-  const _this           : address)
+  var s                 : proxyStorage)
                         : proxyReturn is
   block {
     case p of
@@ -97,10 +96,38 @@ function updateAdmin(
     end
   } with (noOperations, s)
 
+function updateOracle(
+  const p               : proxyAction;
+  var s                 : proxyStorage)
+                        : proxyReturn is
+  block {
+    case p of
+      UpdateOracle(addr) -> {
+        mustBeAdmin(s);
+        s.oracle := addr;
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
+
+function updateYToken(
+  const p               : proxyAction;
+  var s                 : proxyStorage)
+                        : proxyReturn is
+  block {
+    case p of
+      UpdateYToken(addr) -> {
+        mustBeAdmin(s);
+        s.yToken := addr;
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
+
+
 function receivePrice(
   const p               : proxyAction;
-  var s                 : proxyStorage;
-  const _this           : address)
+  const s               : proxyStorage)
                         : proxyReturn is
   block {
     var operations : list(operation) := list[];
@@ -112,10 +139,10 @@ function receivePrice(
 
           operations := list[
             Tezos.transaction(
-              UpdatePrice(record [
+              record [
                 tokenId = tokenId;
                 amount = oracleParam.1.1;
-              ]),
+              ],
               0mutez,
               getYtokenContract(s)
             )
@@ -127,7 +154,7 @@ function receivePrice(
 
 function getPrice(
   const p               : proxyAction;
-  var s                 : proxyStorage)
+  const s               : proxyStorage)
                         : proxyReturn is
   block {
     var operations : list(operation) := list[];
@@ -136,7 +163,7 @@ function getPrice(
           mustBeYtoken(s);
 
           const strName : string = checkPairName(tokenId, s);
-          var param : contract(oracleParam) := getReceivePriceEntrypoint(Tezos.self_address);
+          const param : contract(oracleParam) = getReceivePriceEntrypoint(Tezos.self_address);
 
           operations := list[
             Tezos.transaction(
@@ -152,8 +179,7 @@ function getPrice(
 
 function updatePair(
   const p               : proxyAction;
-  var s                 : proxyStorage;
-  const _this           : address)
+  var s                 : proxyStorage)
                         : proxyReturn is
   block {
       case p of

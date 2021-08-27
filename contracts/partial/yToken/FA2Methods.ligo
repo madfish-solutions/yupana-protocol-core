@@ -7,7 +7,7 @@ function getAccount(
     None -> record [
       balances          = (Map.empty : map(tokenId, nat));
       allowances        = (set [] : set(address));
-      borrows      = (Map.empty : map(tokenId, nat));
+      borrows           = (Map.empty : map(tokenId, nat));
       lastBorrowIndex   = (Map.empty : map(tokenId, nat));
       markets           = (set [] : set(tokenId));
     ]
@@ -58,7 +58,7 @@ function getTokenContract(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-contract-token") : contract(transferType)
+      failwith("token/cant-get-contract-token") : contract(transferType)
     )
   end;
 
@@ -71,7 +71,7 @@ function getIterTranserContract(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-contract-fa2-token") : contract(iterTransferType)
+      failwith("token/cant-get-contract-fa2-token") : contract(iterTransferType)
     )
   end;
 
@@ -83,8 +83,8 @@ function getTotalSupply(
     var operations : list(operation) := list[];
       case p of
         IGetTotalSupply(args) -> {
-          const res : tokenInfo = getTokenInfo(args.0, s);
-          operations := list [Tezos.transaction(res.totalSupply, 0tz, args.1)];
+          const res : tokenInfo = getTokenInfo(args.token_id, s);
+          operations := list [Tezos.transaction(res.totalSupply, 0tz, args.receiver)];
         }
       | _                         -> skip
       end
@@ -120,6 +120,7 @@ function iterateTransfer(
   const params          : transferParam)
                         : tokenStorage is
   block {
+    (* TODO: ensure the sender has permission to transfer tokens *)
     (* Perform single transfer *)
     function makeTransfer(
       var s             : tokenStorage;
@@ -231,7 +232,7 @@ function getBalance(
               const user : account = getAccount(request.owner, s);
 
               (* Form the response *)
-              var response : balanceOfResponse := record [
+              const response : balanceOfResponse = record [
                   request = request;
                   balance = getBalanceByToken(user, request.tokenId);
                 ];

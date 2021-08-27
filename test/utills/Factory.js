@@ -104,10 +104,8 @@ class Factory {
   }
 
   async setUseFunction(idx, f) {
-    const operation = await Tezos.self_address.contract.methods
-      .setUseFunction(idx, f)
-      .send();
-    await confirmOperation(Tezos.self_address.tezos, operation.hash);
+    const operation = await this.contract.methods.setUseFunction(idx, f).send();
+    await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }

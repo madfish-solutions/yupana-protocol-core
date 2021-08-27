@@ -4,7 +4,7 @@ require("ts-node").register({
 });
 const { TezosToolkit } = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
-const { alice } = require('../../scripts/sandbox/accounts');
+const { alice } = require("../../scripts/sandbox/accounts");
 const env = require("../../env");
 const defaultNetwork = "development";
 const network = env.network || defaultNetwork;

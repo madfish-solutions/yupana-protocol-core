@@ -2,17 +2,17 @@
 #include "../partial/Proxy/PriceFeedMethods.ligo"
 
 [@inline] function setProxyAction (
-  const idx : nat;
+  const idx             : nat;
   const f               : proxyFunc;
   var s                 : fullProxyStorage)
                         : fullProxyReturn is
   block {
     if Tezos.sender = s.storage.admin then
       case s.proxyLambdas[idx] of
-        Some(_n) -> failwith("ProxyFunctionNotSet")
+        Some(_n) -> failwith("proxy/proxy-function-not-set")
         | None -> s.proxyLambdas[idx] := f
       end;
-    else failwith("YouNotAdmin(setProxyAction)")
+    else failwith("proxy/you-not-admin")
   } with (noOperations, s)
 
 [@inline] function middleProxy(
@@ -20,16 +20,19 @@
   var s                 : fullProxyStorage)
                         : fullProxyReturn is
   block {
+    (* TODO: use functions instead of lambas *)
     const idx : nat = case p of
       | UpdateAdmin(_addr) -> 0n
-      | UpdatePair(_pairParam) -> 1n
-      | GetPrice(_tokenId) -> 2n
-      | ReceivePrice(_oracleParam) -> 3n
+      | UpdateOracle(_addr) -> 1n
+      | UpdateYToken(_addr) -> 2n
+      | UpdatePair(_pairParam) -> 3n
+      | GetPrice(_tokenId) -> 4n
+      | ReceivePrice(_oracleParam) -> 5n
     end;
     const res : proxyReturn = case s.proxyLambdas[idx] of
       Some(f) -> f(p, s.storage)
       | None -> (
-        failwith("proxy/middle-function-not-set-in-middleProxy") : proxyReturn
+        failwith("proxy/middle-function-not-set") : proxyReturn
       )
     end;
     s.storage := res.1;

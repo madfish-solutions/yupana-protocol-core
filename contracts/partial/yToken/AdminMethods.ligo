@@ -2,7 +2,7 @@ function mustBeAdmin(
   const s               : tokenStorage)
                         : unit is
   if Tezos.sender =/= s.admin
-  then failwith("not-admin")
+  then failwith("yToken/not-admin")
   else unit
 
 function setAdmin(
@@ -84,6 +84,7 @@ function setTokenFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
+    (* TODO: ensure the interest are update before *)
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
     token.collateralFactor := params.collateralFactor;
     token.reserveFactor := params.reserveFactor;

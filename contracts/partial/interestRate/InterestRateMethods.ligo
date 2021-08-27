@@ -1,13 +1,13 @@
-[@inline] function getYtokenContract(
+[@inline] function getReserveFactorContract(
   const yToken          : address)
-                        : contract(entryAction) is
+                        : contract(nat) is
   case (
-    Tezos.get_entrypoint_opt("%updateBorrowRate", yToken)
-                        : option(contract(entryAction))
+    Tezos.get_entrypoint_opt("%getReserveFactor", yToken)
+                        : option(contract(nat))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("cant-get-yToken-entrypoint") : contract(entryAction)
+      failwith("cant-get-yToken-entrypoint") : contract(nat)
     )
   end;
 
@@ -15,7 +15,7 @@
   const selfAddress     : address)
                         : contract(rateAction) is
   case (
-    Tezos.get_entrypoint_opt("%ensuredSupplyRate", selfAddress)
+    Tezos.get_entrypoint_opt("%rateUse", selfAddress)
                         : option(contract(rateAction))
   ) of
     Some(contr) -> contr
@@ -35,24 +35,27 @@
   } with (unit)
 
 [@inline] function calctBorrowRate(
-  var borrows           : nat;
-  var cash              : nat;
-  var reserves          : nat;
+  const borrows         : nat;
+  const cash            : nat;
+  const reserves        : nat;
+  (* TODO : request accuracy as an argument *)
   const s               : rateStorage)
                         : nat is
   block {
-    var utilizationRate : nat := borrows / abs(cash + borrows - reserves);
+    (* TODO: calculate with accuracy *)
+    const utilizationRate : nat = abs(cash + borrows - reserves) / borrows;
     var borrowRate : nat := 0n;
+
     if utilizationRate < s.kickRate
     then borrowRate := s.baseRate + (utilizationRate * s.multiplier);
-    else borrowRate := s.baseRate + s.kickRate * s.multiplier +
-      abs(utilizationRate - s.kickRate) * s.jumpMultiplier
+    else borrowRate := (s.kickRate * s.multiplier + s.baseRate) +
+      (abs(utilizationRate - s.kickRate) * s.jumpMultiplier)
+
   } with borrowRate
 
 function updateRateAdmin(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const _this           : address)
+  var s                 : rateStorage)
                         : rateReturn is
   block {
     case p of
@@ -64,10 +67,23 @@ function updateRateAdmin(
     end
   } with (noOperations, s)
 
+function updateRateYToken(
+  const p               : rateAction;
+  var s                 : rateStorage)
+                        : rateReturn is
+  block {
+    case p of
+      UpdateRateYToken(addr) -> {
+        mustBeAdmin(s);
+        s.yToken := addr;
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
+
 function setCoefficients(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const _this           : address)
+  var s                 : rateStorage)
                         : rateReturn is
   block {
     case p of
@@ -84,15 +100,17 @@ function setCoefficients(
 
 function getUtilizationRate(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const _this           : address)
+  const s               : rateStorage)
+  (* TODO : request accuracy as an argument *)
                         : rateReturn is
   block {
     var operations : list(operation) := list[];
       case p of
         GetUtilizationRate(rateParams) -> {
-          const utilizationRate : nat = rateParams.borrows /
-            abs(rateParams.cash + rateParams.borrows - rateParams.reserves);
+          (* TODO: calculate with accuracy *)
+          const utilizationRate : nat = abs(
+            rateParams.cash + rateParams.borrows - rateParams.reserves
+          ) / rateParams.borrows;
           operations := list[
             Tezos.transaction(record[
                 tokenId = rateParams.tokenId;
@@ -109,8 +127,8 @@ function getUtilizationRate(
 
 function getBorrowRate(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const _this           : address)
+  (* TODO : request accuracy as an argument *)
+  const s               : rateStorage)
                         : rateReturn is
   block {
     var operations : list(operation) := list[];
@@ -139,25 +157,27 @@ function getBorrowRate(
 
 function getSupplyRate(
   const p               : rateAction;
-  var s                 : rateStorage)
+  const s               : rateStorage)
                         : rateReturn is
   block {
     var operations : list(operation) := list[];
       case p of
-        GetSupplyRate(supplyRateParams) -> {
+        GetSupplyRate(rateParams) -> {
+          (* TODO : don't use callbacks; check teh last update time of the reserve factor;
+          it must be updated in the batch*)
           operations := list[
             Tezos.transaction(
-              GetReserveFactor(supplyRateParams.tokenId),
+              rateParams.tokenId,
               0mutez,
-              getYtokenContract(s.yToken)
+              getReserveFactorContract(s.yToken)
             );
             Tezos.transaction(
               EnsuredSupplyRate(record [
-                  tokenId = supplyRateParams.tokenId;
-                  borrows = supplyRateParams.borrows;
-                  cash = supplyRateParams.cash;
-                  reserves = supplyRateParams.reserves;
-                  contract = supplyRateParams.contract;
+                  tokenId = rateParams.tokenId;
+                  borrows = rateParams.borrows;
+                  cash = rateParams.cash;
+                  reserves = rateParams.reserves;
+                  contract = rateParams.contract;
               ]),
               0mutez,
               getEnsuredSupplyRateEntrypoint(Tezos.self_address)
@@ -170,23 +190,23 @@ function getSupplyRate(
 
 function ensuredSupplyRate(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const _this           : address)
+  const s               : rateStorage)
                         : rateReturn is
   block {
     var operations : list(operation) := list[];
       case p of
         EnsuredSupplyRate(rateParams) -> {
-          var borrowRate : nat := calctBorrowRate(
+          const borrowRate : nat = calctBorrowRate(
             rateParams.borrows,
             rateParams.cash,
             rateParams.reserves,
             s
           );
-          var utilizationRate : nat := rateParams.borrows /
-            abs(rateParams.cash + rateParams.borrows - rateParams.reserves);
-          var supplyRate : nat := borrowRate * utilizationRate *
-            abs(1n - s.reserveFactor);
+          const utilizationRate : nat = abs(
+            rateParams.cash + rateParams.borrows - rateParams.reserves
+          ) / rateParams.borrows;
+          const supplyRate : nat = borrowRate * utilizationRate *
+            abs(accuracy - s.reserveFactor);
 
           operations := list[
             Tezos.transaction(record[
@@ -204,12 +224,12 @@ function ensuredSupplyRate(
 
 function updReserveFactor(
   const p               : rateAction;
-  var s                 : rateStorage;
-  const _this           : address)
+  var s                 : rateStorage)
                         : rateReturn is
   block {
     case p of
       UpdReserveFactor(amt) -> {
+        (* TODO: ensure the response is from the yToken *)
         s.reserveFactor := amt;
       }
     | _                 -> skip

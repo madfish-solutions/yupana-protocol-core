@@ -5,7 +5,7 @@ let tokenFunctions = [
   },
   {
     index: 1,
-    name: "approve",
+    name: "updateOperators",
   },
   {
     index: 2,
@@ -13,117 +13,42 @@ let tokenFunctions = [
   },
   {
     index: 3,
-    name: "getAllowance",
-  },
-  {
-    index: 4,
     name: "getTotalSupply",
   },
 ];
 
-let useFunctions = [
+let yTokenFunctions = [
   {
     index: 0,
-    name: "setAdmin",
-  },
-  {
-    index: 1,
-    name: "setOwner",
-  },
-  {
-    index: 2,
     name: "mint",
   },
   {
-    index: 3,
+    index: 1,
     name: "redeem",
   },
   {
-    index: 4,
+    index: 2,
     name: "borrow",
   },
   {
-    index: 5,
+    index: 3,
     name: "repay",
   },
   {
-    index: 6,
+    index: 4,
     name: "liquidate",
   },
   {
-    index: 7,
-    name: "seize",
-  },
-  {
-    index: 8,
-    name: "updateControllerState",
-  },
-];
-
-let useControllerFunctions = [
-  {
-    index: 0,
-    name: "updatePrice",
-  },
-  {
-    index: 1,
-    name: "sendToOracle",
-  },
-  {
-    index: 2,
-    name: "setOracle",
-  },
-  {
-    index: 3,
-    name: "register",
-  },
-  {
-    index: 4,
-    name: "updateQToken",
-  },
-  {
     index: 5,
-    name: "exitMarket",
+    name: "enterMarket",
   },
   {
     index: 6,
-    name: "ensuredExitMarket",
+    name: "exitMarket",
   },
   {
     index: 7,
-    name: "safeMint",
-  },
-  {
-    index: 8,
-    name: "safeRedeem",
-  },
-  {
-    index: 9,
-    name: "ensuredRedeem",
-  },
-  {
-    index: 10,
-    name: "safeBorrow",
-  },
-  {
-    index: 11,
-    name: "ensuredBorrow",
-  },
-  {
-    index: 12,
-    name: "safeRepay",
-  },
-  {
-    index: 13,
-    name: "ensuredRepay",
-  },
-  {
-    index: 14,
-    name: "safeLiquidate",
-  },
-  {
-    index: 15,
-    name: "ensuredLiquidate",
+    name: "updatePrice",
   },
 ];
 
@@ -134,21 +59,64 @@ let proxyFunctions = [
   },
   {
     index: 1,
-    name: "updatePair",
+    name: "updateOracle",
   },
   {
     index: 2,
-    name: "getPrice",
+    name: "updateYToken",
   },
   {
     index: 3,
+    name: "updatePair",
+  },
+  {
+    index: 4,
+    name: "getPrice",
+  },
+  {
+    index: 5,
     name: "receivePrice",
+  },
+];
+
+let interestFunctions = [
+  {
+    index: 0,
+    name: "updateRateAdmin",
+  },
+  {
+    index: 1,
+    name: "updateRateYToken",
+  },
+  {
+    index: 2,
+    name: "setCoefficients",
+  },
+  {
+    index: 3,
+    name: "getBorrowRate",
+  },
+  {
+    index: 4,
+    name: "getUtilizationRate",
+  },
+  {
+    index: 5,
+    name: "getSupplyRate",
+  },
+  {
+    index: 6,
+    name: "ensuredSupplyRate",
+  },
+  {
+    index: 7,
+    name: "updReserveFactor",
   },
 ];
 
 module.exports.functions = {
   token: tokenFunctions,
-  use: useFunctions,
-  useController: useControllerFunctions,
+  yToken: yTokenFunctions,
   proxy: proxyFunctions,
+  interestRate: interestFunctions,
 };

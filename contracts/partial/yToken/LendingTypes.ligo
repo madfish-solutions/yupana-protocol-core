@@ -10,7 +10,7 @@ type allowanceAmount    is [@layout:comb] record [
 type account            is [@layout:comb] record [
   balances              : map(tokenId, nat); // in yToken
   allowances            : set(address);
-  borrows          : map(tokenId, nat); // in asset (* !!! confusing name*)
+  borrows               : map(tokenId, nat); // in asset
   lastBorrowIndex       : map(tokenId, nat);
   markets               : set(tokenId);
 ]
@@ -45,17 +45,21 @@ type tokenStorage       is [@layout:comb] record [
   liqIncentive          : nat;
 ]
 
-type totalSupplyParams is
-  michelson_pair(tokenId, "tokenId", contract(nat), "") (* !!! naming*)
+type tokenSet is set(tokenId)
 
-type liquidateParams    is record [
+type totalSupplyParams is [@layout:comb] record [
+  token_id              : tokenId;
+  [@annot:]receiver     : contract(nat);
+]
+
+type liquidateParams    is [@layout:comb] record [
   borrowToken           : nat;
   collateralToken       : nat;
   borrower              : address;
   amount                : nat;
 ]
-
-type mainParams         is record [
+(* TODO: clarify name *)
+type mainParams         is [@layout:comb] record [
   tokenId               : nat;
   amount                : nat;
 ]
@@ -66,7 +70,7 @@ type faTransferParams   is [@layout:comb] record [
   value                 : nat;
 ]
 
-type setTokenParams     is record [
+type setTokenParams     is [@layout:comb] record [
   tokenId               : nat;
   collateralFactor      : nat;
   reserveFactor         : nat;
@@ -74,7 +78,7 @@ type setTokenParams     is record [
   maxBorrowRate         : nat;
 ]
 
-type setGlobalParams    is record [
+type setGlobalParams    is [@layout:comb] record [
   closeFactor           : nat;
   liqIncentive          : nat;
   priceFeedProxy        : address;
@@ -82,12 +86,12 @@ type setGlobalParams    is record [
 
 type newMetadataParams  is map(string, bytes)
 
-type setModelParams     is record [
+type setModelParams     is [@layout:comb] record [
   tokenId               : nat;
   modelAddress          : address;
 ]
 
-type newMarketParams     is record [
+type newMarketParams    is [@layout:comb] record [
   interstRateModel      : address;
   assetAddress          : address;
   collateralFactor      : nat;
@@ -99,7 +103,7 @@ type newMarketParams     is record [
 
 type oracleParam is (string * (timestamp * nat))
 
-type pairParam          is record [
+type pairParam          is [@layout:comb] record [
   tokenId               : tokenId;
   pairName              : string;
 ]
@@ -108,11 +112,6 @@ type calcCollParams     is [@layout:comb] record [
   s                     : tokenStorage;
   res                   : nat;
   userAccount           : account;
-]
-
-type oneTokenUpdParam   is [@layout:comb] record [
-  operations            : list (operation);
-  priceFeedProxy        : address;
 ]
 
 type transferType is TransferOutside of faTransferParams

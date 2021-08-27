@@ -1,6 +1,34 @@
 #include "../partial/MainTypes.ligo"
 #include "../partial/yToken/LendingMethods.ligo"
 
+function setUseAction(
+  const idx             : nat;
+  const f               : useFunc;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
+  block {
+    if Tezos.sender = s.storage.admin
+    then case s.useLambdas[idx] of
+        Some(_n) -> failwith("yToken/yToken-function-not-set")
+        | None -> s.useLambdas[idx] := f
+      end;
+    else failwith("yToken/you-not-admin")
+  } with (noOperations, s)
+
+function setTokenAction(
+  const idx             : nat;
+  const f               : tokenFunc;
+  var s                 : fullTokenStorage)
+                        : fullReturn is
+  block {
+    if Tezos.sender = s.storage.admin
+    then case s.tokenLambdas[idx] of
+        Some(_n) -> failwith("yToken/token-function-not-set")
+        | None -> s.tokenLambdas[idx] := f
+      end;
+    else failwith("yToken/you-not-admin")
+  } with (noOperations, s)
+
 function middleToken(
   const p               : tokenAction;
   var s                 : fullTokenStorage)
@@ -30,15 +58,16 @@ function middleToken(
         | Mint(_mainParams) -> 0n
         | Redeem(_mainParams) -> 1n
         | Borrow(_mainParams) -> 2n
-        | Repay(_mainParams) -> 4n
-        | Liquidate(_liquidateParams) -> 5n
-        | EnterMarket(_tokenId) -> 7n
-        | ExitMarket(_tokenId) -> 8n
+        | Repay(_mainParams) -> 3n
+        | Liquidate(_liquidateParams) -> 4n
+        | EnterMarket(_tokenId) -> 5n
+        | ExitMarket(_tokenId) -> 6n
+        | UpdatePrice(_tokenSet) -> 7n
       end;
     const res : return = case s.useLambdas[idx] of
       Some(f) -> f(p, s.storage)
       | None -> (
-        failwith("yToken/middle-function-not-set-in-middleUse") : return
+        failwith("yToken/middle-yToken-function-not-set") : return
       )
     end;
     s.storage := res.1;
@@ -49,19 +78,21 @@ function main(
   const s               : fullTokenStorage)
                         : fullReturn is
   case p of
-    | Transfer(params)          -> middleToken(ITransfer(params), s)
-    | UpdateOperators(params)   -> middleToken(IUpdateOperators(params), s)
-    | BalanceOf(params)         -> middleToken(IBalanceOf(params), s)
-    | GetTotalSupply(params)    -> middleToken(IGetTotalSupply(params), s)
-    | UpdateInterest(params)   -> updateInterest(params, s)
+    | Transfer(params)              -> middleToken(ITransfer(params), s)
+    | UpdateOperators(params)       -> middleToken(IUpdateOperators(params), s)
+    | BalanceOf(params)             -> middleToken(IBalanceOf(params), s)
+    | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
+    | UpdateInterest(params)        -> updateInterest(params, s)
     | EnsuredUpdateInterest(params) -> ensuredUpdateInterest(params, s)
-    | UpdateBorrowRate(params) -> updateBorrowRate(params, s)
-    | GetReserveFactor(params) -> getReserveFactor(params, s)
-    | UpdatePrice(params) -> updatePrice(params, s)
-    | SetAdmin(params) -> setAdmin(params, s)
-    | WithdrawReserve(params) -> withdrawReserve(params, s)
-    | AddMarket(params) -> addMarket(params, s)
-    | SetTokenFactors(params) -> setTokenFactors(params, s)
-    | SetGlobalFactors(params) -> setGlobalFactors(params, s)
-    | Use(params)               -> middleUse(params, s)
+    | UpdateBorrowRate(params)      -> updateBorrowRate(params, s)
+    | GetReserveFactor(params)      -> getReserveFactor(params, s)
+    | ReturnPrice(params)           -> returnPrice(params, s)
+    | SetAdmin(params)              -> setAdmin(params, s)
+    | WithdrawReserve(params)       -> withdrawReserve(params, s)
+    | AddMarket(params)             -> addMarket(params, s)
+    | SetTokenFactors(params)       -> setTokenFactors(params, s)
+    | SetGlobalFactors(params)      -> setGlobalFactors(params, s)
+    | Use(params)                   -> middleUse(params, s)
+    | SetUseAction(params)          -> setUseAction(params.index, params.func, s)
+    | SetTokenAction(params)        -> setTokenAction(params.index, params.func, s)
   end
