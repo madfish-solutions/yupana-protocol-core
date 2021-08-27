@@ -38,9 +38,11 @@
   const borrows         : nat;
   const cash            : nat;
   const reserves        : nat;
+  (* TODO : request accuracy as an argument *)
   const s               : rateStorage)
                         : nat is
   block {
+    (* TODO: calculate with accuracy *)
     const utilizationRate : nat = abs(cash + borrows - reserves) / borrows;
     var borrowRate : nat := 0n;
 
@@ -99,11 +101,13 @@ function setCoefficients(
 function getUtilizationRate(
   const p               : rateAction;
   const s               : rateStorage)
+  (* TODO : request accuracy as an argument *)
                         : rateReturn is
   block {
     var operations : list(operation) := list[];
       case p of
         GetUtilizationRate(rateParams) -> {
+          (* TODO: calculate with accuracy *)
           const utilizationRate : nat = abs(
             rateParams.cash + rateParams.borrows - rateParams.reserves
           ) / rateParams.borrows;
@@ -123,6 +127,7 @@ function getUtilizationRate(
 
 function getBorrowRate(
   const p               : rateAction;
+  (* TODO : request accuracy as an argument *)
   const s               : rateStorage)
                         : rateReturn is
   block {
@@ -158,6 +163,8 @@ function getSupplyRate(
     var operations : list(operation) := list[];
       case p of
         GetSupplyRate(rateParams) -> {
+          (* TODO : don't use callbacks; check teh last update time of the reserve factor;
+          it must be updated in the batch*)
           operations := list[
             Tezos.transaction(
               rateParams.tokenId,
@@ -222,6 +229,7 @@ function updReserveFactor(
   block {
     case p of
       UpdReserveFactor(amt) -> {
+        (* TODO: ensure the response is from the yToken *)
         s.reserveFactor := amt;
       }
     | _                 -> skip

@@ -84,6 +84,7 @@ function setTokenFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
+    (* TODO: ensure the interest are update before *)
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
     token.collateralFactor := params.collateralFactor;
     token.reserveFactor := params.reserveFactor;
