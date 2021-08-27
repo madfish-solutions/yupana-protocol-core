@@ -73,7 +73,6 @@ type entryAction        is
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams
 
-
 type fullTokenStorage   is record [
   storage               : tokenStorage;
   tokenLambdas          : big_map(nat, tokenFunc);
@@ -118,6 +117,7 @@ type setRateParams is record [
 type entryRateAction   is
 | RateUse of rateAction
 | SetInterestAction of setRateParams
+
 
 type fullRateStorage    is record [
   storage               : rateStorage;

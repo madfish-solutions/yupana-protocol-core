@@ -17,8 +17,8 @@ class Controller {
   tezos;
 
   constructor(contract, tezos) {
-    this.contract = contract;
-    this.tezos = tezos;
+    Tezos.self_address.contract = contract;
+    Tezos.self_address.tezos = tezos;
   }
 
   static async init(controllerAddress, tezos) {
@@ -67,26 +67,29 @@ class Controller {
   }
 
   async updateStorage(maps = {}) {
-    let storage = await this.contract.storage();
-    this.storage = {
+    let storage = await Tezos.self_address.contract.storage();
+    Tezos.self_address.storage = {
       storage: storage.storage,
       useControllerLambdas: storage.useControllerLambdas,
     };
 
     for (const key in maps) {
-      this.storage[key] = await maps[key].reduce(async (prev, current) => {
-        try {
-          return {
-            ...(await prev),
-            [current]: await storage[key].get(current),
-          };
-        } catch (ex) {
-          return {
-            ...(await prev),
-            [current]: 0,
-          };
-        }
-      }, Promise.resolve({}));
+      Tezos.self_address.storage[key] = await maps[key].reduce(
+        async (prev, current) => {
+          try {
+            return {
+              ...(await prev),
+              [current]: await storage[key].get(current),
+            };
+          } catch (ex) {
+            return {
+              ...(await prev),
+              [current]: 0,
+            };
+          }
+        },
+        Promise.resolve({})
+      );
     }
   }
 
@@ -97,84 +100,90 @@ class Controller {
   }
 
   async updatePrice(pairName, lastTime, price) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .updatePrice(pairName, lastTime, price)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async sendToOracle(addr) {
-    const operation = await this.contract.methods.sendToOracle(addr).send();
-    await confirmOperation(this.tezos, operation.hash);
+    const operation = await Tezos.self_address.contract.methods
+      .sendToOracle(addr)
+      .send();
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async setOracle(addr) {
-    const operation = await this.contract.methods.setOracle(addr).send();
-    await confirmOperation(this.tezos, operation.hash);
+    const operation = await Tezos.self_address.contract.methods
+      .setOracle(addr)
+      .send();
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async register(qToken, token, pairName) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .register(qToken, token, pairName)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async updateQToken(user, balance, borrow, exchangeRate) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .updateQToken(user, balance, borrow, exchangeRate)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async exitMarket() {
-    const operation = await this.contract.methods.exitMarket().send();
-    await confirmOperation(this.tezos, operation.hash);
+    const operation = await Tezos.self_address.contract.methods
+      .exitMarket()
+      .send();
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async safeMint(qToken, amount) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .safeMint(qToken, amount)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async safeRedeem(qToken, amount) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .safeRedeem(qToken, amount)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async safeBorrow(qToken, amount, borrowerToken) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .safeBorrow(qToken, amount, borrowerToken)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async safeRepay(qToken, amount) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .safeRepay(qToken, amount)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
   async safeLiquidate(borrower, amount, qToken) {
-    const operation = await this.contract.methods
+    const operation = await Tezos.self_address.contract.methods
       .safeLiquidate(borrower, amount, qToken)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 }

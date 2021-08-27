@@ -271,6 +271,7 @@ function mint(
             if token.lastUpdateTime =/= Tezos.now
             then failwith("yToken/need-update-interestRate")
             else skip;
+
             mintTokensMantissa := mintTokensMantissa * token.totalSupply /
               abs(token.totalLiquid + token.totalBorrows - token.totalReserves);
           }
@@ -358,6 +359,7 @@ function redeem(
           else mainParams.amount;
 
           if token.totalLiquid < redeemAmount
+
           then failwith("yToken/not-enough-liquid")
           else skip;
 
@@ -418,6 +420,7 @@ function borrow(
           zeroCheck(mainParams.amount);
 
           var accountUser : account := getAccount(Tezos.sender, s);
+
           const borrowSet : set(tokenId) = convertToSet(accountUser.borrows);
           const marketSet : set(tokenId) = accountUser.markets;
 
@@ -474,8 +477,10 @@ function borrow(
           accountUser.borrows[mainParams.tokenId] := userBorrowAmount;
           accountUser.lastBorrowIndex[mainParams.tokenId] := lastBorrowIndex;
           s.accountInfo[Tezos.sender] := accountUser;
+
           token.totalBorrows := token.totalBorrows + borrowsMatissa;
           token.totalLiquid := abs(token.totalLiquid - borrowsMatissa);
+
           s.tokenInfo[mainParams.tokenId] := token;
 
           operations := list [
@@ -548,6 +553,7 @@ function repay (
           else skip;
 
           if userBorrowAmount <= repayAmountMantissa
+
           then failwith("yToken/amount-should-be-less-or-equal")
           else skip;
 
@@ -639,11 +645,13 @@ function liquidate(
             accountBorrower.lastBorrowIndex,
             liquidateParams.borrowToken
           );
+
           const maxBorrowInCU : nat = calculateMaxCollaterallInCU(
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
           const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
+          
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );

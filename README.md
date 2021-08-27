@@ -1,4 +1,4 @@
-# BasicLendingProtocol
+# Lending protocol
 
 # Description
 
