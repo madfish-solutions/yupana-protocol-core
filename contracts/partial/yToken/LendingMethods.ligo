@@ -1,26 +1,12 @@
 #include "./FA2Methods.ligo"
 #include "./AdminMethods.ligo"
-
+(*TODO: use the postfix Float in names of the var's that are multiplied by accuracy *)
 function zeroCheck(
   const amt             : nat)
                         : unit is
     if amt = 0n
     then failwith("yToken/amount-is-zero");
     else unit
-
-// [@inline] function getEnsuredInterestEntrypoint(
-//   const selfAddress     : address)
-//                         : contract(nat) is
-//   case (
-//     Tezos.get_entrypoint_opt("%ensuredUpdateInterest", selfAddress)
-//                         : option(contract(nat))
-//   ) of
-//     Some(contr) -> contr
-//     | None -> (
-//       failwith("yToken/cant-get-ensuredInterest")
-//                         : contract(nat)
-//     )
-//   end;
 
 [@inline] function getProxyContract(
   const priceFeedProxy  : address)
@@ -305,6 +291,7 @@ function redeem(
           else mainParams.amount;
 
           if token.totalLiquid < redeemAmount
+
           then failwith("yToken/not-enough-liquid")
           else skip;
 
@@ -365,6 +352,7 @@ function borrow(
           zeroCheck(mainParams.amount);
 
           var accountUser : account := getAccount(Tezos.sender, s);
+
           const borrowSet : set(tokenId) = convertToSet(accountUser.borrows);
           const marketSet : set(tokenId) = accountUser.markets;
 
@@ -581,11 +569,13 @@ function liquidate(
             accountBorrower.lastBorrowIndex,
             liquidateParams.borrowToken
           );
+
           const maxBorrowInCU : nat = calculateMaxCollaterallInCU(
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
           const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
+          
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );

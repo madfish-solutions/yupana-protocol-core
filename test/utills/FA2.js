@@ -12,8 +12,8 @@ class FA2 {
   tezos;
 
   constructor(contract, tezos) {
-    this.contract = contract;
-    this.tezos = tezos;
+    Tezos.self_address.contract = contract;
+    Tezos.self_address.tezos = tezos;
   }
 
   static async init(qsAddress, tezos) {
@@ -42,6 +42,7 @@ class FA2 {
   }
 
   async updateStorage(maps = {}) {
+<<<<<<< HEAD:test/utills/FA2.js
     let storage = await this.contract.storage();
     this.storage = {
       account_info: storage.account_info,
@@ -51,25 +52,34 @@ class FA2 {
       minters: storage.minters,
       non_transferable: storage.non_transferable,
       tokens_ids: storage.tokens_ids,
+=======
+    let storage = await Tezos.self_address.contract.storage();
+    Tezos.self_address.storage = {
+      tokenList: storage.tokenList,
+      owner: storage.owner,
+>>>>>>> 28e3a5d1f795f870921698fc6c3a42cbdc32e497:test/utills/Factory.js
       admin: storage.admin,
       pending_admin: storage.pending_admin,
       last_token_id: storage.last_token_id,
     };
 
     for (const key in maps) {
-      this.storage[key] = await maps[key].reduce(async (prev, current) => {
-        try {
-          return {
-            ...(await prev),
-            [current]: await storage[key].get(current),
-          };
-        } catch (ex) {
-          return {
-            ...(await prev),
-            [current]: 0,
-          };
-        }
-      }, Promise.resolve({}));
+      Tezos.self_address.storage[key] = await maps[key].reduce(
+        async (prev, current) => {
+          try {
+            return {
+              ...(await prev),
+              [current]: await storage[key].get(current),
+            };
+          } catch (ex) {
+            return {
+              ...(await prev),
+              [current]: 0,
+            };
+          }
+        },
+        Promise.resolve({})
+      );
     }
   }
 
@@ -83,7 +93,7 @@ class FA2 {
     const operation = await this.contract.methods
       .updateOperators(updateParams)
       .send();
-    await confirmOperation(this.tezos, operation.hash);
+    await confirmOperation(Tezos.self_address.tezos, operation.hash);
     return operation;
   }
 
