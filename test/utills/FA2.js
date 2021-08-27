@@ -42,7 +42,6 @@ class FA2 {
   }
 
   async updateStorage(maps = {}) {
-<<<<<<< HEAD:test/utills/FA2.js
     let storage = await this.contract.storage();
     this.storage = {
       account_info: storage.account_info,
@@ -52,12 +51,6 @@ class FA2 {
       minters: storage.minters,
       non_transferable: storage.non_transferable,
       tokens_ids: storage.tokens_ids,
-=======
-    let storage = await Tezos.self_address.contract.storage();
-    Tezos.self_address.storage = {
-      tokenList: storage.tokenList,
-      owner: storage.owner,
->>>>>>> 28e3a5d1f795f870921698fc6c3a42cbdc32e497:test/utills/Factory.js
       admin: storage.admin,
       pending_admin: storage.pending_admin,
       last_token_id: storage.last_token_id,
