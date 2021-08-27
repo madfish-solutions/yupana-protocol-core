@@ -31,7 +31,6 @@ function getTokenInfo(
       totalSupply       = 0n;
       totalReserves     = 0n;
       borrowIndex       = 0n;
-      borrowRate        = 0n;
       maxBorrowRate     = 0n;
       collateralFactor  = 0n;
       reserveFactor     = 0n;
@@ -103,8 +102,7 @@ function getBalanceByToken(
 (* Validates the operators for the given transfer batch
  * and the operator storage.
  *)
-[@inline]
-function isApprovedOperator(
+[@inline] function isApprovedOperator(
   const transferParam   : transferParam;
   const s               : tokenStorage)
                         : bool is
@@ -123,51 +121,56 @@ function iterateTransfer(
     (* Perform single transfer *)
     function makeTransfer(
       var s             : tokenStorage;
-      const transfer_dst: transferDestination)
+      const transferDst : transferDestination)
                         : tokenStorage is
       block {
         (* Create or get source account *)
-        var src_account : account := getAccount(params.from_, s);
+        var srcAccount : account := getAccount(params.from_, s);
+
+        (* Check permissions *)
+        if isApprovedOperator(params, s)
+        then skip
+        else failwith("yToken/FA2-not-operator");
 
         (* Check the entered markets *)
-        if Set.mem(transfer_dst.tokenId, src_account.markets)
+        if Set.mem(transferDst.tokenId, srcAccount.markets)
         then failwith("yToken/token-taken-as-collateral")
         else skip;
 
         (* Token id check *)
-        if transfer_dst.tokenId < s.lastTokenId
+        if transferDst.tokenId < s.lastTokenId
         then skip
         else failwith("FA2/token-undefined");
 
         (* Get source balance *)
-        const src_balance : nat =
-          getBalanceByToken(src_account, transfer_dst.tokenId);
+        const srcBalance : nat =
+          getBalanceByToken(srcAccount, transferDst.tokenId);
 
         (* Balance check *)
-        if src_balance < transfer_dst.amount
+        if srcBalance < transferDst.amount
         then failwith("FA2/insufficient-balance")
         else skip;
 
         (* Update source balance *)
-        src_account.balances[transfer_dst.tokenId] :=
-          abs(src_balance - transfer_dst.amount);
+        srcAccount.balances[transferDst.tokenId] :=
+          abs(srcBalance - transferDst.amount);
 
         (* Update storage *)
-        s.accountInfo[params.from_] := src_account;
+        s.accountInfo[params.from_] := srcAccount;
 
         (* Create or get destination account *)
-        var dst_account : account := getAccount(transfer_dst.to_, s);
+        var dstAccount : account := getAccount(transferDst.to_, s);
 
         (* Get receiver balance *)
-        const dst_balance : nat =
-          getBalanceByToken(dst_account, transfer_dst.tokenId);
+        const dstBalance : nat =
+          getBalanceByToken(dstAccount, transferDst.tokenId);
 
         (* Update destination balance *)
-        dst_account.balances[transfer_dst.tokenId] :=
-          dst_balance + transfer_dst.amount;
+        dstAccount.balances[transferDst.tokenId] :=
+          dstBalance + transferDst.amount;
 
         (* Update storage *)
-        s.accountInfo[transfer_dst.to_] := dst_account;
+        s.accountInfo[transferDst.to_] := dstAccount;
     } with s
 } with List.fold(makeTransfer, params.txs, s)
 
@@ -185,13 +188,13 @@ function iterateUpdateOperators(
       else skip;
 
       (* Create or get source account *)
-      var src_account : account := getAccount(param.owner, s);
+      var srcAccount : account := getAccount(param.owner, s);
 
       (* Add operator *)
-      src_account.allowances := Set.add(param.operator, src_account.allowances);
+      srcAccount.allowances := Set.add(param.operator, srcAccount.allowances);
 
       (* Update storage *)
-      s.accountInfo[param.owner] := src_account;
+      s.accountInfo[param.owner] := srcAccount;
     }
     | RemoveOperator(param) -> block {
       (* Check an owner *)
@@ -200,16 +203,16 @@ function iterateUpdateOperators(
       else skip;
 
       (* Create or get source account *)
-      var src_account : account := getAccount(param.owner, s);
+      var srcAccount : account := getAccount(param.owner, s);
 
       (* Remove operator *)
-      src_account.allowances := Set.remove(
+      srcAccount.allowances := Set.remove(
         param.operator,
-        src_account.allowances
+        srcAccount.allowances
       );
 
       (* Update storage *)
-      s.accountInfo[param.owner] := src_account;
+      s.accountInfo[param.owner] := srcAccount;
     }
     end
   } with s
@@ -238,14 +241,14 @@ function getBalance(
             } with response # l;
 
           (* Collect balances info *)
-          const accumulated_response : list(balanceOfResponse) =
+          const accumulatedResponse : list(balanceOfResponse) =
             List.fold(
               lookUpBalance,
               balanceParams.requests,
               (nil: list(balanceOfResponse))
             );
           operations := list [Tezos.transaction(
-            accumulated_response,
+            accumulatedResponse,
             0tz,
             balanceParams.callback
           )]

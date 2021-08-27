@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { alice } = require("./scripts/sandbox/accounts");
+const { alice, dev } = require("./scripts/sandbox/accounts");
 
 module.exports = {
   outputFile: "output.txt",
@@ -28,7 +28,7 @@ module.exports = {
       rpc: "https://granadanet.smartpy.io",
       port: 443,
       network_id: "*",
-      secretKey: alice.sk,
+      secretKey: dev.sk,
     },
     mainnet: {
       host: "https://mainnet.smartpy.io",

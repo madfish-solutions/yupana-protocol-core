@@ -4,12 +4,9 @@ require("ts-node").register({
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/InterestRate");
-const { functions } = require("../../storage/Functions");
-const { getLigo } = require("../../scripts/helpers");
-const { execSync } = require("child_process");
+const storage = require("../../storage/FA12");
 
-class InterestRate {
+class FA12 {
   contract;
   storage;
   tezos;
@@ -20,12 +17,12 @@ class InterestRate {
   }
 
   static async init(qsAddress, tezos) {
-    return new InterestRate(await tezos.contract.at(qsAddress), tezos);
+    return new FA12(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/interestRate.json`)
+      fs.readFileSync(`${env.buildDir}/FA12.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -38,8 +35,7 @@ class InterestRate {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-
-    return new InterestRate(
+    return new FA12(
       await tezos.contract.at(operation.contractAddress),
       tezos
     );
@@ -48,14 +44,8 @@ class InterestRate {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      admin: storage.admin,
-      yToken: storage.yToken,
-      kickRate: storage.kickRate,
-      baseRate: storage.baseRate,
-      multiplier: storage.multiplier,
-      jumpMultiplier: storage.jumpMultiplier,
-      reserveFactor: storage.reserveFactor,
-      lastUpdTime: storage.lastUpdTime,
+      totalSupply: storage.totalSupply,
+      ledger: storage.ledger,
     };
 
     for (const key in maps) {
@@ -75,29 +65,17 @@ class InterestRate {
     }
   }
 
-  async updateRateAdmin(newAdmin) {
-    const operation = await this.contract.methods
-      .updateRateAdmin(newAdmin)
-      .send();
+  async mint(amt) {
+    const operation = await this.contract.methods.mint(amt).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async updateRateYToken(newToken) {
-    const operation = await this.contract.methods
-      .updateRateYToken(newToken)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async setCoefficients(kickRate, baseRate, multiplier, jumpMultiplier) {
-    const operation = await this.contract.methods
-      .setCoefficients(kickRate, baseRate, multiplier, jumpMultiplier)
-      .send();
+  async approve(adrr, amt) {
+    const operation = await this.contract.methods.approve(adrr, amt).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.InterestRate = InterestRate;
+module.exports.FA12 = FA12;

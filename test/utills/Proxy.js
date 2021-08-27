@@ -39,33 +39,17 @@ class Proxy {
       });
     await confirmOperation(tezos, operation.hash);
 
-    let ligo = getLigo(true);
-    console.log("Start setting proxy lambdas");
-    let proxyFunction = 0;
-    for (proxyFunction of functions.proxy) {
-      const stdout = execSync(
-        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/priceFeed.ligo main 'SetProxyAction(record index =${proxyFunction.index}n; func = ${proxyFunction.name}; end)'`,
-        { maxBuffer: 1024 * 1000 }
-      );
-      const operation2 = await tezos.contract.transfer({
-        to: operation.contractAddress,
-        amount: 0,
-        parameter: {
-          entrypoint: "setProxyAction",
-          value: JSON.parse(stdout.toString()).args[0],
-        },
-      });
-      await confirmOperation(tezos, operation2.hash);
-    }
-    console.log("Setting finished");
     return new Proxy(await tezos.contract.at(operation.contractAddress), tezos);
   }
 
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      storage: storage.storage,
-      proxyLambdas: storage.proxyLambdas,
+      admin: storage.admin,
+      oracle: storage.oracle,
+      yToken: storage.yToken,
+      pairName: storage.pairName,
+      pairId: storage.pairId
     };
 
     for (const key in maps) {
@@ -109,7 +93,7 @@ class Proxy {
 
   async updatePair(tokenId, pairName) {
     const operation = await this.contract.methods
-      .updatePair(pairName, tokenId)
+      .updatePair(tokenId, pairName)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

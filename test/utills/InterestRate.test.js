@@ -36,14 +36,14 @@ describe("Interest tests", async () => {
 
     await interest.updateRateYToken(sendRateContractAddress);
     await interest.updateStorage();
-    strictEqual(interest.storage.storage.yToken, sendRateContractAddress);
+    strictEqual(interest.storage.yToken, sendRateContractAddress);
   });
 
   it("set InterestRate admin", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await interest.updateRateAdmin(bob.pkh);
     await interest.updateStorage();
-    strictEqual(interest.storage.storage.admin, bob.pkh);
+    strictEqual(interest.storage.admin, bob.pkh);
   });
 
   it("set InterestRate coef", async () => {
@@ -51,11 +51,11 @@ describe("Interest tests", async () => {
     await interest.setCoefficients(100, 200, 300, 400);
     await interest.updateStorage();
 
-    strictEqual(await interest.storage.storage.kickRate.toString(), "100");
-    strictEqual(await interest.storage.storage.baseRate.toString(), "200");
-    strictEqual(await interest.storage.storage.multiplier.toString(), "300");
+    strictEqual(await interest.storage.kickRate.toString(), "100");
+    strictEqual(await interest.storage.baseRate.toString(), "200");
+    strictEqual(await interest.storage.multiplier.toString(), "300");
     strictEqual(
-      await interest.storage.storage.jumpMultiplier.toString(),
+      await interest.storage.jumpMultiplier.toString(),
       "400"
     );
   });

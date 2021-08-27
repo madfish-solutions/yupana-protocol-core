@@ -8,6 +8,8 @@ const { Proxy } = require("../test/utills/Proxy");
 const { InterestRate } = require("../test/utills/InterestRate");
 const { GetOracle } = require("../test/utills/GetOracle");
 const { YToken } = require("../test/utills/YToken");
+const { FA12 } = require("../test/utills/FA12");
+const { FA2 } = require("../test/utills/FA2");
 const { Utils } = require("../test/utills/Utils");
 
 const { confirmOperation } = require("../scripts/confirmation");
@@ -25,22 +27,33 @@ describe("Proxy tests", async () => {
   let interest;
   let proxy;
   let oracle;
+  let fa12;
+  let fa12_2;
+  let fa2;
   let yTokenContractAddress;
   let interestContractAddress;
   let proxyContractAddress;
   let oracleContractAddress;
+  let fa12ContractAddress;
+  let fa2ContractAddress;
 
   before("setup Proxy", async () => {
     tezos = await Utils.initTezos();
     yToken = await YToken.originate(tezos);
     interest = await InterestRate.originate(tezos);
     proxy = await Proxy.originate(tezos);
+    fa12 = await FA12.originate(tezos);
+    fa12_2 = await FA12.originate(tezos);
+    fa2 = await FA2.originate(tezos);
     oracle = await GetOracle.originate(tezos);
 
     yTokenContractAddress = yToken.contract.address;
     interestContractAddress = interest.contract.address;
     proxyContractAddress = proxy.contract.address;
     oracleContractAddress = oracle.contract.address;
+    fa12ContractAddress = fa12.contract.address;
+    fa12_2ContractAddress = fa12_2.contract.address;
+    fa2ContractAddress = fa2.contract.address;
 
     await oracle.updReturnAddressOracle(proxyContractAddress);
     await oracle.updateStorage();
@@ -48,17 +61,17 @@ describe("Proxy tests", async () => {
 
     await proxy.updateOracle(oracleContractAddress);
     await proxy.updateStorage();
-    strictEqual(proxy.storage.storage.oracle, oracleContractAddress);
+    strictEqual(proxy.storage.oracle, oracleContractAddress);
 
     await proxy.updateYToken(yTokenContractAddress);
     await proxy.updateStorage();
-    strictEqual(proxy.storage.storage.yToken, yTokenContractAddress);
+    strictEqual(proxy.storage.yToken, yTokenContractAddress);
 
     await interest.updateRateYToken(yTokenContractAddress);
     await interest.updateStorage();
-    strictEqual(interest.storage.storage.yToken, yTokenContractAddress);
+    strictEqual(interest.storage.yToken, yTokenContractAddress);
 
-    await yToken.setGlobalFactors("110", "120", proxyContractAddress);
+    await yToken.setGlobalFactors("110", "120", proxyContractAddress, "10");
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
   });
@@ -67,7 +80,7 @@ describe("Proxy tests", async () => {
     try {
       tezos = await Utils.setProvider(tezos, bob.sk);
       await yToken.setAdmin(carol.pkh);
-      await proxy.updateStorage();
+      await yToken.updateStorage();
     } catch (e) {
       console.log("not-admin");
     }
@@ -78,5 +91,158 @@ describe("Proxy tests", async () => {
     await yToken.setAdmin(bob.pkh);
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.admin, bob.pkh);
+  });
+
+  it("add market [0]", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await yToken.addMarket(
+      interestContractAddress,
+      fa12ContractAddress,
+      100000,
+      150000,
+      10000,
+      tokenMetadata,
+      "fA12"
+    );
+    await yToken.updateStorage();
+    var r = await yToken.storage.storage.tokenInfo.get(0);
+    strictEqual(r.mainToken, fa12ContractAddress);
+
+    await proxy.updatePair(0n, "BTC-USDT");
+    await proxy.updateStorage();
+    strictEqual(await proxy.storage.pairName.get(0), "BTC-USDT");
+
+    let pairId = await proxy.storage.pairId.get("BTC-USDT");
+    strictEqual(pairId.toString(), "0");
+  });
+
+  it("add market [1]", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await yToken.addMarket(
+      interestContractAddress,
+      fa12_2ContractAddress,
+      100000,
+      150000,
+      10000,
+      tokenMetadata,
+      "fA12"
+    );
+    await yToken.updateStorage();
+    var r = await yToken.storage.storage.tokenInfo.get(1);
+    strictEqual(r.mainToken, fa12_2ContractAddress);
+
+    await proxy.updatePair(1, "ETH-USDT");
+    await proxy.updateStorage();
+    strictEqual(await proxy.storage.pairName.get(1), "ETH-USDT");
+
+    let pairId = await proxy.storage.pairId.get("ETH-USDT");
+    strictEqual(pairId.toString(), "1");
+  });
+
+  it("mint fa12 tokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await fa12.mint(100000000000);
+    await fa12.updateStorage();
+
+    let res = await fa12.storage.ledger.get(bob.pkh);
+
+    strictEqual(await res.balance.toString(), "100000000000");
+
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await fa12_2.mint(100000000000);
+    await fa12_2.updateStorage();
+
+    res = await fa12_2.storage.ledger.get(alice.pkh);
+
+    strictEqual(await res.balance.toString(), "100000000000");
+  });
+
+  it("mint yTokens by alice", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await fa12_2.approve(yTokenContractAddress, 100000000000);
+    await fa12_2.updateStorage();
+
+    await yToken.mint(1, 100);
+    await yToken.updateStorage();
+
+    let res = await fa12_2.storage.ledger.get(alice.pkh);
+    strictEqual(await res.balance.toString(), "99999999900");
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(alice.pkh);
+    let yTokenBalance = await yTokenRes.balances.get("1");
+    strictEqual(await yTokenBalance.toString(), "100000000000000000000");
+  });
+
+  it("mint yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await fa12.approve(yTokenContractAddress, 100000000000);
+    await fa12.updateStorage();
+
+    await yToken.mint(0, 100);
+    await yToken.updateStorage();
+
+    let res = await fa12.storage.ledger.get(bob.pkh);
+    strictEqual(await res.balance.toString(), "99999999900");
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    let yTokenBalance = await yTokenRes.balances.get("0");
+    strictEqual(await yTokenBalance.toString(), "100000000000000000000");
+  });
+
+  it("enterMarket and borrow yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await yToken.enterMarket(0);
+    await yToken.updateStorage();
+
+    await yToken.updateInterest(0);
+    await yToken.updateStorage();
+
+    await yToken.updateInterest(1);
+    await yToken.updateStorage();
+
+    await yToken.updatePrice([0, 1]);
+    await yToken.updateStorage();
+
+    await yToken.borrow(1, 10);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    let balance = await res.borrows.get("1");
+
+    strictEqual(await balance.toString(), "10000000000000000000");
+  });
+
+  it("repay yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await fa12_2.approve(yTokenContractAddress, 10);
+    await fa12_2.updateStorage();
+
+    await yToken.repay(1, 5);
+    await yToken.updateStorage();
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    let yTokenBalance = await yTokenRes.borrows.get("1");
+    strictEqual(await yTokenBalance.toString(), "5000000000000000000");
+  });
+
+  it("redeem yTokens by alice", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    let res = await fa12_2.storage.ledger.get(alice.pkh);
+    strictEqual(await res.balance.toString(), "99999999900");
+
+    await yToken.redeem(1, 10);
+    await yToken.updateStorage();
+
+    res = await fa12_2.storage.ledger.get(alice.pkh);
+    strictEqual(await res.balance.toString(), "99999999910");
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(alice.pkh);
+    let yTokenBalance = await yTokenRes.balances.get("1");
+    strictEqual(await yTokenBalance.toString(), "89473684210526315790");
+    // 10 tokens + percents
+    strictEqual(100000000000000000000-89473684210526315790, 10526315789473677000);
   });
 });

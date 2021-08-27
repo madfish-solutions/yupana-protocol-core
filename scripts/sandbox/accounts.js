@@ -19,4 +19,9 @@ module.exports = {
     sk: "edsk3W5Fz1yWK39sLY6vidmgkfmGAXh6V2JqUiri9W1pFeeYWbFbJL",
     pk: "",
   },
+  dev: {
+    pkh: "tz1fpFLUUzfAPFhDabsMKV53vUdvV9VVjX8x",
+    sk: "edskS7EFSnp428cQj5PMDSzV9WFTwjJ63GZnUgdJJWAoafFMgfdTsQHHQo3fYcv4CtEtr2EBLdeSJv9F4xa6fT445Do1dgs9t2",
+    pk: "",
+  },
 };

@@ -6,6 +6,7 @@ type rateStorage        is [@layout:comb] record [
   multiplier            : nat;
   jumpMultiplier        : nat;
   reserveFactor         : nat;
+  lastUpdTime           : timestamp;
 ]
 
 type setCoeffParams     is [@layout:comb] record [
@@ -20,5 +21,6 @@ type rateParams         is [@layout:comb] record [
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
+  accuracy              : nat;
   contract              : contract(mainParams);
 ]

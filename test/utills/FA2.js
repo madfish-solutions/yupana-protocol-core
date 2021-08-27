@@ -4,9 +4,9 @@ require("ts-node").register({
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/Factory");
+const storage = require("../../storage/FA2");
 
-class Factory {
+class FA2 {
   contract;
   storage;
   tezos;
@@ -17,12 +17,12 @@ class Factory {
   }
 
   static async init(qsAddress, tezos) {
-    return new Factory(await tezos.contract.at(qsAddress), tezos);
+    return new FA2(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/Factory.json`)
+      fs.readFileSync(`${env.buildDir}/FA2.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -35,7 +35,7 @@ class Factory {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-    return new Factory(
+    return new FA2(
       await tezos.contract.at(operation.contractAddress),
       tezos
     );
@@ -44,11 +44,16 @@ class Factory {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      tokenList: storage.tokenList,
-      owner: storage.owner,
+      account_info: storage.account_info,
+      token_info: storage.token_info,
+      metadata: storage.metadata,
+      token_metadata: storage.token_metadata,
+      minters: storage.minters,
+      non_transferable: storage.non_transferable,
+      tokens_ids: storage.tokens_ids,
       admin: storage.admin,
-      tokenLambdas: storage.tokenLambdas,
-      useLambdas: storage.useLambdas,
+      pending_admin: storage.pending_admin,
+      last_token_id: storage.last_token_id,
     };
 
     for (const key in maps) {
@@ -68,41 +73,25 @@ class Factory {
     }
   }
 
-  async setFactoryAdmin(newAdmin) {
+  async create_token(tokenMetadata) {
+    const operation = await this.contract.methods.create_token(tokenMetadata).send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  async updateOperators(updateParams) {
     const operation = await this.contract.methods
-      .setFactoryAdmin(newAdmin)
+      .updateOperators(updateParams)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async setNewOwner(newOwner) {
-    const operation = await this.contract.methods.setNewOwner(newOwner).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async launchToken(tokenAddress, oralcePairName) {
-    const operation = await this.contract.methods
-      .launchToken(oralcePairName, tokenAddress)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async setTokenFunction(idx, f) {
-    const operation = await this.contract.methods
-      .setTokenFunction(idx, f)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async setUseFunction(idx, f) {
-    const operation = await this.contract.methods.setUseFunction(idx, f).send();
+  async mint(txs) {
+    const operation = await this.contract.methods.mint_asset(txs).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.Factory = Factory;
+module.exports.FA2 = FA2;
