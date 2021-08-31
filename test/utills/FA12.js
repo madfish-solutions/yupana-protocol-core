@@ -21,9 +21,7 @@ class FA12 {
   }
 
   static async originate(tezos) {
-    const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/FA12.json`)
-    );
+    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/FA12.json`));
     const operation = await tezos.contract
       .originate({
         code: artifacts.michelson,
@@ -35,10 +33,7 @@ class FA12 {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-    return new FA12(
-      await tezos.contract.at(operation.contractAddress),
-      tezos
-    );
+    return new FA12(await tezos.contract.at(operation.contractAddress), tezos);
   }
 
   async updateStorage(maps = {}) {

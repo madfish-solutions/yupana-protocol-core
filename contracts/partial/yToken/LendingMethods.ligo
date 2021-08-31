@@ -450,7 +450,6 @@ function repay (
     var operations : list(operation) := list[];
       case p of
         Repay(mainParams) -> {
-          zeroCheck(mainParams.amount);
 
           var token : tokenInfo := getTokenInfo(mainParams.tokenId, s);
 
@@ -468,16 +467,16 @@ function repay (
             mainParams.tokenId
           );
 
+          if repayAmountFloat = 0n
+          then repayAmountFloat := userBorrowAmountFloat;
+          else skip;
+
           if lastBorrowIndex =/= 0n
           then userBorrowAmountFloat := userBorrowAmountFloat *
             token.borrowIndex / lastBorrowIndex;
           else skip;
 
-          if repayAmountFloat = 0n
-          then repayAmountFloat := userBorrowAmountFloat;
-          else skip;
-
-          if userBorrowAmountFloat <= repayAmountFloat
+          if repayAmountFloat > userBorrowAmountFloat
           then failwith("yToken/amount-should-be-less-or-equal")
           else skip;
 
@@ -575,7 +574,7 @@ function liquidate(
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
           const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
-          
+
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );

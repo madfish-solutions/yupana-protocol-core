@@ -54,10 +54,7 @@ describe("Interest tests", async () => {
     strictEqual(await interest.storage.kickRate.toString(), "100");
     strictEqual(await interest.storage.baseRate.toString(), "200");
     strictEqual(await interest.storage.multiplier.toString(), "300");
-    strictEqual(
-      await interest.storage.jumpMultiplier.toString(),
-      "400"
-    );
+    strictEqual(await interest.storage.jumpMultiplier.toString(), "400");
   });
 
   it("send UtilizationRate", async () => {

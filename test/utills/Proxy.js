@@ -49,7 +49,7 @@ class Proxy {
       oracle: storage.oracle,
       yToken: storage.yToken,
       pairName: storage.pairName,
-      pairId: storage.pairId
+      pairId: storage.pairId,
     };
 
     for (const key in maps) {

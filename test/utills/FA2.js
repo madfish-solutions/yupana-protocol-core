@@ -12,8 +12,8 @@ class FA2 {
   tezos;
 
   constructor(contract, tezos) {
-    Tezos.self_address.contract = contract;
-    Tezos.self_address.tezos = tezos;
+    this.contract = contract;
+    this.tezos = tezos;
   }
 
   static async init(qsAddress, tezos) {
@@ -21,9 +21,7 @@ class FA2 {
   }
 
   static async originate(tezos) {
-    const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/FA2.json`)
-    );
+    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/FA2.json`));
     const operation = await tezos.contract
       .originate({
         code: artifacts.michelson,
@@ -35,10 +33,7 @@ class FA2 {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-    return new FA2(
-      await tezos.contract.at(operation.contractAddress),
-      tezos
-    );
+    return new FA2(await tezos.contract.at(operation.contractAddress), tezos);
   }
 
   async updateStorage(maps = {}) {
@@ -57,7 +52,7 @@ class FA2 {
     };
 
     for (const key in maps) {
-      Tezos.self_address.storage[key] = await maps[key].reduce(
+      this.storage[key] = await maps[key].reduce(
         async (prev, current) => {
           try {
             return {
@@ -77,7 +72,9 @@ class FA2 {
   }
 
   async create_token(tokenMetadata) {
-    const operation = await this.contract.methods.create_token(tokenMetadata).send();
+    const operation = await this.contract.methods
+      .create_token(tokenMetadata)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
@@ -86,7 +83,7 @@ class FA2 {
     const operation = await this.contract.methods
       .updateOperators(updateParams)
       .send();
-    await confirmOperation(Tezos.self_address.tezos, operation.hash);
+    await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
