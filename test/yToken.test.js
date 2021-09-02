@@ -171,7 +171,10 @@ describe("Proxy tests", async () => {
     let yTokenRes = await yToken.storage.storage.accountInfo.get(alice.pkh);
     let yTokenBalance = await yTokenRes.balances.get("1");
 
-    strictEqual(await yTokenBalance.toPrecision(40).split('.')[0], "1000000000000000000000000");
+    strictEqual(
+      await yTokenBalance.toPrecision(40).split(".")[0],
+      "1000000000000000000000000"
+    );
   });
 
   it("mint yTokens by bob", async () => {
@@ -187,7 +190,10 @@ describe("Proxy tests", async () => {
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
     let yTokenBalance = await yTokenRes.balances.get("0");
-    strictEqual(await yTokenBalance.toPrecision(40).split('.')[0], "1000000000000000000000000");
+    strictEqual(
+      await yTokenBalance.toPrecision(40).split(".")[0],
+      "1000000000000000000000000"
+    );
   });
 
   it("enterMarket and borrow yTokens by bob", async () => {
@@ -195,6 +201,9 @@ describe("Proxy tests", async () => {
 
     await yToken.enterMarket(0);
     await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    strictEqual(await res.markets.toString(), '0')
 
     await yToken.updateInterest(0);
     await yToken.updateStorage();
@@ -211,7 +220,10 @@ describe("Proxy tests", async () => {
     res = await yToken.storage.storage.accountInfo.get(bob.pkh);
     let balance = await res.borrows.get("1");
 
-    strictEqual(await balance.toPrecision(40).split('.')[0], "100000000000000000000000");
+    strictEqual(
+      await balance.toPrecision(40).split(".")[0],
+      "100000000000000000000000"
+    );
   });
 
   it("repay yTokens by bob", async () => {
@@ -224,8 +236,11 @@ describe("Proxy tests", async () => {
     await yToken.updateStorage();
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    let yTokenBalance = await yTokenRes.borrows.get("1");
-    strictEqual(await yTokenBalance.toPrecision(40).split('.')[0], "50000000000000000000000");
+    let yTokenBorrow = await yTokenRes.borrows.get("1");
+    strictEqual(
+      await yTokenBorrow.toPrecision(40).split(".")[0],
+      "50000000000000000000000"
+    );
   });
 
   it("redeem yTokens by alice", async () => {
@@ -242,7 +257,11 @@ describe("Proxy tests", async () => {
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(alice.pkh);
     let yTokenBalance = await yTokenRes.balances.get("1");
-    strictEqual(await yTokenBalance.toPrecision(40).split('.')[0], "894736842105263157894737");
+    strictEqual(
+      await yTokenBalance.toPrecision(40).split(".")[0],
+      "894736842105263157894737"
+    );
+
   });
 
   it("try exit market yTokens by bob", async () => {
@@ -261,27 +280,35 @@ describe("Proxy tests", async () => {
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
     let yTokenBalance = await yTokenRes.borrows.get("1");
-    console.log(yTokenBalance)
 
     await yToken.repay(1, 40000);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
     yTokenBalance = await yTokenRes.borrows.get("1");
-    strictEqual(await yTokenBalance.toPrecision(40).split('.')[0], "10000000000000000000000");
+    strictEqual(
+      await yTokenBalance.toPrecision(40).split(".")[0],
+      "10000000000000000000000"
+    );
 
     await yToken.repay(1, 0);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
     yTokenBalance = await yTokenRes.borrows.get("1");
-    strictEqual(await yTokenBalance.toPrecision(40).split('.')[0], "0");
+    strictEqual(await yTokenBalance.toString(), "0");
   });
 
   it("exit market yTokens by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
 
+    let res = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    strictEqual(await res.markets.toString(), '0');
+
     await yToken.exitMarket(0);
     await yToken.updateStorage();
+
+    res = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    strictEqual(await res.markets.toString(), '')
   });
 });

@@ -30,7 +30,8 @@ function zeroCheck(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("yToken/cant-get-interestRate-contract(rateUse)") : contract(entryRateAction)
+      failwith("yToken/cant-get-interestRate-contract(rateUse)")
+        : contract(entryRateAction)
     )
   end;
 
@@ -56,21 +57,22 @@ function zeroCheck(
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("yToken/cant-get-interestRate-contract(getBorrowRate)") : contract(entryRateAction)
+      failwith("yToken/cant-get-interestRate-contract(getBorrowRate)")
+        : contract(entryRateAction)
     )
   end;
 
 function convertToSet(
   const fullMap         : map(tokenId, nat))
                         : set(tokenId) is
-    block {
-      var res : set(tokenId) := Set.empty;
-      function add(
-        var res         : set(tokenId);
-        const currPair  : tokenId * nat)
-                        : set(tokenId) is
-          Set.add(currPair.0, res);
-    } with Map.fold(add, fullMap, res);
+  block {
+    var res : set(tokenId) := Set.empty;
+    function add(
+      var res         : set(tokenId);
+      const currPair  : tokenId * nat)
+                      : set(tokenId) is
+        Set.add(currPair.0, res);
+  } with Map.fold(add, fullMap, res);
 
 function prepareOracleRequests(
   const tokenSet        : set(tokenId);
@@ -104,18 +106,18 @@ function calculateMaxCollaterallInCU(
   block {
     function oneToken(
       var param         : calcCollParams;
-      var tokenId       : tokenId)
+      const tokenId     : tokenId)
                         : calcCollParams is
       block {
-        var userBalance : nat := getMapInfo(
+        const userBalance : nat = getMapInfo(
           userAccount.balances,
           tokenId
         );
-        var token : tokenInfo := getTokenInfo(tokenId, param.s);
+        const token : tokenInfo = getTokenInfo(tokenId, param.s);
         (* sum += collateralFactor * exchangeRate * oraclePrice * balance *)
-        param.res := param.res + userBalance * token.lastPrice * token.collateralFactor
-          * abs(token.totalLiquid + token.totalBorrows - token.totalReserves)
-          / token.totalSupply / accuracy;
+        param.res := param.res + ((userBalance * token.lastPrice * token.collateralFactor)
+          * (abs(token.totalLiquid + token.totalBorrows - token.totalReserves)
+          / token.totalSupply) / accuracy);
       } with param;
     const result : calcCollParams = Set.fold(
       oneToken,
@@ -134,9 +136,9 @@ function calculateOutstandingBorrowInCU(
       const borrowMap   : tokenId * nat)
                         : calcCollParams is
       block {
-        var token : tokenInfo := getTokenInfo(borrowMap.0, param.s);
+        const token : tokenInfo = getTokenInfo(borrowMap.0, param.s);
         (* sum += oraclePrice * balance *)
-        param.res := param.res + (borrowMap.1 * token.lastPrice);
+        param.res := param.res + ((borrowMap.1 * token.lastPrice) / accuracy);
       } with param;
     const result : calcCollParams = Map.fold(
       oneToken,
@@ -378,7 +380,8 @@ function borrow(
           const availableToBorrowInCU : nat = abs(
             maxBorrowInCU - outstandingBorrowInCU
           );
-          const maxBorrowXAmount : nat = availableToBorrowInCU / token.lastPrice;
+          const maxBorrowXAmount : nat = availableToBorrowInCU
+            / token.lastPrice;
 
           var userBorrowAmountFloat : nat := getMapInfo(
             accountUser.borrows,
@@ -574,7 +577,6 @@ function liquidate(
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
           const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
-
             accountBorrower,
             record[s = s; res = 0n; userAccount = accountBorrower]
           );
@@ -747,7 +749,7 @@ function exitMarket(
             record[s = s; res = 0n; userAccount = userAccount]
           );
 
-          if outstandingBorrowInCU < maxBorrowInCU
+          if outstandingBorrowInCU < maxBorrowInCU or outstandingBorrowInCU = 0n
           then s.accountInfo[Tezos.sender] := userAccount;
           else failwith("yToken/debt-not-repaid");
         }
