@@ -50,22 +50,22 @@ describe("Proxy tests", async () => {
 
     await proxy.updateOracle(oracleContractAddress);
     await proxy.updateStorage();
-    strictEqual(proxy.storage.storage.oracle, oracleContractAddress);
+    strictEqual(proxy.storage.oracle, oracleContractAddress);
 
     await proxy.updateYToken(yTokenContractAddress);
     await proxy.updateStorage();
-    strictEqual(proxy.storage.storage.yToken, yTokenContractAddress);
+    strictEqual(proxy.storage.yToken, yTokenContractAddress);
 
     await yToken.setGlobalFactors("110", "120", proxyContractAddress);
     await yToken.updateStorage();
-    strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
+    strictEqual(yToken.storage.priceFeedProxy, proxyContractAddress);
   });
 
   it("set Proxy admin", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await proxy.updateAdmin(bob.pkh);
     await proxy.updateStorage();
-    strictEqual(proxy.storage.storage.admin, bob.pkh);
+    strictEqual(proxy.storage.admin, bob.pkh);
   });
 
   it("update Pair by not admin", async () => {
@@ -82,8 +82,8 @@ describe("Proxy tests", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await proxy.updatePair(0n, "BTC-USDT");
     await proxy.updateStorage();
-    strictEqual(await proxy.storage.storage.pairName.get(0), "BTC-USDT");
-    let pairId = await proxy.storage.storage.pairId.get("BTC-USDT");
+    strictEqual(await proxy.storage.pairName.get(0), "BTC-USDT");
+    let pairId = await proxy.storage.pairId.get("BTC-USDT");
     strictEqual(pairId.toString(), "0");
   });
 
@@ -110,19 +110,19 @@ describe("Proxy tests", async () => {
       0
     );
     await yToken.updateStorage();
-    var r = await yToken.storage.storage.tokenInfo.get(0);
+    var r = await yToken.storage.tokenInfo.get(0);
     strictEqual(r.mainToken, alice.pkh);
   });
 
   it("getting a price for an permitted address", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
-    var r = await yToken.storage.storage.tokenInfo.get(0);
+    var r = await yToken.storage.tokenInfo.get(0);
     strictEqual(r.lastPrice.toString(), "0");
 
     await yToken.updatePrice([0n]);
     await yToken.updateStorage();
 
-    r = await yToken.storage.storage.tokenInfo.get(0);
+    r = await yToken.storage.tokenInfo.get(0);
     strictEqual(r.lastPrice.toString(), "100");
   });
 });

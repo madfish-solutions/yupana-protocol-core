@@ -6,20 +6,6 @@ type storage is record [
   returnAddress   : address;
 ]
 
-type oracleParam is (string * (timestamp * nat))
-
-type pairParam          is record [
-  tokenId               : nat;
-  pairName              : string;
-]
-
-type proxyAction        is
-  | UpdateAdmin of address
-  | UpdateOracle of address
-  | UpdatePair of pairParam
-  | GetPrice of nat
-  | ReceivePrice of oracleParam
-
 [@inline] const noOperations : list (operation) = nil;
 
 type return is list (operation) * storage
@@ -36,20 +22,6 @@ type entryAction is
   | Get of updParams
   | UpdParamsOracle of updParamsOracleParams
   | UpdReturnAddressOracle of address
-
-
-[@inline] function getProxyContract(
-  const priceFeedProxy  : address)
-                        : contract(proxyAction) is
-  case(
-    Tezos.get_entrypoint_opt("%proxyUse", priceFeedProxy)
-                        : option(contract(proxyAction))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("oracle/cant-get-contract-proxy") : contract(proxyAction)
-    )
-  end;
 
 function get(
   const upd             : updParams;

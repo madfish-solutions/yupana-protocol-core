@@ -1,3 +1,20 @@
+function verifyUpdatedRates(
+  const setOfTokens     : set(tokenId);
+  var s                 : tokenStorage)
+                        : tokenStorage is
+  block {
+    function updInterest(
+      var s             : tokenStorage;
+      const tokenId     : tokenId)
+                        : tokenStorage is
+      block {
+        var token : tokenInfo := getTokenInfo(tokenId, s);
+        if token.lastUpdateTime > ((Tezos.now + 60) : timestamp)
+        then failwith("yToken/need-update-interestRate")
+        else skip;
+      } with s
+  } with Set.fold(updInterest, setOfTokens, s)
+
 function mustBeAdmin(
   const s               : tokenStorage)
                         : unit is
@@ -84,7 +101,8 @@ function setTokenFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    (* TODO: ensure the interest are update before *)
+    s.storage := verifyUpdatedRates(set [params.tokenId], s.storage);
+
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
     token.collateralFactor := params.collateralFactor;
     token.reserveFactor := params.reserveFactor;
@@ -102,4 +120,5 @@ function setGlobalFactors(
     s.storage.closeFactor := params.closeFactor;
     s.storage.liqIncentive := params.liqIncentive;
     s.storage.priceFeedProxy := params.priceFeedProxy;
+    s.storage.maxMarkets := params.maxMarkets;
   } with (noOperations, s)

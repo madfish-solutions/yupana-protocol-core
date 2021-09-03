@@ -28,6 +28,7 @@ type rateParams         is [@layout:comb] record [
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
+  accuracy              : nat;
   contract              : contract(mainParams);
 ]
 
@@ -36,9 +37,10 @@ type interestParams     is [@layout:comb] record [
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
+  accuracy              : nat;
 ]
 
-type rateAction         is
+type entryRateAction         is
   | UpdateRateAdmin of address
   | UpdateRateYToken of address
   | SetCoefficients of setCoeffParams
@@ -59,16 +61,42 @@ type entryAction is
   | GetReserveFactor of nat
 
 
-[@inline] function getRateContract(
+[@inline] function getUtilRateContract(
   const addr            : address)
-                        : contract(rateAction) is
+                        : contract(entryRateAction) is
   case (
-    Tezos.get_entrypoint_opt("%rateUse", addr)
-                        : option(contract(rateAction))
+    Tezos.get_entrypoint_opt("%getUtilizationRate", addr)
+                        : option(contract(entryRateAction))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("getInterest/cant-get-rate-contract") : contract(rateAction)
+      failwith("getInterest/cant-get-rate-contract") : contract(entryRateAction)
+    )
+  end;
+
+[@inline] function getBorrowRateContract(
+  const addr            : address)
+                        : contract(entryRateAction) is
+  case (
+    Tezos.get_entrypoint_opt("%getBorrowRate", addr)
+                        : option(contract(entryRateAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("getInterest/cant-get-rate-contract") : contract(entryRateAction)
+    )
+  end;
+
+[@inline] function getSupplyRateContract(
+  const addr            : address)
+                        : contract(entryRateAction) is
+  case (
+    Tezos.get_entrypoint_opt("%getSupplyRate", addr)
+                        : option(contract(entryRateAction))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("getInterest/cant-get-rate-contract") : contract(entryRateAction)
     )
   end;
 
@@ -111,16 +139,16 @@ type entryAction is
     )
   end;
 
-[@inline] function geteRateContract(
+[@inline] function getUpdRateContract(
   const rateAddress     : address)
-                        : contract(rateAction) is
+                        : contract(entryRateAction) is
   case(
-    Tezos.get_entrypoint_opt("%rateUse", rateAddress)
-                        : option(contract(rateAction))
+    Tezos.get_entrypoint_opt("%updReserveFactor", rateAddress)
+                        : option(contract(entryRateAction))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("yToken/cant-get-interestRate-contract") : contract(rateAction)
+      failwith("getInterests/cant-get-interestRate-contract") : contract(entryRateAction)
     )
   end;
 
@@ -145,10 +173,11 @@ function sendUtil(
           borrows = p.borrows;
           cash = p.cash;
           reserves = p.reserves;
+          accuracy = p.accuracy;
           contract = getUpdateUtilRateContract(Tezos.self_address);
         ]),
         0mutez,
-        getRateContract(s.interestAddress)
+        getUtilRateContract(s.interestAddress)
       );
     ]
   } with (operations , s)
@@ -174,10 +203,11 @@ function sendBorrow(
           borrows = p.borrows;
           cash = p.cash;
           reserves = p.reserves;
+          accuracy = p.accuracy;
           contract = getUpdateBorrowRateContract(Tezos.self_address)
         ]),
         0mutez,
-        getRateContract(s.interestAddress)
+        getBorrowRateContract(s.interestAddress)
       );
     ]
   } with (operations , s)
@@ -203,10 +233,11 @@ function sendSupply(
           borrows = p.borrows;
           cash = p.cash;
           reserves = p.reserves;
+          accuracy = p.accuracy;
           contract = getUpdateSupplyRateContract(Tezos.self_address)
         ]),
         0mutez,
-        getRateContract(s.interestAddress)
+        getSupplyRateContract(s.interestAddress)
       );
     ]
   } with (operations , s)
@@ -234,7 +265,7 @@ function getReserveFactor(
       Tezos.transaction(
         UpdReserveFactor(reserveFactor),
         0mutez,
-        geteRateContract(s.interestAddress)
+        getUpdRateContract(s.interestAddress)
       )
     ];
   } with (operations, s)

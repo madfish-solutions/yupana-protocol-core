@@ -52,8 +52,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setTokenAction",
-          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0]
-            .args[0],
+          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
         },
       });
       await confirmOperation(tezos, operation2.hash);
@@ -70,8 +69,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setUseAction",
-          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0]
-            .args[0],
+          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
         },
       });
       await confirmOperation(tezos, operation3.hash);
@@ -205,9 +203,9 @@ class YToken {
     return operation;
   }
 
-  async setGlobalFactors(closeFactor, liqIncentive, priceFeedProxy) {
+  async setGlobalFactors(closeFactor, liqIncentive, priceFeedProxy, accuracy) {
     const operation = await this.contract.methods
-      .setGlobalFactors(closeFactor, liqIncentive, priceFeedProxy)
+      .setGlobalFactors(closeFactor, liqIncentive, priceFeedProxy, accuracy)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

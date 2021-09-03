@@ -11,6 +11,7 @@ const tokenStorage = {
   priceFeedProxy: alice.pkh,
   closeFactor: "0",
   liqIncentive: "0",
+  maxMarkets: "0",
 };
 
 module.exports = {

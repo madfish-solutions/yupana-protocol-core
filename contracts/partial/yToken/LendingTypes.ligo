@@ -26,7 +26,6 @@ type tokenInfo         is [@layout:comb] record [
   totalSupply           : nat;
   totalReserves         : nat;
   borrowIndex           : nat;
-  borrowRate            : nat;
   maxBorrowRate         : nat;
   collateralFactor      : nat;
   reserveFactor         : nat;
@@ -43,6 +42,7 @@ type tokenStorage       is [@layout:comb] record [
   priceFeedProxy        : address;
   closeFactor           : nat;
   liqIncentive          : nat;
+  maxMarkets            : nat;
 ]
 
 type tokenSet is set(tokenId)
@@ -82,6 +82,7 @@ type setGlobalParams    is [@layout:comb] record [
   closeFactor           : nat;
   liqIncentive          : nat;
   priceFeedProxy        : address;
+  maxMarkets            : nat;
 ]
 
 type newMetadataParams  is map(string, bytes)
@@ -120,7 +121,6 @@ type iterTransferType is IterateTransferOutside of transferParam
 type contrParam is (string * (timestamp * nat))
 type updParams is (string * contract(contrParam))
 
-[@inline] const maxMarkets : nat = 10n;
 [@inline] const zeroAddress : address = (
   "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address
 );

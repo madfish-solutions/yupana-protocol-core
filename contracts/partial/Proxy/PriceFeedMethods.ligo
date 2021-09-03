@@ -1,29 +1,23 @@
 [@inline] function mustBeAdmin(
   const s               : proxyStorage)
                         : unit is
-  block {
-    if Tezos.sender =/= s.admin
-    then failwith("proxy/not-admin")
-    else skip;
-  } with (unit)
+  if Tezos.sender =/= s.admin
+  then failwith("proxy/not-admin")
+  else unit
 
 [@inline] function mustBeYtoken(
   const s               : proxyStorage)
                         : unit is
-  block {
-    if Tezos.sender =/= s.yToken
-    then failwith("proxy/not-yToken")
-    else skip;
-  } with (unit)
+  if Tezos.sender =/= s.yToken
+  then failwith("proxy/not-yToken")
+  else unit
 
 [@inline] function mustBeOracle(
   const s               : proxyStorage)
                         : unit is
-  block {
-    if Tezos.sender =/= s.oracle
-    then failwith("proxy/not-oracle")
-    else skip;
-  } with (unit)
+  if Tezos.sender =/= s.oracle
+  then failwith("proxy/not-oracle")
+  else unit
 
 [@inline] function getNormalizerContract(
   const oracleAddress   : address)
@@ -83,111 +77,77 @@
   end;
 
 function updateAdmin(
-  const p               : proxyAction;
+  const addr            : address;
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    case p of
-      UpdateAdmin(addr) -> {
-        mustBeAdmin(s);
-        s.admin := addr;
-      }
-    | _                 -> skip
-    end
+    mustBeAdmin(s);
+    s.admin := addr;
   } with (noOperations, s)
 
 function updateOracle(
-  const p               : proxyAction;
+  const addr            : address;
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    case p of
-      UpdateOracle(addr) -> {
-        mustBeAdmin(s);
-        s.oracle := addr;
-      }
-    | _                 -> skip
-    end
+    mustBeAdmin(s);
+    s.oracle := addr;
   } with (noOperations, s)
 
 function updateYToken(
-  const p               : proxyAction;
+  const addr            : address;
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    case p of
-      UpdateYToken(addr) -> {
-        mustBeAdmin(s);
-        s.yToken := addr;
-      }
-    | _                 -> skip
-    end
+    mustBeAdmin(s);
+    s.yToken := addr;
   } with (noOperations, s)
 
 
 function receivePrice(
-  const p               : proxyAction;
+  const param           : oracleParam;
   const s               : proxyStorage)
                         : proxyReturn is
   block {
-    var operations : list(operation) := list[];
-      case p of
-        ReceivePrice(oracleParam) -> {
-          mustBeOracle(s);
-
-          const tokenId : nat = checkPairId(oracleParam.0, s);
-
-          operations := list[
-            Tezos.transaction(
-              record [
-                tokenId = tokenId;
-                amount = oracleParam.1.1;
-              ],
-              0mutez,
-              getYtokenContract(s)
-            )
-          ];
-        }
-      | _               -> skip
-      end
+    mustBeOracle(s);
+    const tokenId : nat = checkPairId(param.0, s);
+    var operations : list(operation) := list[
+      Tezos.transaction(
+        record [
+          tokenId = tokenId;
+          amount = param.1.1;
+        ],
+        0mutez,
+        getYtokenContract(s)
+      )
+    ];
   } with (operations, s)
 
 function getPrice(
-  const p               : proxyAction;
+  const tokenId         : nat;
   const s               : proxyStorage)
                         : proxyReturn is
   block {
-    var operations : list(operation) := list[];
-      case p of
-        GetPrice(tokenId) -> {
-          mustBeYtoken(s);
+    mustBeYtoken(s);
 
-          const strName : string = checkPairName(tokenId, s);
-          const param : contract(oracleParam) = getReceivePriceEntrypoint(Tezos.self_address);
+    const strName : string = checkPairName(tokenId, s);
+    const param : contract(oracleParam) = getReceivePriceEntrypoint(Tezos.self_address);
 
-          operations := list[
-            Tezos.transaction(
-              Get(strName, param),
-              0mutez,
-              getNormalizerContract(s.oracle)
-            )
-          ];
-        }
-      | _               -> skip
-      end
+    var operations : list(operation) := list[
+      Tezos.transaction(
+        Get(strName, param),
+        0mutez,
+        getNormalizerContract(s.oracle)
+      )
+    ];
   } with (operations, s)
 
 function updatePair(
-  const p               : proxyAction;
+  const param           : pairParam;
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-      case p of
-        UpdatePair(pairParam) -> {
-          mustBeAdmin(s);
-          s.pairName[pairParam.tokenId] := pairParam.pairName;
-          s.pairId[pairParam.pairName] := pairParam.tokenId;
-        }
-      | _               -> skip
-      end
+    mustBeAdmin(s);
+    s.pairName[param.tokenId] := param.pairName;
+    s.pairId[param.pairName] := param.tokenId;
   } with (noOperations, s)

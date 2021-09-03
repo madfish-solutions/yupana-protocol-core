@@ -39,25 +39,6 @@ class InterestRate {
       });
     await confirmOperation(tezos, operation.hash);
 
-    let ligo = getLigo(true);
-    console.log("Start setting interestRate lambdas");
-    let interestFunction = 0;
-    for (interestFunction of functions.interestRate) {
-      const stdout = execSync(
-        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/interestRate.ligo main 'SetInterestAction(record index =${interestFunction.index}n; func = ${interestFunction.name}; end)'`,
-        { maxBuffer: 1024 * 1000 }
-      );
-      const operation2 = await tezos.contract.transfer({
-        to: operation.contractAddress,
-        amount: 0,
-        parameter: {
-          entrypoint: "setInterestAction",
-          value: JSON.parse(stdout.toString()).args[0],
-        },
-      });
-      await confirmOperation(tezos, operation2.hash);
-    }
-    console.log("Setting finished");
     return new InterestRate(
       await tezos.contract.at(operation.contractAddress),
       tezos
@@ -67,8 +48,14 @@ class InterestRate {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      storage: storage.storage,
-      rateLambdas: storage.rateLambdas,
+      admin: storage.admin,
+      yToken: storage.yToken,
+      kickRate: storage.kickRate,
+      baseRate: storage.baseRate,
+      multiplier: storage.multiplier,
+      jumpMultiplier: storage.jumpMultiplier,
+      reserveFactor: storage.reserveFactor,
+      lastUpdTime: storage.lastUpdTime,
     };
 
     for (const key in maps) {

@@ -1,7 +1,6 @@
-const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { alice } = require("../scripts/sandbox/accounts");
 
-const rateStorage = {
+module.exports = {
   admin: alice.pkh,
   yToken: alice.pkh,
   kickRate: "0",
@@ -9,10 +8,5 @@ const rateStorage = {
   multiplier: "0",
   jumpMultiplier: "0",
   reserveFactor: "0",
-};
-
-
-module.exports = {
-  storage: rateStorage,
-  rateLambdas: MichelsonMap.fromLiteral({}),
+  lastUpdTime: "2021-08-20T09:06:50Z",
 };
