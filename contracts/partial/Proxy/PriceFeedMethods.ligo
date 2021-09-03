@@ -1,4 +1,4 @@
-[@inline] function mustBeAdmin(
+function mustBeAdmin(
   const s               : proxyStorage)
                         : unit is
   if Tezos.sender =/= s.admin

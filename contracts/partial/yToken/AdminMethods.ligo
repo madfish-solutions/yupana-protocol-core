@@ -9,7 +9,7 @@ function verifyUpdatedRates(
                         : tokenStorage is
       block {
         var token : tokenInfo := getTokenInfo(tokenId, s);
-        if token.lastUpdateTime > ((Tezos.now + 60) : timestamp)
+        if token.lastUpdateTime < Tezos.now
         then failwith("yToken/need-update-interestRate")
         else skip;
       } with s
@@ -39,6 +39,7 @@ function withdrawReserve(
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
 
+    (* TODO: ensure withdrawn amount not bigger than token.totalReserves *)
     token.totalReserves := abs(
       token.totalReserves - params.amount * accuracy
     );
@@ -79,7 +80,7 @@ function addMarket(
                         : fullReturn is
   block {
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
-
+    (* TODO: fail if token exist *)
     token.interstRateModel := params.interstRateModel;
     token.mainToken := params.assetAddress;
     token.collateralFactor := params.collateralFactor;
@@ -101,9 +102,10 @@ function setTokenFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    s.storage := verifyUpdatedRates(set [params.tokenId], s.storage);
-
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+    if token.lastUpdateTime < Tezos.now
+    then failwith("yToken/need-update")
+    else skip;
     token.collateralFactor := params.collateralFactor;
     token.reserveFactor := params.reserveFactor;
     token.interstRateModel := params.interstRateModel;

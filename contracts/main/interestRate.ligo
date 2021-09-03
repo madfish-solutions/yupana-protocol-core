@@ -11,7 +11,6 @@ function main(
     | SetCoefficients(params) -> setCoefficients(params, s)
     | GetBorrowRate(params) -> getBorrowRate(params, s)
     | GetUtilizationRate(params) -> getUtilizationRate(params, s)
-    | CallReserveFactor(params) -> callReserveFactor(params, s)
     | GetSupplyRate(params) -> getSupplyRate(params, s)
     | UpdReserveFactor(params) -> updReserveFactor(params, s)
   end
