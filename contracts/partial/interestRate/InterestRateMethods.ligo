@@ -132,20 +132,6 @@ function getBorrowRate(
     ];
   } with (operations, s)
 
-function callReserveFactor(
-  const param           : rateParams;
-  const s               : rateStorage)
-                        : rateReturn is
-  block {
-    var operations : list(operation) := list[
-      Tezos.transaction(
-        param.tokenId,
-        0mutez,
-        getReserveFactorContract(s.yToken)
-      )
-    ];
-  } with (operations, s)
-
 function getSupplyRate(
   const param           : rateParams;
   const s               : rateStorage)

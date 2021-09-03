@@ -83,7 +83,6 @@ type entryRateAction   is
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams
-  | CallReserveFactor of rateParams
   | GetSupplyRate of rateParams
   | UpdReserveFactor of nat
 
