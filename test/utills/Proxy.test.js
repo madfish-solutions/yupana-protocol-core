@@ -90,7 +90,7 @@ describe("Proxy tests", async () => {
   it("getting a price not for an permitted address", async () => {
     try {
       tezos = await Utils.setProvider(tezos, bob.sk);
-      await proxy.getPrice(0n);
+      await proxy.getPrice([0n]);
       await proxy.updateStorage();
     } catch (e) {
       console.log("not-yToken");

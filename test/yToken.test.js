@@ -2,6 +2,8 @@ const { MichelsonMap } = require("@taquito/michelson-encoder");
 
 const { alice, bob, carol } = require("../scripts/sandbox/accounts");
 
+// const { confirmOperation } = require("../scripts/confirmation");
+
 const { strictEqual } = require("assert");
 
 const { Proxy } = require("../test/utills/Proxy");
@@ -11,8 +13,6 @@ const { YToken } = require("../test/utills/YToken");
 const { FA12 } = require("../test/utills/FA12");
 const { FA2 } = require("../test/utills/FA2");
 const { Utils } = require("../test/utills/Utils");
-
-const { confirmOperation } = require("../scripts/confirmation");
 
 const tokenMetadata = MichelsonMap.fromLiteral({
   symbol: Buffer.from("TST").toString("hex"),
@@ -199,22 +199,10 @@ describe("Proxy tests", async () => {
   it("enterMarket and borrow yTokens by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
 
-    await yToken.enterMarket(0);
+    await yToken.updateAndEnter(proxy, 0);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    strictEqual(await res.markets.toString(), '0')
-
-    await yToken.updateInterest(0);
-    await yToken.updateStorage();
-
-    await yToken.updateInterest(1);
-    await yToken.updateStorage();
-
-    await yToken.updatePrice([0, 1]);
-    await yToken.updateStorage();
-
-    await yToken.borrow(1, 100000);
+    await yToken.updateAndBorrow(proxy, 1, 100000);
     await yToken.updateStorage();
 
     res = await yToken.storage.storage.accountInfo.get(bob.pkh);
@@ -232,7 +220,7 @@ describe("Proxy tests", async () => {
     await fa12_2.approve(yTokenContractAddress, 100000);
     await fa12_2.updateStorage();
 
-    await yToken.repay(1, 50000);
+    await yToken.updateAndRepay(proxy, 1, 50000);
     await yToken.updateStorage();
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
@@ -249,7 +237,7 @@ describe("Proxy tests", async () => {
     let res = await fa12_2.storage.ledger.get(alice.pkh);
     strictEqual(await res.balance.toString(), "99999000000");
 
-    await yToken.redeem(1, 100000);
+    await yToken.updateAndRedeem(proxy, 1, 100000);
     await yToken.updateStorage();
 
     res = await fa12_2.storage.ledger.get(alice.pkh);
@@ -281,7 +269,8 @@ describe("Proxy tests", async () => {
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
     let yTokenBalance = await yTokenRes.borrows.get("1");
 
-    await yToken.repay(1, 40000);
+
+    await yToken.updateAndRepay(proxy, 1, 40000);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
@@ -291,7 +280,7 @@ describe("Proxy tests", async () => {
       "10000000000000000000000"
     );
 
-    await yToken.repay(1, 0);
+    await yToken.updateAndRepay(proxy, 1, 0);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
@@ -305,7 +294,7 @@ describe("Proxy tests", async () => {
     let res = await yToken.storage.storage.accountInfo.get(bob.pkh);
     strictEqual(await res.markets.toString(), '0');
 
-    await yToken.exitMarket(0);
+    await yToken.updateAndExit(proxy, 0);
     await yToken.updateStorage();
 
     res = await yToken.storage.storage.accountInfo.get(bob.pkh);

@@ -1,6 +1,3 @@
-require("ts-node").register({
-  files: true,
-});
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
@@ -39,15 +36,19 @@ class YToken {
       });
     await confirmOperation(tezos, operation.hash);
 
-    let ligo = getLigo(true);
+
+    const ligo = getLigo(true);
+    let params = [];
+
     console.log("Start setting Token lambdas");
-    let yTokenFunction = 0;
-    for (yTokenFunction of functions.token) {
+    for (const yTokenFunction of functions.token) {
       const stdout = execSync(
-        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetTokenAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
+        `${ligo}  compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetTokenAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
         { maxBuffer: 1024 * 1000 }
       );
-      const operation2 = await tezos.contract.transfer({
+
+      params.push({
+        kind: "transaction",
         to: operation.contractAddress,
         amount: 0,
         parameter: {
@@ -55,16 +56,18 @@ class YToken {
           value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
         },
       });
-      await confirmOperation(tezos, operation2.hash);
     }
+
     console.log("Start setting yToken lambdas");
-    yTokenFunction = 0;
+
     for (yTokenFunction of functions.yToken) {
       const stdout = execSync(
         `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetUseAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
         { maxBuffer: 1024 * 1000 }
       );
-      const operation3 = await tezos.contract.transfer({
+
+      params.push({
+        kind: "transaction",
         to: operation.contractAddress,
         amount: 0,
         parameter: {
@@ -72,8 +75,13 @@ class YToken {
           value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
         },
       });
-      await confirmOperation(tezos, operation3.hash);
     }
+
+    const batch = tezos.wallet.batch(params);
+    const operation1 = await batch.send();
+
+    await confirmOperation(tezos, operation1.opHash);
+
     console.log("Setting finished");
     return new YToken(
       await tezos.contract.at(operation.contractAddress),
@@ -266,6 +274,109 @@ class YToken {
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
+
+  async updateAndEnter(proxy, enterToken) {
+    const batch = await this.tezos.wallet.batch([
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(enterToken).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([enterToken]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.enterMarket(enterToken).toTransferParams()
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndBorrow(proxy, borrowToken, amount) {
+    const batch = await this.tezos.wallet.batch([
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(0).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([0]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(borrowToken).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([borrowToken]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.borrow(borrowToken, amount).toTransferParams()
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndRepay(proxy, repayToken, amount) {
+    const batch = await this.tezos.wallet.batch([
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(repayToken).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([repayToken]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.repay(repayToken, amount).toTransferParams()
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndRedeem(proxy, redeemToken, amount) {
+    const batch = await this.tezos.wallet.batch([
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(redeemToken).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([redeemToken]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.redeem(redeemToken, amount).toTransferParams()
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndExit(proxy, token) {
+    const batch = await this.tezos.wallet.batch([
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(1).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([1]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.updateInterest(token).toTransferParams()
+      },
+      { kind: "transaction",
+        ...proxy.contract.methods.getPrice([token]).toTransferParams()
+      },
+      { kind: "transaction",
+        ...this.contract.methods.exitMarket(token).toTransferParams()
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
 }
 
 module.exports.YToken = YToken;

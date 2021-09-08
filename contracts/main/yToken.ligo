@@ -55,14 +55,14 @@ function middleToken(
                         : fullReturn is
   block {
       const idx : nat = case p of
-        | Mint(_mainParams) -> 0n
-        | Redeem(_mainParams) -> 1n
-        | Borrow(_mainParams) -> 2n
-        | Repay(_mainParams) -> 3n
+        | Mint(_yAssetParams) -> 0n
+        | Redeem(_yAssetParams) -> 1n
+        | Borrow(_yAssetParams) -> 2n
+        | Repay(_yAssetParams) -> 3n
         | Liquidate(_liquidateParams) -> 4n
         | EnterMarket(_tokenId) -> 5n
         | ExitMarket(_tokenId) -> 6n
-        | UpdatePrice(_tokenSet) -> 7n
+        // | UpdatePrice(_tokenSet) -> 7n
       end;
     const res : return = case s.useLambdas[idx] of
       Some(f) -> f(p, s.storage)

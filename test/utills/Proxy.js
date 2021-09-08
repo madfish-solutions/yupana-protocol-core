@@ -99,8 +99,8 @@ class Proxy {
     return operation;
   }
 
-  async getPrice(tokenId) {
-    const operation = await this.contract.methods.getPrice(tokenId).send();
+  async getPrice(tokenSet) {
+    const operation = await this.contract.methods.getPrice(tokenSet).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }

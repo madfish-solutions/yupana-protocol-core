@@ -1,20 +1,3 @@
-function verifyUpdatedRates(
-  const setOfTokens     : set(tokenId);
-  var s                 : tokenStorage)
-                        : tokenStorage is
-  block {
-    function updInterest(
-      var s             : tokenStorage;
-      const tokenId     : tokenId)
-                        : tokenStorage is
-      block {
-        var token : tokenInfo := getTokenInfo(tokenId, s);
-        if token.lastUpdateTime < Tezos.now
-        then failwith("yToken/need-update-interestRate")
-        else skip;
-      } with s
-  } with Set.fold(updInterest, setOfTokens, s)
-
 function mustBeAdmin(
   const s               : tokenStorage)
                         : unit is
@@ -32,14 +15,17 @@ function setAdmin(
   } with (noOperations, s)
 
 function withdrawReserve(
-  const params          : mainParams;
+  const params          : yAssetParams;
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
 
-    (* TODO: ensure withdrawn amount not bigger than token.totalReserves *)
+    if params.amount * accuracy > token.totalReserves
+    then failwith("yToken/withdraw-is-too-big");
+    else skip;
+
     token.totalReserves := abs(
       token.totalReserves - params.amount * accuracy
     );
@@ -80,6 +66,7 @@ function addMarket(
                         : fullReturn is
   block {
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
+
     (* TODO: fail if token exist *)
     token.interstRateModel := params.interstRateModel;
     token.mainToken := params.assetAddress;

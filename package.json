@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Yupana protocol",
   "dependencies": {
-    "@taquito/michelson-encoder": "^9.0.1",
-    "@taquito/rpc": "^9.0.1",
-    "@taquito/signer": "^9.0.1",
-    "@taquito/taquito": "^9.0.1",
+    "@taquito/michelson-encoder": "^10.1.0",
+    "@taquito/rpc": "^10.1.0",
+    "@taquito/signer": "^10.1.0",
+    "@taquito/taquito": "^10.1.0",
     "child_process": "^1.0.2",
     "dotenv": "^10.0.0",
     "fs": "^0.0.1-security",
@@ -19,13 +19,13 @@
   },
   "scripts": {
     "clean": "rm -rf ./build",
-    "compile": "yarn clean && node scripts/cli.js compile -c yToken && node scripts/cli.js compile -c priceFeed && node scripts/cli.js compile -c interestRate && node scripts/cli.js compile -c getOracle && node scripts/cli.js compile -c getInterests && node scripts/cli.js compile -c FA12 && node scripts/cli.js compile -c FA2",
-    "compile-qToken": "node scripts/helpers.js build-qToken --no-json -o contracts",
-    "migrate": "yarn compile && node scripts/cli.js migrate",
-    "migrate-gra": "yarn compile && node scripts/cli.js migrate --network granadanet",
-    "migrate-s": "yarn compile && node scripts/cli.js migrate --network development_server",
+    "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && node -r ts-node/register scripts/cli.js compile -c getOracle && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c FA12 && node -r ts-node/register scripts/cli.js compile -c FA2",
+    "compile-qToken": "node -r ts-node/register scripts/helpers.js build-qToken --no-json -o contracts",
+    "migrate": "yarn compile && node -r ts-node/register scripts/cli.js migrate",
+    "migrate-gra": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network granadanet",
+    "migrate-s": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network development_server",
     "test": "yarn compile && mocha --bail",
-    "start-sandbox": "docker run --rm --name my-sandbox -e flextesa_node_cors_origin='*' --detach -p 8732:20000 tqtezos/flextesa:20210602 flobox start"
+    "start-sandbox": "docker run --rm --name my-sandbox -e flextesa_node_cors_origin='*' -e block_time=1 --detach -p 8732:20000 tqtezos/flextesa:20210602 granabox start"
   },
   "repository": {
     "type": "git",

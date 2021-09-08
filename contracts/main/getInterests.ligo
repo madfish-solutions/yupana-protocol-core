@@ -11,7 +11,7 @@ type return is list (operation) * storage
 
 [@inline] const noOperations : list (operation) = nil;
 
-type mainParams         is record [
+type yAssetParams         is record [
   tokenId               : nat;
   amount                : nat;
 ]
@@ -29,7 +29,7 @@ type rateParams         is [@layout:comb] record [
   cash                  : nat;
   reserves              : nat;
   accuracy              : nat;
-  contract              : contract(mainParams);
+  contract              : contract(yAssetParams);
 ]
 
 type interestParams     is [@layout:comb] record [
@@ -53,11 +53,11 @@ type entryRateAction         is
 type entryAction is
   | SetInterestRate of address
   | SendUtil of interestParams
-  | UpdateUtilRate of mainParams
+  | UpdateUtilRate of yAssetParams
   | SendBorrow of interestParams
-  | UpdateBorrowRate of mainParams
+  | UpdateBorrowRate of yAssetParams
   | SendSupply of interestParams
-  | UpdateSupplyRate of mainParams
+  | UpdateSupplyRate of yAssetParams
   | GetReserveFactor of nat
 
 
@@ -102,40 +102,40 @@ type entryAction is
 
 [@inline] function getUpdateUtilRateContract(
   const interestAddress : address)
-                        : contract(mainParams) is
+                        : contract(yAssetParams) is
   case(
     Tezos.get_entrypoint_opt("%updateUtilRate", interestAddress)
-                        : option(contract(mainParams))
+                        : option(contract(yAssetParams))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("getInterest/cant-get-utilRate") : contract(mainParams)
+      failwith("getInterest/cant-get-utilRate") : contract(yAssetParams)
     )
   end;
 
 [@inline] function getUpdateBorrowRateContract(
   const interestAddress : address)
-                        : contract(mainParams) is
+                        : contract(yAssetParams) is
   case(
     Tezos.get_entrypoint_opt("%updateBorrowRate", interestAddress)
-                        : option(contract(mainParams))
+                        : option(contract(yAssetParams))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("getInterest/cant-get-borrowRate") : contract(mainParams)
+      failwith("getInterest/cant-get-borrowRate") : contract(yAssetParams)
     )
   end;
 
 [@inline] function getUpdateSupplyRateContract(
   const interestAddress : address)
-                        : contract(mainParams) is
+                        : contract(yAssetParams) is
   case(
     Tezos.get_entrypoint_opt("%updateSupplyRate", interestAddress)
-                        : option(contract(mainParams))
+                        : option(contract(yAssetParams))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("getInterest/cant-get-SupplyRate") : contract(mainParams)
+      failwith("getInterest/cant-get-SupplyRate") : contract(yAssetParams)
     )
   end;
 
@@ -183,7 +183,7 @@ function sendUtil(
   } with (operations , s)
 
 function updateUtilRate(
-  const p               : mainParams;
+  const p               : yAssetParams;
   var s                 : storage)
                         : return is
   block {
@@ -213,7 +213,7 @@ function sendBorrow(
   } with (operations , s)
 
 function updateBorrowRate(
-  const p               : mainParams;
+  const p               : yAssetParams;
   var s                 : storage)
                         : return is
   block {
@@ -243,7 +243,7 @@ function sendSupply(
   } with (operations , s)
 
 function updateSupplyRate(
-  const p               : mainParams;
+  const p               : yAssetParams;
   var s                 : storage)
                         : return is
   block {

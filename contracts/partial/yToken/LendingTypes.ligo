@@ -58,8 +58,8 @@ type liquidateParams    is [@layout:comb] record [
   borrower              : address;
   amount                : nat;
 ]
-(* TODO: clarify name *)
-type mainParams         is [@layout:comb] record [
+
+type yAssetParams         is [@layout:comb] record [
   tokenId               : nat;
   amount                : nat;
 ]

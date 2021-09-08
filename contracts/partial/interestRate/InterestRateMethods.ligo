@@ -91,7 +91,6 @@ function setCoefficients(
 function getUtilizationRate(
   const param           : rateParams;
   const s               : rateStorage)
-  (* TODO : request accuracy as an argument *)
                         : rateReturn is
   block {
     const utilizationRate : nat = abs(
