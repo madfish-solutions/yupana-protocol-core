@@ -9,8 +9,8 @@ const tokenStorage = {
   tokenMetadata: MichelsonMap.fromLiteral({}),
   lastTokenId: "0",
   priceFeedProxy: alice.pkh,
-  closeFactor: "0",
-  liqIncentive: "0",
+  closeFactorFloat: "0",
+  liqIncentiveFloat: "0",
   maxMarkets: "0",
 };
 

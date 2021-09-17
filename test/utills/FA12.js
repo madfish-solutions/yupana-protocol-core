@@ -36,7 +36,7 @@ class FA12 {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      totalSupply: storage.totalSupply,
+      totalSupplyFloat: storage.totalSupplyFloat,
       ledger: storage.ledger,
     };
 

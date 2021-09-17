@@ -8,9 +8,9 @@ type allowanceAmount    is [@layout:comb] record [
 ]
 
 type account            is [@layout:comb] record [
-  balances              : map(tokenId, nat); // in yToken
+  balances              : map(tokenId, nat);
   allowances            : set(address);
-  borrows               : map(tokenId, nat); // in asset
+  borrows               : map(tokenId, nat);
   lastBorrowIndex       : map(tokenId, nat);
   markets               : set(tokenId);
 ]
@@ -21,14 +21,14 @@ type tokenInfo         is [@layout:comb] record [
   interstRateModel      : address;
   lastUpdateTime        : timestamp;
   priceUpdateTime       : timestamp;
-  totalBorrows          : nat;
-  totalLiquid           : nat;
-  totalSupply           : nat;
-  totalReserves         : nat;
+  totalBorrowsFloat     : nat;
+  totalLiquidFloat      : nat;
+  totalSupplyFloat      : nat;
+  totalReservesFloat    : nat;
   borrowIndex           : nat;
   maxBorrowRate         : nat;
-  collateralFactor      : nat;
-  reserveFactor         : nat;
+  collateralFactorFloat : nat;
+  reserveFactorFloat    : nat;
   lastPrice             : nat;
 ]
 
@@ -40,8 +40,8 @@ type tokenStorage       is [@layout:comb] record [
   tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
   priceFeedProxy        : address;
-  closeFactor           : nat;
-  liqIncentive          : nat;
+  closeFactorFloat      : nat;
+  liqIncentiveFloat     : nat;
   maxMarkets            : nat;
 ]
 
@@ -59,7 +59,7 @@ type liquidateParams    is [@layout:comb] record [
   amount                : nat;
 ]
 
-type yAssetParams         is [@layout:comb] record [
+type yAssetParams       is [@layout:comb] record [
   tokenId               : nat;
   amount                : nat;
 ]
@@ -72,15 +72,15 @@ type faTransferParams   is [@layout:comb] record [
 
 type setTokenParams     is [@layout:comb] record [
   tokenId               : nat;
-  collateralFactor      : nat;
-  reserveFactor         : nat;
+  collateralFactorFloat : nat;
+  reserveFactorFloat    : nat;
   interstRateModel      : address;
   maxBorrowRate         : nat;
 ]
 
 type setGlobalParams    is [@layout:comb] record [
-  closeFactor           : nat;
-  liqIncentive          : nat;
+  closeFactorFloat      : nat;
+  liqIncentiveFloat     : nat;
   priceFeedProxy        : address;
   maxMarkets            : nat;
 ]
@@ -95,8 +95,8 @@ type setModelParams     is [@layout:comb] record [
 type newMarketParams    is [@layout:comb] record [
   interstRateModel      : address;
   assetAddress          : address;
-  collateralFactor      : nat;
-  reserveFactor         : nat;
+  collateralFactorFloat : nat;
+  reserveFactorFloat    : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
   faType                : assetType;

@@ -11,8 +11,6 @@ type useAction          is
   | Liquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
-  (* TODO: think do we even need the method? *)
-  // | UpdatePrice of tokenSet
 
 type tokenAction        is
   | ITransfer of transferParams

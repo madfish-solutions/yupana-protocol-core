@@ -21,13 +21,14 @@ function withdrawReserve(
   block {
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+    const amountFloat = params.amount * accuracy;
 
-    if params.amount * accuracy > token.totalReserves
+    if amountFloat > token.totalReservesFloat
     then failwith("yToken/withdraw-is-too-big");
     else skip;
 
-    token.totalReserves := abs(
-      token.totalReserves - params.amount * accuracy
+    token.totalReservesFloat := abs(
+      token.totalReservesFloat -amountFloat
     );
     s.storage.tokenInfo[params.tokenId] := token;
 
@@ -65,13 +66,14 @@ function addMarket(
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
+    mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
 
     (* TODO: fail if token exist *)
     token.interstRateModel := params.interstRateModel;
     token.mainToken := params.assetAddress;
-    token.collateralFactor := params.collateralFactor;
-    token.reserveFactor := params.reserveFactor;
+    token.collateralFactorFloat := params.collateralFactorFloat;
+    token.reserveFactorFloat := params.reserveFactorFloat;
     token.maxBorrowRate := params.maxBorrowRate;
     token.faType := params.faType;
 
@@ -90,11 +92,13 @@ function setTokenFactors(
   block {
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+
     if token.lastUpdateTime < Tezos.now
     then failwith("yToken/need-update")
     else skip;
-    token.collateralFactor := params.collateralFactor;
-    token.reserveFactor := params.reserveFactor;
+
+    token.collateralFactorFloat := params.collateralFactorFloat;
+    token.reserveFactorFloat := params.reserveFactorFloat;
     token.interstRateModel := params.interstRateModel;
     token.maxBorrowRate := params.maxBorrowRate;
     s.storage.tokenInfo[params.tokenId] := token;
@@ -106,8 +110,8 @@ function setGlobalFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    s.storage.closeFactor := params.closeFactor;
-    s.storage.liqIncentive := params.liqIncentive;
+    s.storage.closeFactorFloat := params.closeFactorFloat;
+    s.storage.liqIncentiveFloat := params.liqIncentiveFloat;
     s.storage.priceFeedProxy := params.priceFeedProxy;
     s.storage.maxMarkets := params.maxMarkets;
   } with (noOperations, s)

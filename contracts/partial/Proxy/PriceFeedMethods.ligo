@@ -123,25 +123,6 @@ function receivePrice(
     ];
   } with (operations, s)
 
-// function getPrice(
-//   const tokenId         : nat;
-//   const s               : proxyStorage)
-//                         : proxyReturn is
-//   block {
-//     mustBeYtoken(s);
-
-//     const strName : string = checkPairName(tokenId, s);
-//     const param : contract(oracleParam) = getReceivePriceEntrypoint(Tezos.self_address);
-
-//     var operations : list(operation) := list[
-//       Tezos.transaction(
-//         Get(strName, param),
-//         0mutez,
-//         getNormalizerContract(s.oracle)
-//       )
-//     ];
-//   } with (operations, s)
-
 function getPrice(
   const tokenSet        : set(nat);
   const s               : proxyStorage)
