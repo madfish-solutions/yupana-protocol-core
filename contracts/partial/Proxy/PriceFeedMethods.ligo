@@ -5,6 +5,7 @@ function mustBeAdmin(
   then failwith("proxy/not-admin")
   else unit
 
+(* TODO: remove unused method *)
 [@inline] function mustBeYtoken(
   const s               : proxyStorage)
                         : unit is

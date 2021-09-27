@@ -8,6 +8,7 @@ type allowanceAmount    is [@layout:comb] record [
 ]
 
 type account            is [@layout:comb] record [
+  (* TODO: join the maps with token id as the key *)
   balances              : map(tokenId, nat);
   allowances            : set(address);
   borrows               : map(tokenId, nat);
