@@ -69,7 +69,7 @@ function addMarket(
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
 
-    (* TODO: fail if token exist *)
+    (* TODO: fail if token exist - not fixed yet *)
     token.interstRateModel := params.interstRateModel;
     token.mainToken := params.assetAddress;
     token.collateralFactorFloat := params.collateralFactorFloat;

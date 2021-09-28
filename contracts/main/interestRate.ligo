@@ -6,6 +6,8 @@ function main(
   const s               : rateStorage)
                         : rateReturn is
   case p of
+    (* TODO: make the entrypoint' names shorter; UpdateAdmin instead
+    UpdateRateAdmin, UpdateYToken instead UpdateRateYToken*)
     | UpdateRateAdmin(params) -> updateRateAdmin(params, s)
     | UpdateRateYToken(params) -> updateRateYToken(params, s)
     | SetCoefficients(params) -> setCoefficients(params, s)

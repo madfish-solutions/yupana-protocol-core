@@ -1,6 +1,6 @@
 #include "./FA2Methods.ligo"
 #include "./AdminMethods.ligo"
-(*TODO: use the postfix Float in names of the var's that are multiplied by accuracy *)
+
 function zeroCheck(
   const amt             : nat)
                         : unit is
@@ -239,7 +239,7 @@ function redeem(
             accountUser.balances,
             yAssetParams.tokenId
           );
-
+          (* TODO: rename to liquidityFloat *)
           const liquidity : nat = abs(token.totalLiquidFloat
             + token.totalBorrowsFloat - token.totalReservesFloat);
 
@@ -247,6 +247,7 @@ function redeem(
           then userBalanceFloat * liquidity / token.totalSupplyFloat / accuracy
           else yAssetParams.amount;
 
+          (* TODO: fix comparison redeemAmount isn't float but totalLiquidFloat is *)
           if redeemAmount > token.totalLiquidFloat
           then failwith("yToken/not-enough-liquid")
           else skip;
@@ -435,17 +436,20 @@ function repay (
           userBorrowAmountFloat := abs(
             userBorrowAmountFloat - repayAmountFloat
           );
+          (* TODO: remove the next line and update
+          accountUser.lastBorrowIndex[yAssetParams.tokenId] directly *)
           lastBorrowIndex := token.borrowIndex;
-
           accountUser.lastBorrowIndex[yAssetParams.tokenId] := lastBorrowIndex;
           accountUser.borrows[yAssetParams.tokenId] := userBorrowAmountFloat;
           s.accountInfo[Tezos.sender] := accountUser;
           token.totalBorrowsFloat := abs(token.totalBorrowsFloat
             - repayAmountFloat);
+          (* TODO: increase the liquid amount of tokens *)
           s.tokenInfo[yAssetParams.tokenId] := token;
 
           var value : nat := 0n;
 
+          (* TODO: save the gas; replace with ediv *)
           if repayAmountFloat - (repayAmountFloat / accuracy * accuracy) > 0
           then value := repayAmountFloat / accuracy + 1n
           else value := repayAmountFloat / accuracy;
@@ -563,6 +567,7 @@ function liquidate(
           borrowToken.totalBorrowsFloat := abs(
             borrowToken.totalBorrowsFloat - liqAmountFloat
           );
+          (* TODO: increase the liquid amount of tokens *)
 
           accountBorrower.lastBorrowIndex[
             liquidateParams.borrowToken
@@ -615,6 +620,14 @@ function liquidate(
             * priceBorrowed / priceCollateral
             seizeTokens = seizeAmount / exchangeRate
           *)
+          (* TODO: immprove accurancy by calculating the numerator and
+          denominator instead of exchangeRateFloat; ie.
+          numerator = liqAmountFloat * s.liqIncentiveFloat
+            * borrowToken.lastPrice * collateralToken.totalSupplyFloat
+          denominator = abs(
+            collateralToken.totalLiquidFloat + collateralToken.totalBorrowsFloat
+            - collateralToken.totalReservesFloat
+          ) * accuracy * collateralToken.lastPrice *)
           const exchangeRateFloat : nat = abs(
             collateralToken.totalLiquidFloat + collateralToken.totalBorrowsFloat
             - collateralToken.totalReservesFloat
@@ -712,7 +725,9 @@ function exitMarket(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
-
+          (* TODO: remove unneccessary condition about outstandingBorrowInCU = 0n;
+          it makes no sense as if outstandingBorrowInCU == 0 it is always <=
+          maxBorrowInCU *)
           if outstandingBorrowInCU <= maxBorrowInCU or outstandingBorrowInCU = 0n
           then s.accountInfo[Tezos.sender] := userAccount;
           else failwith("yToken/debt-not-repaid");
@@ -759,6 +774,7 @@ function accrueInterest(
     //  Calculate the number of blocks elapsed since the last accrual
     const blockDelta : nat = abs(Tezos.now - token.lastUpdateTime);
 
+    (* TODO: rename to simpleInterestFactorFloat, interestAccumulatedFloat*)
     const simpleInterestFactor : nat = borrowRate * blockDelta;
     const interestAccumulated : nat = simpleInterestFactor *
       token.totalBorrowsFloat / accuracy;
