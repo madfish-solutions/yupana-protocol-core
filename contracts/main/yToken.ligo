@@ -62,7 +62,6 @@ function middleToken(
         | Liquidate(_liquidateParams) -> 4n
         | EnterMarket(_tokenId) -> 5n
         | ExitMarket(_tokenId) -> 6n
-        // | UpdatePrice(_tokenSet) -> 7n
       end;
     const res : return = case s.useLambdas[idx] of
       Some(f) -> f(p, s.storage)

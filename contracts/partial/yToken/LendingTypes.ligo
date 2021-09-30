@@ -7,13 +7,16 @@ type allowanceAmount    is [@layout:comb] record [
   amount                : nat;
 ]
 
+type balanceInfo        is record [
+  balance               : nat;
+  borrow                : nat;
+  lastBorrowIndex       : nat;
+]
+
 type account            is [@layout:comb] record [
-  (* TODO: join the maps with token id as the key *)
-  balances              : map(tokenId, nat);
   allowances            : set(address);
-  borrows               : map(tokenId, nat);
-  lastBorrowIndex       : map(tokenId, nat);
   markets               : set(tokenId);
+  balances              : map(tokenId, balanceInfo);
 ]
 
 type tokenInfo         is [@layout:comb] record [
@@ -44,6 +47,7 @@ type tokenStorage       is [@layout:comb] record [
   closeFactorFloat      : nat;
   liqIncentiveFloat     : nat;
   maxMarkets            : nat;
+  // typesInfo             : big_map ((address * assetType), tokenId); // ??????????
 ]
 
 type tokenSet is set(tokenId)

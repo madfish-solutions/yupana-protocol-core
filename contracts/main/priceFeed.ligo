@@ -6,7 +6,7 @@ function main(
   const s               : proxyStorage)
                         : proxyReturn is
   case p of
-    | UpdateAdmin(params) -> updateAdmin(params, s)
+    | SetProxyAdmin(params) -> setProxyAdmin(params, s)
     | UpdateOracle(params) -> updateOracle(params, s)
     | UpdateYToken(params) -> updateYToken(params, s)
     | UpdatePair(params) -> updatePair(params, s)

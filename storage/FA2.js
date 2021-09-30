@@ -1,5 +1,5 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
-const { alice } = require("../scripts/sandbox/accounts");
+const { bob } = require("../scripts/sandbox/accounts");
 
 module.exports = {
   account_info: MichelsonMap.fromLiteral({}),
@@ -9,7 +9,7 @@ module.exports = {
   minters: [],
   non_transferable: [],
   tokens_ids: [],
-  admin: alice.pkh,
-  pending_admin: alice.pkh,
+  admin: bob.pkh,
+  pending_admin: bob.pkh,
   last_token_id: "0",
 }

@@ -84,7 +84,7 @@ describe("Proxy tests", async () => {
     await proxy.updateStorage();
     strictEqual(proxy.storage.yToken, yTokenContractAddress);
 
-    await interest.updateRateYToken(yTokenContractAddress);
+    await interest.updateYToken(yTokenContractAddress);
     await interest.updateStorage();
     strictEqual(interest.storage.yToken, yTokenContractAddress);
 
@@ -133,7 +133,7 @@ describe("Proxy tests", async () => {
         500000000000000000,
         5000000000000,
         tokenMetadata,
-        "fA12"
+        "fA2"
       );
       await yToken.updateStorage();
       var r = await yToken.storage.storage.tokenInfo.get(0);
@@ -159,7 +159,8 @@ describe("Proxy tests", async () => {
       200000000000000000,
       5000000000000,
       tokenMetadata,
-      "fA12"
+      "fA12",
+      0
     );
     await yToken.updateStorage();
     var r = await yToken.storage.storage.tokenInfo.get(0);
@@ -196,15 +197,17 @@ describe("Proxy tests", async () => {
     strictEqual(pairId.toString(), "1");
   });
 
-  it("mint fa12 tokens by bob", async () => {
+  it("mint fa2 tokens by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await fa12.mint(10000000000000000000);
     await fa12.updateStorage();
 
-    let res = await fa12.storage.ledger.get(bob.pkh);
+    res = await fa12.storage.ledger.get(bob.pkh);
 
     strictEqual(await res.balance.toString(), "10000000000000000000");
+  });
 
+  it("mint 2", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await fa12_2.mint(10000000000000000000);
     await fa12_2.updateStorage();
@@ -239,7 +242,7 @@ describe("Proxy tests", async () => {
     let yTokenBalance = await yTokenRes.balances.get("1");
 
     strictEqual(
-      await yTokenBalance.toPrecision(40).split(".")[0],
+      await yTokenBalance.balance.toPrecision(40).split(".")[0],
       "10000000000000000000000000000"
     );
   });
@@ -258,7 +261,7 @@ describe("Proxy tests", async () => {
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
     let yTokenBalance = await yTokenRes.balances.get("0");
     strictEqual(
-      await yTokenBalance.toPrecision(40).split(".")[0],
+      await yTokenBalance.balance.toPrecision(40).split(".")[0],
       "100000000000000000000000"
     );
   });
@@ -298,10 +301,10 @@ describe("Proxy tests", async () => {
     await yToken.updateStorage();
 
     res = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    let balance = await res.borrows.get("1");
+    let balances = await res.balances.get("1");
 
     strictEqual(
-      await balance.toPrecision(40).split(".")[0],
+      await balances.borrow.toPrecision(40).split(".")[0],
       "50000000000000000000000"
     );
   });
@@ -314,9 +317,9 @@ describe("Proxy tests", async () => {
     await yToken.updateStorage();
 
     let res = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    let balance = await res.borrows.get("1");
+    let balances = await res.balances.get("1");
 
-    console.log(balance.toPrecision(40).split(".")[0]);
+    console.log(balances.borrow.toPrecision(40).split(".")[0]);
   });
 
   it("borrow more than allowed yTokens by bob", async () => {
@@ -337,7 +340,7 @@ describe("Proxy tests", async () => {
       await yToken.updateAndBorrow2(proxy, 0, 200000);
       await yToken.updateStorage();
       console.log("no error found!");
-    } catch(e) {
+    } catch (e) {
       console.log("yToken/amount-too-big");
     }
   });
@@ -352,8 +355,8 @@ describe("Proxy tests", async () => {
     await yToken.updateStorage();
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    let yTokenBorrow = await yTokenRes.borrows.get("1");
-    console.log(yTokenBorrow.toPrecision(40).split(".")[0])
+    let yTokenBorrow = await yTokenRes.balances.get("1");
+    console.log(yTokenBorrow.borrow.toPrecision(40).split(".")[0]);
   });
 
   it("redeem yTokens by bob", async () => {
@@ -390,15 +393,15 @@ describe("Proxy tests", async () => {
     console.log(await res.balance.toString());
 
     let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    let yTokenBalance = await yTokenRes.borrows.get("1");
-    console.log(yTokenBalance.toPrecision(40).split(".")[0]);
+    let yTokenBalance = await yTokenRes.balances.get("1");
+    console.log(yTokenBalance.balance.toPrecision(40).split(".")[0]);
 
     await yToken.updateAndRepay(proxy, 1, 0);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    yTokenBalance = await yTokenRes.borrows.get("1");
-    strictEqual(await yTokenBalance.toString(), "0");
+    yTokenBalance = await yTokenRes.balances.get("1");
+    strictEqual(await yTokenBalance.borrow.toString(), "0");
   });
 
   it("exit market yTokens by bob", async () => {

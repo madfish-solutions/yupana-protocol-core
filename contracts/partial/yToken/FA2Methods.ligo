@@ -5,11 +5,12 @@ function getAccount(
                         : account is
   case s.accountInfo[user] of
     None -> record [
-      balances          = (Map.empty : map(tokenId, nat));
+      // balances          = (Map.empty : map(tokenId, nat));
       allowances        = (set [] : set(address));
-      borrows           = (Map.empty : map(tokenId, nat));
-      lastBorrowIndex   = (Map.empty : map(tokenId, nat));
+      // borrows           = (Map.empty : map(tokenId, nat));
+      // lastBorrowIndex   = (Map.empty : map(tokenId, nat));
       markets           = (set [] : set(tokenId));
+      balances          = (Map.empty : map(tokenId, balanceInfo));
     ]
   | Some(v) -> v
   end
@@ -40,11 +41,15 @@ function getTokenInfo(
   end
 
 function getMapInfo(
-  const currentMap      : map(tokenId, nat);
+  const currentMap      : map(tokenId, balanceInfo);
   const tokenId         : nat)
-                        : nat is
+                        : balanceInfo is
   case currentMap[tokenId] of
-    None -> 0n
+    None -> record [
+      balance = 0n;
+      borrow = 0n;
+      lastBorrowIndex = 0n;
+    ]
   | Some(v) -> v
   end
 
@@ -95,9 +100,13 @@ function getTotalSupply(
 function getBalanceByToken(
   const user            : account;
   const tokenId         : tokenId)
-                        : nat is
+                        : balanceInfo is
   case user.balances[tokenId] of
-  | None -> 0n
+    None -> record [
+      balance = 0n;
+      borrow = 0n;
+      lastBorrowIndex = 0n;
+    ]
   | Some(v) -> v
   end
 
@@ -144,18 +153,17 @@ function iterateTransfer(
         then skip
         else failwith("FA2/token-undefined");
 
-        (* Get source balance *)
-        const srcBalance : nat =
-          getBalanceByToken(srcAccount, transferDst.tokenId);
+        (* Get source info *)
+        var srcInfo : balanceInfo := getBalanceByToken(srcAccount, transferDst.tokenId);
 
         (* Balance check *)
-        if srcBalance < transferDst.amount
+        if srcInfo.balance < transferDst.amount
         then failwith("FA2/insufficient-balance")
         else skip;
 
         (* Update source balance *)
-        srcAccount.balances[transferDst.tokenId] :=
-          abs(srcBalance - transferDst.amount);
+        srcInfo.balance := abs(srcInfo.balance - transferDst.amount);
+        srcAccount.balances[transferDst.tokenId] := srcInfo;
 
         (* Update storage *)
         s.accountInfo[params.from_] := srcAccount;
@@ -164,12 +172,11 @@ function iterateTransfer(
         var dstAccount : account := getAccount(transferDst.to_, s);
 
         (* Get receiver balance *)
-        const dstBalance : nat =
-          getBalanceByToken(dstAccount, transferDst.tokenId);
+        var dstInfo : balanceInfo := getBalanceByToken(dstAccount, transferDst.tokenId);
 
         (* Update destination balance *)
-        dstAccount.balances[transferDst.tokenId] :=
-          dstBalance + transferDst.amount;
+        dstInfo.balance := dstInfo.balance + transferDst.amount;
+        dstAccount.balances[transferDst.tokenId] := dstInfo;
 
         (* Update storage *)
         s.accountInfo[transferDst.to_] := dstAccount;
@@ -235,10 +242,12 @@ function getBalance(
               (* Retrieve the asked account from the storage *)
               const user : account = getAccount(request.owner, s);
 
+              const userBalance : balanceInfo = getBalanceByToken(user, request.tokenId);
+
               (* Form the response *)
               const response : balanceOfResponse = record [
                   request = request;
-                  balance = getBalanceByToken(user, request.tokenId);
+                  balance = userBalance.balance;
                 ];
             } with response # l;
 

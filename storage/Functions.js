@@ -78,11 +78,11 @@ let proxyFunctions = [
 let interestFunctions = [
   {
     index: 0,
-    name: "updateRateAdmin",
+    name: "updateAdmin",
   },
   {
     index: 1,
-    name: "updateRateYToken",
+    name: "updateYToken",
   },
   {
     index: 2,

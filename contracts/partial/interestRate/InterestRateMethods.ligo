@@ -24,13 +24,11 @@
                         : contract(entryRateAction)
     )
   end;
- (* TODO: fix type - verifyReserveFactor *)
-[@inline] function varifyReserveFactor(
+
+[@inline] function verifyReserveFactor(
   const s               : rateStorage)
                         : unit is
- (* TODO: fix condition; it can't be ever true because now it requires the update
- were done in the future to fail the operation *)
-  if s.lastUpdTime > ((Tezos.now + 60) : timestamp)
+  if s.lastUpdTime < Tezos.now
   then failwith("interestRate/need-update-reserveFactorFloat")
   else unit
 
@@ -41,6 +39,14 @@
   then failwith("interestRate/not-admin")
   else unit
 
+[@inline] function calctUtilRate(
+  const borrowsFloat    : nat;
+  const cashFloat       : nat;
+  const reservesFloat   : nat;
+  const accuracy        : nat)
+                        : nat is
+  accuracy * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat)
+
 [@inline] function calctBorrowRate(
   const borrowsFloat    : nat;
   const cashFloat       : nat;
@@ -49,20 +55,22 @@
   const s               : rateStorage)
                         : nat is
   block {
-    (* TODO: add helper function to calculate utilization rate and use in
-    required places to avoid code dublicates *)
-    const utilizationRateFloat : nat = accuracy * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat);
+    const utilizationRateFloat : nat = calctUtilRate(
+      borrowsFloat,
+      cashFloat,
+      reservesFloat,
+      accuracy
+    );
     var borrowRateFloat : nat := 0n;
 
     if utilizationRateFloat < s.kickRateFloat
-    (* TODO: use calctBorrowRate here to ensure the calculations are the same everywhere *)
     then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / accuracy);
     else borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / accuracy + s.baseRateFloat) +
       (abs(utilizationRateFloat - s.kickRateFloat) * s.jumpMultiplierFloat) / accuracy);
 
   } with borrowRateFloat
 
-function updateRateAdmin(
+function updateAdmin(
   const addr            : address;
   var s                 : rateStorage)
                         : rateReturn is
@@ -71,7 +79,7 @@ function updateRateAdmin(
     s.admin := addr;
   } with (noOperations, s)
 
-function updateRateYToken(
+function setYToken(
   const addr            : address;
   var s                 : rateStorage)
                         : rateReturn is
@@ -97,8 +105,12 @@ function getUtilizationRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const utilizationRateFloat : nat = param.accuracy * param.borrowsFloat
-      / abs(param.cashFloat + param.borrowsFloat - param.reservesFloat);
+    const utilizationRateFloat : nat = calctUtilRate(
+      param.borrowsFloat,
+      param.cashFloat,
+      param.reservesFloat,
+      param.accuracy
+    );
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
@@ -139,7 +151,7 @@ function getSupplyRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    varifyReserveFactor(s);
+    verifyReserveFactor(s);
 
     const borrowRateFloat : nat = calctBorrowRate(
       param.borrowsFloat,
@@ -148,15 +160,18 @@ function getSupplyRate(
       param.accuracy,
       s
     );
-    const utilizationRateFloat : nat = param.accuracy * param.borrowsFloat
-      / abs(param.cashFloat + param.borrowsFloat - param.reservesFloat);
-    const supplyRateFloat : nat = borrowRateFloat * utilizationRateFloat *
-      abs(accuracy - s.reserveFactorFloat);
+    const utilizationRateFloat : nat = calctUtilRate(
+      param.borrowsFloat,
+      param.cashFloat,
+      param.reservesFloat,
+      param.accuracy
+    );
 
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = supplyRateFloat;
+          amount = borrowRateFloat * utilizationRateFloat *
+            abs(accuracy - s.reserveFactorFloat);
         ],
         0mutez,
         param.contract

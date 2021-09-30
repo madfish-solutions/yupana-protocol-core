@@ -25,12 +25,12 @@ type tokenFunc is (tokenAction * tokenStorage) -> return
 type useFunc is (useAction * tokenStorage) -> return
 type useParam is useAction
 
-type setUseParams is record [
+type setUseParams       is record [
   index                 : nat;
   func                  : useFunc;
 ]
 
-type setUseTokenParams is record [
+type setUseTokenParams  is record [
   index                 : nat;
   func                  : tokenFunc;
 ]
@@ -67,7 +67,7 @@ type getType is Get of string * contract(oracleParam)
 type proxyReturn is list (operation) * proxyStorage
 
 type entryProxyAction   is
-  | UpdateAdmin of address
+  | SetProxyAdmin of address
   | UpdateOracle of address
   | UpdateYToken of address
   | UpdatePair of pairParam
@@ -76,8 +76,8 @@ type entryProxyAction   is
 
 // interestRate
 type entryRateAction   is
-  | UpdateRateAdmin of address
-  | UpdateRateYToken of address
+  | UpdateAdmin of address
+  | SetYToken of address
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams

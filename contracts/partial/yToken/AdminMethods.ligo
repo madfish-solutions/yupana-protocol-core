@@ -77,12 +77,15 @@ function addMarket(
     token.maxBorrowRate := params.maxBorrowRate;
     token.faType := params.faType;
 
-    s.storage.tokenMetadata[s.storage.lastTokenId] := record [
-      tokenId = s.storage.lastTokenId;
+    const lastTokenId : nat = s.storage.lastTokenId;
+    // s.storage.typesInfo[(params.assetAddress, params.faType)] := lastTokenId;
+
+    s.storage.tokenMetadata[lastTokenId] := record [
+      tokenId = lastTokenId;
       tokenInfo = params.tokenMetadata;
     ];
-    s.storage.tokenInfo[s.storage.lastTokenId] := token;
-    s.storage.lastTokenId := s.storage.lastTokenId + 1n;
+    s.storage.tokenInfo[lastTokenId] := token;
+    s.storage.lastTokenId := lastTokenId + 1n;
   } with (noOperations, s)
 
 function setTokenFactors(

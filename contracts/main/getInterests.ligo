@@ -41,8 +41,8 @@ type interestParams     is [@layout:comb] record [
 ]
 
 type entryRateAction         is
-  | UpdateRateAdmin of address
-  | UpdateRateYToken of address
+  | UpdateAdmin of address
+  | UpdateYToken of address
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams

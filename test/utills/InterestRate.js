@@ -72,18 +72,14 @@ class InterestRate {
     }
   }
 
-  async updateRateAdmin(newAdmin) {
-    const operation = await this.contract.methods
-      .updateRateAdmin(newAdmin)
-      .send();
+  async updateAdmin(newAdmin) {
+    const operation = await this.contract.methods.updateAdmin(newAdmin).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async updateRateYToken(newToken) {
-    const operation = await this.contract.methods
-      .updateRateYToken(newToken)
-      .send();
+  async updateYToken(newToken) {
+    const operation = await this.contract.methods.setYToken(newToken).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }

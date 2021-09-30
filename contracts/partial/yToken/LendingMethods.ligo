@@ -66,7 +66,7 @@ function calculateMaxCollaterallInCU(
       const tokenId     : tokenId)
                         : calcCollParams is
       block {
-        const userBalance : nat = getMapInfo(
+        const userInfo : balanceInfo = getMapInfo(
           userAccount.balances,
           tokenId
         );
@@ -75,7 +75,7 @@ function calculateMaxCollaterallInCU(
         verifyTokenUpdated(token);
 
         (* sum += collateralFactorFloat * exchangeRate * oraclePrice * balance *)
-        param.res := param.res + ((userBalance * token.lastPrice
+        param.res := param.res + ((userInfo.balance * token.lastPrice
           * token.collateralFactorFloat) * (abs(token.totalLiquidFloat
           + token.totalBorrowsFloat - token.totalReservesFloat)
           / token.totalSupplyFloat) / accuracy);
@@ -94,7 +94,7 @@ function calculateOutstandingBorrowInCU(
   block {
     function oneToken(
       var param         : calcCollParams;
-      const borrowMap   : tokenId * nat)
+      const borrowMap   : tokenId * balanceInfo)
                         : calcCollParams is
       block {
         const token : tokenInfo = getTokenInfo(borrowMap.0, param.s);
@@ -102,11 +102,11 @@ function calculateOutstandingBorrowInCU(
         verifyTokenUpdated(token);
 
         (* sum += oraclePrice * balance *)
-        param.res := param.res + ((borrowMap.1 * token.lastPrice));
+        param.res := param.res + ((borrowMap.1.borrow * token.lastPrice));
       } with param;
     const result : calcCollParams = Map.fold(
       oneToken,
-      userAccount.borrows,
+      userAccount.balances,
       params
     );
   } with result.res
@@ -165,14 +165,14 @@ function mint(
           } else skip;
 
           var userAccount : account := getAccount(Tezos.sender, s);
-          var userBalanceFloat : nat := getMapInfo(
+          var userInfo : balanceInfo := getMapInfo(
             userAccount.balances,
             yAssetParams.tokenId
           );
 
-          userBalanceFloat := userBalanceFloat + mintTokensFloat;
+          userInfo.balance := userInfo.balance + mintTokensFloat;
 
-          userAccount.balances[yAssetParams.tokenId] := userBalanceFloat;
+          userAccount.balances[yAssetParams.tokenId] := userInfo;
           s.accountInfo[Tezos.sender] := userAccount;
           token.totalSupplyFloat := token.totalSupplyFloat + mintTokensFloat;
           token.totalLiquidFloat := token.totalLiquidFloat
@@ -235,31 +235,29 @@ function redeem(
           then failwith("yToken/token-taken-as-collateral")
           else skip;
 
-          var userBalanceFloat : nat := getMapInfo(
+          var userInfo : balanceInfo := getMapInfo(
             accountUser.balances,
             yAssetParams.tokenId
           );
-          (* TODO: rename to liquidityFloat *)
-          const liquidity : nat = abs(token.totalLiquidFloat
+          const liquidityFloat : nat = abs(token.totalLiquidFloat
             + token.totalBorrowsFloat - token.totalReservesFloat);
 
           const redeemAmount : nat = if yAssetParams.amount = 0n
-          then userBalanceFloat * liquidity / token.totalSupplyFloat / accuracy
+          then userInfo.balance * liquidityFloat / token.totalSupplyFloat / accuracy
           else yAssetParams.amount;
 
-          (* TODO: fix comparison redeemAmount isn't float but totalLiquidFloat is *)
-          if redeemAmount > token.totalLiquidFloat
+          if redeemAmount * accuracy > token.totalLiquidFloat
           then failwith("yToken/not-enough-liquid")
           else skip;
 
           var burnTokensFloat : nat := redeemAmount * accuracy *
-            token.totalSupplyFloat / liquidity;
-          if userBalanceFloat < burnTokensFloat
+            token.totalSupplyFloat / liquidityFloat;
+          if userInfo.balance < burnTokensFloat
           then failwith("yToken/not-enough-tokens-to-burn")
           else skip;
 
-          userBalanceFloat := abs(userBalanceFloat - burnTokensFloat);
-          accountUser.balances[yAssetParams.tokenId] := userBalanceFloat;
+          userInfo.balance := abs(userInfo.balance - burnTokensFloat);
+          accountUser.balances[yAssetParams.tokenId] := userInfo;
           s.accountInfo[Tezos.sender] := accountUser;
           token.totalSupplyFloat := abs(token.totalSupplyFloat - burnTokensFloat);
           token.totalLiquidFloat := abs(token.totalLiquidFloat - redeemAmount *
@@ -323,24 +321,20 @@ function borrow(
           else skip;
 
 
-          var userBorrowAmountFloat : nat := getMapInfo(
-            accountUser.borrows,
+          var userInfo : balanceInfo := getMapInfo(
+            accountUser.balances,
             yAssetParams.tokenId
           );
 
-          var lastBorrowIndex : nat := getMapInfo(
-            accountUser.lastBorrowIndex,
-            yAssetParams.tokenId
-          );
-
-          if lastBorrowIndex =/= 0n
-          then userBorrowAmountFloat := userBorrowAmountFloat *
-              token.borrowIndex / lastBorrowIndex;
+          if userInfo.lastBorrowIndex =/= 0n
+          then userInfo.borrow := userInfo.borrow *
+              token.borrowIndex / userInfo.lastBorrowIndex;
           else skip;
 
-          userBorrowAmountFloat := userBorrowAmountFloat + borrowsFloat;
-          accountUser.borrows[yAssetParams.tokenId] := userBorrowAmountFloat;
-          accountUser.lastBorrowIndex[yAssetParams.tokenId] := token.borrowIndex;
+          userInfo.lastBorrowIndex := token.borrowIndex;
+
+          userInfo.borrow := userInfo.borrow + borrowsFloat;
+          accountUser.balances[yAssetParams.tokenId] := userInfo;
           s.accountInfo[Tezos.sender] := accountUser;
 
           const maxBorrowInCU : nat = calculateMaxCollaterallInCU(
@@ -411,48 +405,42 @@ function repay (
           var repayAmountFloat : nat := yAssetParams.amount * accuracy;
 
           var accountUser : account := getAccount(Tezos.sender, s);
-          var lastBorrowIndex : nat := getMapInfo(
-            accountUser.lastBorrowIndex,
-            yAssetParams.tokenId
-          );
-          var userBorrowAmountFloat : nat := getMapInfo(
-            accountUser.borrows,
+          var userInfo : balanceInfo := getMapInfo(
+            accountUser.balances,
             yAssetParams.tokenId
           );
 
-          if lastBorrowIndex =/= 0n
-          then userBorrowAmountFloat := userBorrowAmountFloat *
-            token.borrowIndex / lastBorrowIndex;
+          if userInfo.lastBorrowIndex =/= 0n
+          then userInfo.borrow := userInfo.borrow *
+            token.borrowIndex / userInfo.lastBorrowIndex;
           else skip;
 
           if repayAmountFloat = 0n
-          then repayAmountFloat := userBorrowAmountFloat;
+          then repayAmountFloat := userInfo.borrow;
           else skip;
 
-          if repayAmountFloat > userBorrowAmountFloat
+          if repayAmountFloat > userInfo.borrow
           then failwith("yToken/amount-should-be-less-or-equal")
           else skip;
 
-          userBorrowAmountFloat := abs(
-            userBorrowAmountFloat - repayAmountFloat
+          userInfo.borrow := abs(
+            userInfo.borrow - repayAmountFloat
           );
-          (* TODO: remove the next line and update
-          accountUser.lastBorrowIndex[yAssetParams.tokenId] directly *)
-          lastBorrowIndex := token.borrowIndex;
-          accountUser.lastBorrowIndex[yAssetParams.tokenId] := lastBorrowIndex;
-          accountUser.borrows[yAssetParams.tokenId] := userBorrowAmountFloat;
+
+          userInfo.lastBorrowIndex := token.borrowIndex;
+          accountUser.balances[yAssetParams.tokenId] := userInfo;
           s.accountInfo[Tezos.sender] := accountUser;
           token.totalBorrowsFloat := abs(token.totalBorrowsFloat
             - repayAmountFloat);
-          (* TODO: increase the liquid amount of tokens *)
+          token.totalLiquidFloat := token.totalLiquidFloat + repayAmountFloat;
           s.tokenInfo[yAssetParams.tokenId] := token;
 
-          var value : nat := 0n;
-
-          (* TODO: save the gas; replace with ediv *)
-          if repayAmountFloat - (repayAmountFloat / accuracy * accuracy) > 0
-          then value := repayAmountFloat / accuracy + 1n
-          else value := repayAmountFloat / accuracy;
+          var value : nat := case ediv(repayAmountFloat, accuracy) of
+            Some(result) -> if result.1 > 0n
+              then result.0 + 1n
+              else result.0
+          | None -> failwith("error")
+          end;
 
           operations := list [
               case token.faType of
@@ -519,12 +507,8 @@ function liquidate(
           then failwith("yToken/borrower-cannot-be-liquidator")
           else skip;
 
-          var borrowerBorrowAmountFloat : nat := getMapInfo(
-            accountBorrower.borrows,
-            liquidateParams.borrowToken
-          );
-          var borrowerLastBorrowIndex : nat := getMapInfo(
-            accountBorrower.lastBorrowIndex,
+          var borrowerInfo : balanceInfo := getMapInfo(
+            accountBorrower.balances,
             liquidateParams.borrowToken
           );
 
@@ -540,41 +524,36 @@ function liquidate(
           if outstandingBorrowInCU > maxBorrowInCU
           then skip
           else failwith("yToken/liquidation-not-achieved");
-          if borrowerBorrowAmountFloat = 0n
+          if borrowerInfo.borrow = 0n
           then failwith("yToken/debt-is-zero");
           else skip;
 
           var liqAmountFloat : nat := liquidateParams.amount * accuracy;
 
-          if borrowerLastBorrowIndex =/= 0n
-          then borrowerBorrowAmountFloat := borrowerBorrowAmountFloat *
+          if borrowerInfo.lastBorrowIndex =/= 0n
+          then borrowerInfo.borrow := borrowerInfo.borrow *
             borrowToken.borrowIndex /
-            borrowerLastBorrowIndex;
+            borrowerInfo.lastBorrowIndex;
           else skip;
 
           (* liquidate amount can't be more than allowed close factor *)
-          const maxClose : nat = borrowerBorrowAmountFloat * s.closeFactorFloat
+          const maxClose : nat = borrowerInfo.borrow * s.closeFactorFloat
             / accuracy;
 
           if liqAmountFloat <= maxClose
           then skip
           else failwith("yToken/too-much-repay");
 
-          borrowerBorrowAmountFloat := abs(
-            borrowerBorrowAmountFloat - liqAmountFloat
+          borrowerInfo.borrow := abs(
+            borrowerInfo.borrow - liqAmountFloat
           );
-          borrowerLastBorrowIndex := borrowToken.borrowIndex;
+          borrowerInfo.lastBorrowIndex := borrowToken.borrowIndex;
           borrowToken.totalBorrowsFloat := abs(
             borrowToken.totalBorrowsFloat - liqAmountFloat
           );
-          (* TODO: increase the liquid amount of tokens *)
+          borrowToken.totalLiquidFloat := borrowToken.totalLiquidFloat + liqAmountFloat;
 
-          accountBorrower.lastBorrowIndex[
-            liquidateParams.borrowToken
-          ] := borrowerLastBorrowIndex;
-          accountBorrower.borrows[
-            liquidateParams.borrowToken
-          ] := borrowerBorrowAmountFloat;
+          accountBorrower.balances[liquidateParams.borrowToken] := borrowerInfo;
 
           operations := list [
               case borrowToken.faType of
@@ -620,49 +599,39 @@ function liquidate(
             * priceBorrowed / priceCollateral
             seizeTokens = seizeAmount / exchangeRate
           *)
-          (* TODO: immprove accurancy by calculating the numerator and
-          denominator instead of exchangeRateFloat; ie.
-          numerator = liqAmountFloat * s.liqIncentiveFloat
-            * borrowToken.lastPrice * collateralToken.totalSupplyFloat
-          denominator = abs(
-            collateralToken.totalLiquidFloat + collateralToken.totalBorrowsFloat
-            - collateralToken.totalReservesFloat
-          ) * accuracy * collateralToken.lastPrice *)
+          const seizeAmount : nat = liqAmountFloat * s.liqIncentiveFloat
+            * borrowToken.lastPrice * collateralToken.totalSupplyFloat;
+
           const exchangeRateFloat : nat = abs(
             collateralToken.totalLiquidFloat + collateralToken.totalBorrowsFloat
             - collateralToken.totalReservesFloat
-          ) * accuracy / collateralToken.totalSupplyFloat;
-          const seizeTokensFloat : nat = liqAmountFloat * s.liqIncentiveFloat
-            * borrowToken.lastPrice /
-            exchangeRateFloat / collateralToken.lastPrice;
+          ) * accuracy * collateralToken.lastPrice;
+
+          const seizeTokensFloat : nat = seizeAmount / exchangeRateFloat;
 
           var liquidatorAccount : account := getAccount(
             Tezos.sender,
             s
           );
 
-          var borrowerBalance : nat := getMapInfo(
+          var borrowerCollateralInfo : balanceInfo := getMapInfo(
             accountBorrower.balances,
             liquidateParams.collateralToken
           );
 
-          if borrowerBalance < seizeTokensFloat
+          if borrowerCollateralInfo.balance < seizeTokensFloat
           then failwith("yToken/seize/not-enough-tokens")
           else skip;
 
-          var liquidatorBalance : nat := getMapInfo(
+          var liquidatorInfo : balanceInfo := getMapInfo(
             liquidatorAccount.balances,
             liquidateParams.collateralToken
           );
-          borrowerBalance := abs(borrowerBalance - seizeTokensFloat);
-          liquidatorBalance := liquidatorBalance + seizeTokensFloat;
+          borrowerCollateralInfo.balance := abs(borrowerCollateralInfo.balance - seizeTokensFloat);
+          liquidatorInfo.balance := liquidatorInfo.balance + seizeTokensFloat;
 
-          accountBorrower.balances[
-            liquidateParams.collateralToken
-          ] := borrowerBalance;
-          liquidatorAccount.balances[
-            liquidateParams.collateralToken
-          ] := liquidatorBalance;
+          accountBorrower.balances[liquidateParams.collateralToken] := borrowerCollateralInfo;
+          liquidatorAccount.balances[liquidateParams.collateralToken] := liquidatorInfo;
           s.accountInfo[liquidateParams.borrower] := accountBorrower;
           s.accountInfo[Tezos.sender] := liquidatorAccount;
           s.tokenInfo[liquidateParams.collateralToken] := collateralToken;
@@ -725,10 +694,8 @@ function exitMarket(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
-          (* TODO: remove unneccessary condition about outstandingBorrowInCU = 0n;
-          it makes no sense as if outstandingBorrowInCU == 0 it is always <=
-          maxBorrowInCU *)
-          if outstandingBorrowInCU <= maxBorrowInCU or outstandingBorrowInCU = 0n
+
+          if outstandingBorrowInCU <= maxBorrowInCU
           then s.accountInfo[Tezos.sender] := userAccount;
           else failwith("yToken/debt-not-repaid");
         }
@@ -774,17 +741,16 @@ function accrueInterest(
     //  Calculate the number of blocks elapsed since the last accrual
     const blockDelta : nat = abs(Tezos.now - token.lastUpdateTime);
 
-    (* TODO: rename to simpleInterestFactorFloat, interestAccumulatedFloat*)
-    const simpleInterestFactor : nat = borrowRate * blockDelta;
-    const interestAccumulated : nat = simpleInterestFactor *
+    const simpleInterestFactorFloat : nat = borrowRate * blockDelta;
+    const interestAccumulatedFloat : nat = simpleInterestFactorFloat *
       token.totalBorrowsFloat / accuracy;
 
-    token.totalBorrowsFloat := interestAccumulated + token.totalBorrowsFloat;
+    token.totalBorrowsFloat := interestAccumulatedFloat + token.totalBorrowsFloat;
     // one mult operation with float require accuracy division
-    token.totalReservesFloat := interestAccumulated * token.reserveFactorFloat /
+    token.totalReservesFloat := interestAccumulatedFloat * token.reserveFactorFloat /
       accuracy + token.totalReservesFloat;
     // one mult operation with float require accuracy division
-    token.borrowIndex := simpleInterestFactor * token.borrowIndex /
+    token.borrowIndex := simpleInterestFactorFloat * token.borrowIndex /
       accuracy + token.borrowIndex;
     token.lastUpdateTime := Tezos.now;
 

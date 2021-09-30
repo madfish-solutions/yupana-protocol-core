@@ -5,14 +5,6 @@ function mustBeAdmin(
   then failwith("proxy/not-admin")
   else unit
 
-(* TODO: remove unused method *)
-[@inline] function mustBeYtoken(
-  const s               : proxyStorage)
-                        : unit is
-  if Tezos.sender =/= s.yToken
-  then failwith("proxy/not-yToken")
-  else unit
-
 [@inline] function mustBeOracle(
   const s               : proxyStorage)
                         : unit is
@@ -77,7 +69,7 @@ function mustBeAdmin(
     | None -> (failwith("checkPairId/tokenId-not-defined") : nat)
   end;
 
-function updateAdmin(
+function setProxyAdmin(
   const addr            : address;
   var s                 : proxyStorage)
                         : proxyReturn is

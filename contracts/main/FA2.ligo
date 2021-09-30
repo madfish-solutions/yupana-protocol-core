@@ -256,10 +256,6 @@ function mint_asset(
         then skip
         else failwith("FA2_TOKEN_UNDEFINED");
 
-        if param.token_id = 0n
-        then failwith("MINT_FORBIDDEN");
-        else skip;
-
         (* Get receiver account *)
         var dst_account : account := get_account(param.receiver, s);
 
