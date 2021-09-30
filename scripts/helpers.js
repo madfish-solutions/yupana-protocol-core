@@ -1,10 +1,7 @@
 const { alice } = require("../scripts/sandbox/accounts");
 require("dotenv").config();
-require("ts-node").register({
-  files: true,
-});
-const { program } = require("commander");
-const { exec, execSync } = require("child_process");
+
+const { execSync } = require("child_process");
 const fs = require("fs");
 const { TezosToolkit } = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
@@ -139,7 +136,7 @@ const runMigrations = async (options) => {
     options.optionTo = options.to || migrations.length;
 
     const networkConfig = env.networks[options.network];
-    // const tezos = new TezosToolkit("http://136.244.96.28:8732");
+
     const tezos = new TezosToolkit(networkConfig.rpc);
 
     tezos.setProvider({

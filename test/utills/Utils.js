@@ -1,10 +1,9 @@
 require("dotenv").config();
-require("ts-node").register({
-  files: true,
-});
+
 const { TezosToolkit } = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
 const { alice } = require("../../scripts/sandbox/accounts");
+const { confirmOperation } = require("../../scripts/confirmation");
 const env = require("../../env");
 const defaultNetwork = "development";
 const network = env.network || defaultNetwork;
@@ -30,6 +29,17 @@ class Utils {
     });
 
     return tezos;
+  }
+
+  static async bakeBlocks(tezos, count) {
+    for (let i = 0; i < count; ++i) {
+      const operation = await tezos.contract.transfer({
+        to: await tezos.signer.publicKeyHash(),
+        amount: 1,
+      });
+
+      await confirmOperation(tezos, operation.hash);
+    }
   }
 }
 

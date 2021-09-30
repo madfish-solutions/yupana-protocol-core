@@ -1,6 +1,3 @@
-require("ts-node").register({
-  files: true,
-});
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");

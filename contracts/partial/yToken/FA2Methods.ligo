@@ -21,20 +21,20 @@ function getTokenInfo(
                         : tokenInfo is
   case s.tokenInfo[tokenId] of
     None -> record [
-      mainToken         = zeroAddress;
-      faType            = FA12(unit);
-      interstRateModel  = zeroAddress;
-      priceUpdateTime   = zeroTimestamp;
-      lastUpdateTime    = zeroTimestamp;
-      totalBorrows      = 0n;
-      totalLiquid       = 0n;
-      totalSupply       = 0n;
-      totalReserves     = 0n;
-      borrowIndex       = 0n;
-      maxBorrowRate     = 0n;
-      collateralFactor  = 0n;
-      reserveFactor     = 0n;
-      lastPrice         = 0n;
+      mainToken               = zeroAddress;
+      faType                  = FA12(unit);
+      interstRateModel        = zeroAddress;
+      priceUpdateTime         = zeroTimestamp;
+      lastUpdateTime          = zeroTimestamp;
+      totalBorrowsFloat       = 0n;
+      totalLiquidFloat        = 0n;
+      totalSupplyFloat        = 0n;
+      totalReservesFloat      = 0n;
+      borrowIndex             = accuracy;
+      maxBorrowRate           = 0n;
+      collateralFactorFloat   = 0n;
+      reserveFactorFloat      = 0n;
+      lastPrice               = 0n;
     ]
   | Some(v) -> v
   end
@@ -83,7 +83,9 @@ function getTotalSupply(
       case p of
         IGetTotalSupply(args) -> {
           const res : tokenInfo = getTokenInfo(args.token_id, s);
-          operations := list [Tezos.transaction(res.totalSupply, 0tz, args.receiver)];
+          operations := list [
+            Tezos.transaction(res.totalSupplyFloat, 0tz, args.receiver)
+          ];
         }
       | _                         -> skip
       end
@@ -118,7 +120,6 @@ function iterateTransfer(
   const params          : transferParam)
                         : tokenStorage is
   block {
-    (* TODO: ensure the sender has permission to transfer tokens *)
     (* Perform single transfer *)
     function makeTransfer(
       var s             : tokenStorage;

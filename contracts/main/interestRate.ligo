@@ -6,12 +6,13 @@ function main(
   const s               : rateStorage)
                         : rateReturn is
   case p of
+    (* TODO: make the entrypoint' names shorter; UpdateAdmin instead
+    UpdateRateAdmin, UpdateYToken instead UpdateRateYToken*)
     | UpdateRateAdmin(params) -> updateRateAdmin(params, s)
     | UpdateRateYToken(params) -> updateRateYToken(params, s)
     | SetCoefficients(params) -> setCoefficients(params, s)
     | GetBorrowRate(params) -> getBorrowRate(params, s)
     | GetUtilizationRate(params) -> getUtilizationRate(params, s)
-    | CallReserveFactor(params) -> callReserveFactor(params, s)
     | GetSupplyRate(params) -> getSupplyRate(params, s)
     | UpdReserveFactor(params) -> updReserveFactor(params, s)
   end

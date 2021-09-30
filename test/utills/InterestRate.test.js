@@ -51,10 +51,10 @@ describe("Interest tests", async () => {
     await interest.setCoefficients(100, 200, 300, 400);
     await interest.updateStorage();
 
-    strictEqual(await interest.storage.kickRate.toString(), "100");
-    strictEqual(await interest.storage.baseRate.toString(), "200");
-    strictEqual(await interest.storage.multiplier.toString(), "300");
-    strictEqual(await interest.storage.jumpMultiplier.toString(), "400");
+    strictEqual(await interest.storage.kickRateFloat.toString(), "100");
+    strictEqual(await interest.storage.baseRateFloat.toString(), "200");
+    strictEqual(await interest.storage.multiplierFloat.toString(), "300");
+    strictEqual(await interest.storage.jumpMultiplierFloat.toString(), "400");
   });
 
   it("send UtilizationRate", async () => {

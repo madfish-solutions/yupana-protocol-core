@@ -46,10 +46,6 @@ let yTokenFunctions = [
     index: 6,
     name: "exitMarket",
   },
-  {
-    index: 7,
-    name: "updatePrice",
-  },
 ];
 
 let proxyFunctions = [

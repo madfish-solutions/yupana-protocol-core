@@ -1,6 +1,3 @@
-require("ts-node").register({
-  files: true,
-});
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
@@ -39,7 +36,7 @@ class FA12 {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      totalSupply: storage.totalSupply,
+      totalSupplyFloat: storage.totalSupplyFloat,
       ledger: storage.ledger,
     };
 

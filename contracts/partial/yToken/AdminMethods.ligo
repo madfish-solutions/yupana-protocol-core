@@ -1,20 +1,3 @@
-function verifyUpdatedRates(
-  const setOfTokens     : set(tokenId);
-  var s                 : tokenStorage)
-                        : tokenStorage is
-  block {
-    function updInterest(
-      var s             : tokenStorage;
-      const tokenId     : tokenId)
-                        : tokenStorage is
-      block {
-        var token : tokenInfo := getTokenInfo(tokenId, s);
-        if token.lastUpdateTime > ((Tezos.now + 60) : timestamp)
-        then failwith("yToken/need-update-interestRate")
-        else skip;
-      } with s
-  } with Set.fold(updInterest, setOfTokens, s)
-
 function mustBeAdmin(
   const s               : tokenStorage)
                         : unit is
@@ -32,15 +15,20 @@ function setAdmin(
   } with (noOperations, s)
 
 function withdrawReserve(
-  const params          : mainParams;
+  const params          : yAssetParams;
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+    const amountFloat = params.amount * accuracy;
 
-    token.totalReserves := abs(
-      token.totalReserves - params.amount * accuracy
+    if amountFloat > token.totalReservesFloat
+    then failwith("yToken/withdraw-is-too-big");
+    else skip;
+
+    token.totalReservesFloat := abs(
+      token.totalReservesFloat -amountFloat
     );
     s.storage.tokenInfo[params.tokenId] := token;
 
@@ -78,12 +66,14 @@ function addMarket(
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
+    mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
 
+    (* TODO: fail if token exist - not fixed yet *)
     token.interstRateModel := params.interstRateModel;
     token.mainToken := params.assetAddress;
-    token.collateralFactor := params.collateralFactor;
-    token.reserveFactor := params.reserveFactor;
+    token.collateralFactorFloat := params.collateralFactorFloat;
+    token.reserveFactorFloat := params.reserveFactorFloat;
     token.maxBorrowRate := params.maxBorrowRate;
     token.faType := params.faType;
 
@@ -101,11 +91,14 @@ function setTokenFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    s.storage := verifyUpdatedRates(set [params.tokenId], s.storage);
-
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
-    token.collateralFactor := params.collateralFactor;
-    token.reserveFactor := params.reserveFactor;
+
+    if token.lastUpdateTime < Tezos.now
+    then failwith("yToken/need-update")
+    else skip;
+
+    token.collateralFactorFloat := params.collateralFactorFloat;
+    token.reserveFactorFloat := params.reserveFactorFloat;
     token.interstRateModel := params.interstRateModel;
     token.maxBorrowRate := params.maxBorrowRate;
     s.storage.tokenInfo[params.tokenId] := token;
@@ -117,8 +110,8 @@ function setGlobalFactors(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    s.storage.closeFactor := params.closeFactor;
-    s.storage.liqIncentive := params.liqIncentive;
+    s.storage.closeFactorFloat := params.closeFactorFloat;
+    s.storage.liqIncentiveFloat := params.liqIncentiveFloat;
     s.storage.priceFeedProxy := params.priceFeedProxy;
     s.storage.maxMarkets := params.maxMarkets;
   } with (noOperations, s)

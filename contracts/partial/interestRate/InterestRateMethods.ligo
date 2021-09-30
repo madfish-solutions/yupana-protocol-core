@@ -24,12 +24,14 @@
                         : contract(entryRateAction)
     )
   end;
-
+ (* TODO: fix type - verifyReserveFactor *)
 [@inline] function varifyReserveFactor(
   const s               : rateStorage)
                         : unit is
+ (* TODO: fix condition; it can't be ever true because now it requires the update
+ were done in the future to fail the operation *)
   if s.lastUpdTime > ((Tezos.now + 60) : timestamp)
-  then failwith("interestRate/need-update-reserveFactor")
+  then failwith("interestRate/need-update-reserveFactorFloat")
   else unit
 
 [@inline] function mustBeAdmin(
@@ -40,23 +42,25 @@
   else unit
 
 [@inline] function calctBorrowRate(
-  const borrows         : nat;
-  const cash            : nat;
-  const reserves        : nat;
-  const accuracy       : nat;
+  const borrowsFloat    : nat;
+  const cashFloat       : nat;
+  const reservesFloat   : nat;
+  const accuracy        : nat;
   const s               : rateStorage)
                         : nat is
   block {
-    const utilizationRate : nat = abs(cash + borrows - reserves)
-      / accuracy * borrows;
-    var borrowRate : nat := 0n;
+    (* TODO: add helper function to calculate utilization rate and use in
+    required places to avoid code dublicates *)
+    const utilizationRateFloat : nat = accuracy * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat);
+    var borrowRateFloat : nat := 0n;
 
-    if utilizationRate < s.kickRate
-    then borrowRate := s.baseRate + (utilizationRate * s.multiplier);
-    else borrowRate := (s.kickRate * s.multiplier + s.baseRate) +
-      (abs(utilizationRate - s.kickRate) * s.jumpMultiplier)
+    if utilizationRateFloat < s.kickRateFloat
+    (* TODO: use calctBorrowRate here to ensure the calculations are the same everywhere *)
+    then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / accuracy);
+    else borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / accuracy + s.baseRateFloat) +
+      (abs(utilizationRateFloat - s.kickRateFloat) * s.jumpMultiplierFloat) / accuracy);
 
-  } with borrowRate
+  } with borrowRateFloat
 
 function updateRateAdmin(
   const addr            : address;
@@ -82,25 +86,23 @@ function setCoefficients(
                         : rateReturn is
   block {
     mustBeAdmin(s);
-    s.kickRate := param.kickRate;
-    s.baseRate := param.baseRate;
-    s.multiplier := param.multiplier;
-    s.jumpMultiplier := param.jumpMultiplier;
+    s.kickRateFloat := param.kickRateFloat;
+    s.baseRateFloat := param.baseRateFloat;
+    s.multiplierFloat := param.multiplierFloat;
+    s.jumpMultiplierFloat := param.jumpMultiplierFloat;
   } with (noOperations, s)
 
 function getUtilizationRate(
   const param           : rateParams;
   const s               : rateStorage)
-  (* TODO : request accuracy as an argument *)
                         : rateReturn is
   block {
-    const utilizationRate : nat = abs(
-      param.cash + param.borrows - param.reserves
-    ) / param.accuracy * param.borrows;
+    const utilizationRateFloat : nat = param.accuracy * param.borrowsFloat
+      / abs(param.cashFloat + param.borrowsFloat - param.reservesFloat);
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = utilizationRate;
+          amount = utilizationRateFloat;
         ],
         0mutez,
         param.contract
@@ -113,10 +115,10 @@ function getBorrowRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const borrowRate : nat = calctBorrowRate(
-      param.borrows,
-      param.cash,
-      param.reserves,
+    const borrowRateFloat : nat = calctBorrowRate(
+      param.borrowsFloat,
+      param.cashFloat,
+      param.reservesFloat,
       param.accuracy,
       s
     );
@@ -124,24 +126,10 @@ function getBorrowRate(
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = borrowRate;
+          amount = borrowRateFloat;
         ],
         0mutez,
         param.contract
-      )
-    ];
-  } with (operations, s)
-
-function callReserveFactor(
-  const param           : rateParams;
-  const s               : rateStorage)
-                        : rateReturn is
-  block {
-    var operations : list(operation) := list[
-      Tezos.transaction(
-        param.tokenId,
-        0mutez,
-        getReserveFactorContract(s.yToken)
       )
     ];
   } with (operations, s)
@@ -153,23 +141,22 @@ function getSupplyRate(
   block {
     varifyReserveFactor(s);
 
-    const borrowRate : nat = calctBorrowRate(
-      param.borrows,
-      param.cash,
-      param.reserves,
+    const borrowRateFloat : nat = calctBorrowRate(
+      param.borrowsFloat,
+      param.cashFloat,
+      param.reservesFloat,
       param.accuracy,
       s
     );
-    const utilizationRate : nat = abs(
-      param.cash + param.borrows - param.reserves
-    ) / param.accuracy * param.borrows;
-    const supplyRate : nat = borrowRate * utilizationRate *
-      abs(accuracy - s.reserveFactor);
+    const utilizationRateFloat : nat = param.accuracy * param.borrowsFloat
+      / abs(param.cashFloat + param.borrowsFloat - param.reservesFloat);
+    const supplyRateFloat : nat = borrowRateFloat * utilizationRateFloat *
+      abs(accuracy - s.reserveFactorFloat);
 
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = supplyRate;
+          amount = supplyRateFloat;
         ],
         0mutez,
         param.contract
@@ -184,7 +171,7 @@ function updReserveFactor(
   block {
     if Tezos.sender = s.yToken
     then block {
-      s.reserveFactor := amt;
+      s.reserveFactorFloat := amt;
       s.lastUpdTime := Tezos.now;
     }
     else failwith("interestRate/not-yToken")

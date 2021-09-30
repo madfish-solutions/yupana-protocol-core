@@ -58,7 +58,6 @@
 13. Shouldn't accept more than 9 qToken functions.
 14. Shouldn't allow to replace the qToken functions.
 
-
 ## 2. Controller
 
 **Atomic requirements:**
@@ -114,8 +113,8 @@
 1. Should contains in qToken in qTokens list
 2. Shouldn't call if qToken not in qTokens list
 3. Should be approved by user to contract and balance should be same or more
-3. qToken contract storage should be upd after valid transaction
-4. Main tokens (for ex wXTZ) should be transfered to contract after qToken.mint was called
+4. qToken contract storage should be upd after valid transaction
+5. Main tokens (for ex wXTZ) should be transfered to contract after qToken.mint was called
 
 #### SafeBorrow
 
@@ -135,10 +134,9 @@
 
 1. Shouldn't call if qToken not in qTokens list
 2. Check way if user did not enter the market. Should call qToken.redeem
-3. Check way if user enter the market. Should return list of operations: qToken.updateControllerState(user)  (qToken is the contract the user set as the collateral)
+3. Check way if user enter the market. Should return list of operations: qToken.updateControllerState(user) (qToken is the contract the user set as the collateral)
 4. Should contains in qToken in qTokens list
 5. Should fail if redeem without mint
-
 
 #### SafeRepay
 
@@ -150,14 +148,12 @@
 4. Should call if user have borrow.
 5. Amount of collateral should be withdrawn (transferred) from the sender
 
-
 #### ExitMarket
 
 **Test cases to cover entrypoint call:**
 
 1. Should`nt delete date in controller.storage.accountMembership if doesnt entered in market and borrow exist
 2. Should delete date in controller.storage.accountMembership if entered in market and borrow not exist
-
 
 #### SafeLiquidate
 
@@ -221,9 +217,9 @@
 **Test cases to cover entrypoint call:**
 
 1. Should executed only by authorized admin (Controller contract)
-2. Should fail if available totalLiquid is lower than borrowed amount
-3. Should`nt fail if available totalLiquid is same or more than borrowed amount
-3. Amount of collateral should be transfered to the sender
+2. Should fail if available totalLiquidFloat is lower than borrowed amount
+3. Should`nt fail if available totalLiquidFloat is same or more than borrowed amount
+4. Amount of collateral should be transfered to the sender
 
 #### Redeem
 

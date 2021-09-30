@@ -14,7 +14,7 @@ const metadata = MichelsonMap.fromLiteral({
         tools: ["Ligo", "Flextesa"],
         location: "https://ligolang.org/",
       },
-      homepage:"https://ypana.com",
+      homepage: "https://ypana.com",
       interfaces: ["TZIP-12", "TZIP-16"],
       errors: [],
       views: [],
@@ -31,8 +31,8 @@ const tokenStorage = {
   tokenMetadata: MichelsonMap.fromLiteral({}),
   lastTokenId: "0",
   priceFeedProxy: alice.pkh,
-  closeFactor: "0",
-  liqIncentive: "0",
+  closeFactorFloat: "0",
+  liqIncentiveFloat: "0",
   maxMarkets: "0",
 };
 

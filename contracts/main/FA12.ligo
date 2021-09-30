@@ -13,8 +13,8 @@ type account is
 (* contract storage *)
 type storage is
   record [
-    totalSupply     : amt;
-    ledger          : big_map (address, account);
+    totalSupplyFloat : amt;
+    ledger           : big_map (address, account);
   ]
 
 (* define return for readability *)
@@ -91,7 +91,7 @@ function transfer(
 
     (* Balance check *)
     if senderAccount.balance < value then
-      failwith("fa12/not-enough-balance")
+      failwith("fa12/not-enough-balance(transfer)")
     else skip;
 
     (* Check this address can spend the tokens *)
@@ -176,14 +176,14 @@ function getAllowance (
     const spenderAllowance : amt = getAllowance(ownerAccount, spender);
   } with (list [transaction(spenderAllowance, 0tz, contr)], s)
 
-(* View function that forwards the totalSupply to a contract *)
+(* View function that forwards the totalSupplyFloat to a contract *)
 function getTotalSupply(
   const contr           : contract(amt);
   var s                 : storage)
                         : return is
   block {
     skip
-  } with (list [transaction(s.totalSupply, 0tz, contr)], s)
+  } with (list [transaction(s.totalSupplyFloat, 0tz, contr)], s)
 
 function mint (
   var amt                 : nat;
@@ -202,7 +202,7 @@ function withdraw(
   block {
     var senderAccount : account := getAccount(Tezos.sender, s);
     if senderAccount.balance < value then
-      failwith("fa12/not-enough-balance")
+      failwith("fa12/not-enough-balance(mint)")
     else skip;
 
     senderAccount.balance := abs(senderAccount.balance - value);

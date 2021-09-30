@@ -4,15 +4,13 @@
 #include "/proxy/PriceFeedTypes.ligo"
 
 type useAction          is
-  | Mint of mainParams
-  | Redeem of mainParams
-  | Borrow of mainParams
-  | Repay of mainParams
+  | Mint of yAssetParams
+  | Redeem of yAssetParams
+  | Borrow of yAssetParams
+  | Repay of yAssetParams
   | Liquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
-  (* TODO: think do we even need the method? *)
-  | UpdatePrice of tokenSet
 
 type tokenAction        is
   | ITransfer of transferParams
@@ -43,11 +41,11 @@ type entryAction        is
   | BalanceOf of balanceParams
   | GetTotalSupply of totalSupplyParams
   | UpdateInterest of tokenId
-  | AccrueInterest of mainParams
+  | AccrueInterest of yAssetParams
   | GetReserveFactor of tokenId
-  | ReturnPrice of mainParams
+  | ReturnPrice of yAssetParams
   | SetAdmin of address
-  | WithdrawReserve of mainParams
+  | WithdrawReserve of yAssetParams
   | AddMarket of newMarketParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
@@ -73,7 +71,7 @@ type entryProxyAction   is
   | UpdateOracle of address
   | UpdateYToken of address
   | UpdatePair of pairParam
-  | GetPrice of tokenId
+  | GetPrice of tokenSet
   | ReceivePrice of oracleParam
 
 // interestRate
@@ -83,7 +81,6 @@ type entryRateAction   is
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams
-  | CallReserveFactor of rateParams
   | GetSupplyRate of rateParams
   | UpdReserveFactor of nat
 

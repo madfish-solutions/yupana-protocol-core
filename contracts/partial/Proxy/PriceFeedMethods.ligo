@@ -1,10 +1,11 @@
-[@inline] function mustBeAdmin(
+function mustBeAdmin(
   const s               : proxyStorage)
                         : unit is
   if Tezos.sender =/= s.admin
   then failwith("proxy/not-admin")
   else unit
 
+(* TODO: remove unused method *)
 [@inline] function mustBeYtoken(
   const s               : proxyStorage)
                         : unit is
@@ -47,14 +48,14 @@
 
 [@inline] function getYtokenContract(
   const s               : proxyStorage)
-                        : contract(mainParams) is
+                        : contract(yAssetParams) is
   case (
     Tezos.get_entrypoint_opt("%returnPrice", s.yToken)
-                        : option(contract(mainParams))
+                        : option(contract(yAssetParams))
   ) of
     Some(contr) -> contr
     | None -> (
-      failwith("proxy/cant-get-yToken") : contract(mainParams)
+      failwith("proxy/cant-get-yToken") : contract(yAssetParams)
     )
   end;
 
@@ -124,22 +125,33 @@ function receivePrice(
   } with (operations, s)
 
 function getPrice(
-  const tokenId         : nat;
+  const tokenSet        : set(nat);
   const s               : proxyStorage)
                         : proxyReturn is
   block {
-    mustBeYtoken(s);
+    var operations : list(operation) := list [];
+    function oneTokenUpd(
+      var operations    : list(operation);
+      const tokenId     : nat)
+                        : list(operation) is
+      block {
+        const strName : string = checkPairName(tokenId, s);
+        const param : contract(oracleParam) = getReceivePriceEntrypoint(
+          Tezos.self_address
+        );
 
-    const strName : string = checkPairName(tokenId, s);
-    const param : contract(oracleParam) = getReceivePriceEntrypoint(Tezos.self_address);
+        operations := Tezos.transaction(
+          Get(strName, param),
+          0mutez,
+          getNormalizerContract(s.oracle)
+        ) # operations
+      } with operations;
 
-    var operations : list(operation) := list[
-      Tezos.transaction(
-        Get(strName, param),
-        0mutez,
-        getNormalizerContract(s.oracle)
-      )
-    ];
+      operations := Set.fold(
+        oneTokenUpd,
+        tokenSet,
+        operations
+      );
   } with (operations, s)
 
 function updatePair(

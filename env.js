@@ -4,13 +4,13 @@ const { alice, dev } = require("./scripts/sandbox/accounts");
 
 module.exports = {
   outputFile: "output.txt",
-  confirmationPollingTimeoutSecond: 2000000,
+  confirmationPollingTimeoutSecond: 500000,
   syncInterval: 0, // 0 for tests, 5000 for deploying
-  confirmTimeout: 90000, // 90000 for tests, 180000 for deploying
+  confirmTimeout: 180000, // 90000 for tests, 180000 for deploying
   buildDir: "build",
   migrationsDir: "migrations",
   contractsDir: "contracts/main",
-  ligoVersion: "0.20.0",
+  ligoVersion: "0.23.0",
   network: "development",
   networks: {
     development: {
