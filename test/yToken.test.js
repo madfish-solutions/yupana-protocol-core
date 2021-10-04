@@ -19,6 +19,13 @@ const tokenMetadata = MichelsonMap.fromLiteral({
   icon: Buffer.from("").toString("hex"),
 });
 
+const tokenMetadata2 = MichelsonMap.fromLiteral({
+  symbol: Buffer.from("TST2").toString("hex"),
+  name: Buffer.from("TEST2").toString("hex"),
+  decimals: Buffer.from("6").toString("hex"),
+  icon: Buffer.from("").toString("hex"),
+});
+
 describe("Proxy tests", async () => {
   let tezos;
   let yToken;
@@ -72,9 +79,14 @@ describe("Proxy tests", async () => {
     );
     await interest2.updateStorage();
 
-    await oracle.updReturnAddressOracle(proxyContractAddress);
-    await oracle.updateStorage();
-    strictEqual(oracle.storage.returnAddress, proxyContractAddress);
+    console.log("oracle ", oracleContractAddress);
+
+    // await oracle.updOracle([new Date(), new Date(), 1, 2, 3, 4, 5]);
+    // await oracle.updateStorage();
+
+    // await oracle.updReturnAddressOracle(proxyContractAddress);
+    // await oracle.updateStorage();
+    // strictEqual(oracle.storage.returnAddress, proxyContractAddress);
 
     await proxy.updateOracle(oracleContractAddress);
     await proxy.updateStorage();
@@ -145,6 +157,7 @@ describe("Proxy tests", async () => {
 
       let pairId = await proxy.storage.pairId.get("BTC-USDT");
       strictEqual(pairId.toString(), "0");
+      console.log("no error found!");
     } catch (e) {
       console.log("not-admin");
     }
@@ -173,6 +186,31 @@ describe("Proxy tests", async () => {
     let pairId = await proxy.storage.pairId.get("BTC-USDT");
     strictEqual(pairId.toString(), "0");
   });
+
+  // it("update metadata [0] by non admin", async () => {
+  //   try {
+  //     tezos = await Utils.setProvider(tezos, alice.sk);
+  //     await yToken.updMetadata(
+  //       0,
+  //       tokenMetadata2
+  //     );
+  //     await yToken.updateStorage();
+  //     console.log("no error found!");
+  //   }
+  //   catch(e) {
+  //     console.log('permition');
+  //   }
+  // });
+
+  // it("update metadata [0] by admin", async () => {
+  //   tezos = await Utils.setProvider(tezos, bob.sk);
+  //   await yToken.updMetadata(
+  //     0,
+  //     tokenMetadata2
+  //   );
+  //   await yToken.updateStorage();
+  //   console.log(await yToken.storage.storage.tokenMetadata.get(0));
+  // });
 
   it("add market [1]", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);

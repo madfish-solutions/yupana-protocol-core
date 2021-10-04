@@ -92,6 +92,11 @@ type setGlobalParams    is [@layout:comb] record [
 
 type newMetadataParams  is map(string, bytes)
 
+type updateMetadataParams is [@layout:comb] record [
+  tokenId               : nat;
+  tokenMetadata         : newMetadataParams;
+]
+
 type setModelParams     is [@layout:comb] record [
   tokenId               : nat;
   modelAddress          : address;

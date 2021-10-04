@@ -47,6 +47,7 @@ type entryAction        is
   | SetAdmin of address
   | WithdrawReserve of yAssetParams
   | AddMarket of newMarketParams
+  // | UpdateMetadata of updateMetadataParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
   | Use of useAction

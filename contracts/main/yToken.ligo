@@ -95,6 +95,7 @@ function main(
     | SetAdmin(params)              -> setAdmin(params, s)
     | WithdrawReserve(params)       -> withdrawReserve(params, s)
     | AddMarket(params)             -> addMarket(params, s)
+    // | UpdateMetadata(params)        -> updateMetadata(params, s)
     | SetTokenFactors(params)       -> setTokenFactors(params, s)
     | SetGlobalFactors(params)      -> setGlobalFactors(params, s)
     | Use(params)                   -> middleUse(params, s)
