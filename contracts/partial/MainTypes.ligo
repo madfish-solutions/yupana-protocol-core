@@ -27,7 +27,7 @@ type useParam is useAction
 
 type setUseParams       is record [
   index                 : nat;
-  func                  : useFunc;
+  func                  : bytes;
 ]
 
 type setUseTokenParams  is record [
@@ -56,7 +56,7 @@ type entryAction        is
 type fullTokenStorage   is record [
   storage               : tokenStorage;
   tokenLambdas          : big_map(nat, tokenFunc);
-  useLambdas            : big_map(nat, useFunc);
+  useLambdas            : big_map(nat, bytes);
 ]
 
 type fullReturn is list (operation) * fullTokenStorage

@@ -61,9 +61,18 @@ class YToken {
 
     for (yTokenFunction of functions.yToken) {
       const stdout = execSync(
-        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetUseAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
+        `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
+        
+        // TODO alternative packing to use with direct call below
+        // `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
+
         { maxBuffer: 1024 * 1000 }
       );
+      
+      const input_params = JSON.parse(stdout.toString())
+
+      // const setCall = ytokenContract.methods.setUseAction(yTokenFunction.index, input_params.bytes)
+      // params.push(setCall.toTransferParams());
 
       params.push({
         kind: "transaction",
@@ -71,7 +80,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setUseAction",
-          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
+          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
         },
       });
     }
