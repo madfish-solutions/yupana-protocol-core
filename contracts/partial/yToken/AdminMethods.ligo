@@ -88,6 +88,18 @@ function addMarket(
     s.storage.lastTokenId := lastTokenId + 1n;
   } with (noOperations, s)
 
+// function updateMetadata(
+//   const params          : updateMetadataParams;
+//    var s                : fullTokenStorage)
+//                         : fullReturn is
+//   block {
+//     mustBeAdmin(s.storage);
+//     s.storage.tokenMetadata[params.tokenId] := record [
+//       tokenId = params.tokenId;
+//       tokenInfo = params.tokenMetadata;
+//     ];
+//   } with (noOperations, s)
+
 function setTokenFactors(
   const params          : setTokenParams;
   var s                 : fullTokenStorage)

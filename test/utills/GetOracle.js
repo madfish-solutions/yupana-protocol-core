@@ -2,6 +2,7 @@ const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
 const storage = require("../../storage/GetOracle");
+// const contract = require("../../KT1MwuujtBodVQFm1Jk1KTGNc49wygqoLvpe.tz");
 
 class GetOracle {
   contract;
@@ -17,13 +18,16 @@ class GetOracle {
     return new GetOracle(await tezos.contract.at(qsAddress), tezos);
   }
 
+
   static async originate(tezos) {
-    const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/getOracle.json`)
-    );
+    const Normalizer = fs.readFileSync("Norma.tz").toString();
+
+    // const artifacts = JSON.parse(
+    //   fs.readFileSync(contract)
+    // );
     const operation = await tezos.contract
       .originate({
-        code: artifacts.michelson,
+        code: Normalizer,
         storage: storage,
       })
       .catch((e) => {
@@ -41,9 +45,10 @@ class GetOracle {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      lastDate: storage.lastDate,
-      lastPrice: storage.lastPrice,
-      returnAddress: storage.returnAddress,
+      assetCodes: storage.assetCodes,
+      assetMap: storage.assetMap,
+      numDataPoints: storage.numDataPoints,
+      oracleContract: storage.oracleContract
     };
 
     for (const key in maps) {
@@ -63,17 +68,9 @@ class GetOracle {
     }
   }
 
-  async updParamsOracle(price, time) {
+  async updOracle(map) {
     const operation = await this.contract.methods
-      .updParamsOracle(price, time)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async updReturnAddressOracle(addr) {
-    const operation = await this.contract.methods
-      .updReturnAddressOracle(addr)
+      .update(map)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

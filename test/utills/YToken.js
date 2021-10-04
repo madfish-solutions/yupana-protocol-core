@@ -6,6 +6,8 @@ const { functions } = require("../../storage/Functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
+
+
 class YToken {
   contract;
   storage;
@@ -283,6 +285,12 @@ class YToken {
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
+
+  // async updMetadata(tokenId, tokenMetadata) {
+  //   const operation = await this.contract.methods.updateMetadata(tokenId, tokenMetadata).send();
+  //   await confirmOperation(this.tezos, operation.hash);
+  //   return operation;
+  // }
 
   async updateAndBorrow(proxy, borrowToken, amount) {
     const batch = await this.tezos.wallet.batch([
