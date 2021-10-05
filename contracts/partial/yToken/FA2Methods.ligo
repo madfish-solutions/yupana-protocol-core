@@ -22,16 +22,15 @@ function getTokenInfo(
                         : tokenInfo is
   case s.tokenInfo[tokenId] of
     None -> record [
-      mainToken               = zeroAddress;
-      faType                  = FA12(unit);
-      interstRateModel        = zeroAddress;
+      mainToken               = FA12(zeroAddress);
+      interestRateModel       = zeroAddress;
       priceUpdateTime         = zeroTimestamp;
       lastUpdateTime          = zeroTimestamp;
       totalBorrowsFloat       = 0n;
       totalLiquidFloat        = 0n;
       totalSupplyFloat        = 0n;
       totalReservesFloat      = 0n;
-      borrowIndex             = accuracy;
+      borrowIndex             = precision;
       maxBorrowRate           = 0n;
       collateralFactorFloat   = 0n;
       reserveFactorFloat      = 0n;
@@ -66,7 +65,7 @@ function getTokenContract(
     )
   end;
 
-function getIterTranserContract(
+function getIterTransferContract(
   const tokenAddress    : address)
                         : contract(iterTransferType) is
   case(

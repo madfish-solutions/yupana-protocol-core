@@ -43,15 +43,15 @@
   const borrowsFloat    : nat;
   const cashFloat       : nat;
   const reservesFloat   : nat;
-  const accuracy        : nat)
+  const precision        : nat)
                         : nat is
-  accuracy * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat)
+  precision * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat)
 
 [@inline] function calctBorrowRate(
   const borrowsFloat    : nat;
   const cashFloat       : nat;
   const reservesFloat   : nat;
-  const accuracy        : nat;
+  const precision        : nat;
   const s               : rateStorage)
                         : nat is
   block {
@@ -59,14 +59,14 @@
       borrowsFloat,
       cashFloat,
       reservesFloat,
-      accuracy
+      precision
     );
     var borrowRateFloat : nat := 0n;
 
     if utilizationRateFloat < s.kickRateFloat
-    then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / accuracy);
-    else borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / accuracy + s.baseRateFloat) +
-      (abs(utilizationRateFloat - s.kickRateFloat) * s.jumpMultiplierFloat) / accuracy);
+    then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / precision);
+    else borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / precision + s.baseRateFloat) +
+      (abs(utilizationRateFloat - s.kickRateFloat) * s.jumpMultiplierFloat) / precision);
 
   } with borrowRateFloat
 
@@ -109,7 +109,7 @@ function getUtilizationRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
-      param.accuracy
+      param.precision
     );
     var operations : list(operation) := list[
       Tezos.transaction(record[
@@ -131,7 +131,7 @@ function getBorrowRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
-      param.accuracy,
+      param.precision,
       s
     );
 
@@ -157,21 +157,21 @@ function getSupplyRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
-      param.accuracy,
+      param.precision,
       s
     );
     const utilizationRateFloat : nat = calctUtilRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
-      param.accuracy
+      param.precision
     );
 
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
           amount = borrowRateFloat * utilizationRateFloat *
-            abs(accuracy - s.reserveFactorFloat);
+            abs(precision - s.reserveFactorFloat);
         ],
         0mutez,
         param.contract

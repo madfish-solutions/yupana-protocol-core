@@ -1,6 +1,6 @@
 type assetType          is
-| FA12
-| FA2                     of nat
+| FA12 of address
+| FA2  of (address * nat)
 
 type allowanceAmount    is [@layout:comb] record [
   src                   : address;
@@ -20,9 +20,8 @@ type account            is [@layout:comb] record [
 ]
 
 type tokenInfo         is [@layout:comb] record [
-  mainToken             : address;
-  faType                : assetType;
-  interstRateModel      : address;
+  mainToken             : assetType;
+  interestRateModel     : address;
   lastUpdateTime        : timestamp;
   priceUpdateTime       : timestamp;
   totalBorrowsFloat     : nat;
@@ -79,7 +78,7 @@ type setTokenParams     is [@layout:comb] record [
   tokenId               : nat;
   collateralFactorFloat : nat;
   reserveFactorFloat    : nat;
-  interstRateModel      : address;
+  interestRateModel     : address;
   maxBorrowRate         : nat;
 ]
 
@@ -103,13 +102,12 @@ type setModelParams     is [@layout:comb] record [
 ]
 
 type newMarketParams    is [@layout:comb] record [
-  interstRateModel      : address;
-  assetAddress          : address;
+  interestRateModel     : address;
+  assetAddress          : assetType;
   collateralFactorFloat : nat;
   reserveFactorFloat    : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
-  faType                : assetType;
 ]
 
 type oracleParam is (string * (timestamp * nat))
@@ -128,14 +126,9 @@ type calcCollParams     is [@layout:comb] record [
 type transferType is TransferOutside of faTransferParams
 type iterTransferType is IterateTransferOutside of transferParam
 
-type contrParam is (string * (timestamp * nat))
-type updParams is (string * contract(contrParam))
-
 [@inline] const zeroAddress : address = (
   "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address
 );
-[@inline] const zeroTimestamp : timestamp = (
-  "2000-01-01t10:10:10Z" : timestamp
-);
-[@inline] const accuracy : nat = 1000000000000000000n; //1e+18
+[@inline] const zeroTimestamp : timestamp = (0 : timestamp);
+[@inline] const precision : nat = 1000000000000000000n; //1e+18
 [@inline] const noOperations : list (operation) = nil;

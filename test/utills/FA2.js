@@ -43,7 +43,6 @@ class FA2 {
       token_metadata: storage.token_metadata,
       minters: storage.minters,
       non_transferable: storage.non_transferable,
-      tokens_ids: storage.tokens_ids,
       admin: storage.admin,
       pending_admin: storage.pending_admin,
       last_token_id: storage.last_token_id,

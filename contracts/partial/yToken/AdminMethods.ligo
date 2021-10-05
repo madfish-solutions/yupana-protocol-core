@@ -21,7 +21,7 @@ function withdrawReserve(
   block {
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
-    const amountFloat = params.amount * accuracy;
+    const amountFloat = params.amount * precision;
 
     if amountFloat > token.totalReservesFloat
     then failwith("yToken/withdraw-is-too-big");
@@ -33,29 +33,29 @@ function withdrawReserve(
     s.storage.tokenInfo[params.tokenId] := token;
 
     var operations : list(operation) := list [
-        case token.faType of
-        | FA12 -> Tezos.transaction(
+        case token.mainToken of
+        | FA12(addr) -> Tezos.transaction(
             TransferOutside(record [
               from_ = Tezos.self_address;
               to_ = Tezos.sender;
               value = params.amount
             ]),
             0mutez,
-            getTokenContract(token.mainToken)
+            getTokenContract(addr)
           )
-        | FA2(assetId) -> Tezos.transaction(
+        | FA2(addr, assetId) -> Tezos.transaction(
             IterateTransferOutside(record [
               from_ = Tezos.self_address;
               txs = list[
                 record[
                   tokenId = assetId;
                   to_ = Tezos.sender;
-                  amount = params.amount / accuracy;
+                  amount = params.amount / precision;
                 ]
               ]
             ]),
             0mutez,
-            getIterTranserContract(token.mainToken)
+            getIterTransferContract(addr)
           )
         end
     ];
@@ -70,15 +70,13 @@ function addMarket(
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
 
     (* TODO: fail if token exist - not fixed yet *)
-    token.interstRateModel := params.interstRateModel;
+    token.interestRateModel := params.interestRateModel;
     token.mainToken := params.assetAddress;
     token.collateralFactorFloat := params.collateralFactorFloat;
     token.reserveFactorFloat := params.reserveFactorFloat;
     token.maxBorrowRate := params.maxBorrowRate;
-    token.faType := params.faType;
 
     const lastTokenId : nat = s.storage.lastTokenId;
-    // s.storage.typesInfo[(params.assetAddress, params.faType)] := lastTokenId;
 
     s.storage.tokenMetadata[lastTokenId] := record [
       tokenId = lastTokenId;
@@ -114,7 +112,7 @@ function setTokenFactors(
 
     token.collateralFactorFloat := params.collateralFactorFloat;
     token.reserveFactorFloat := params.reserveFactorFloat;
-    token.interstRateModel := params.interstRateModel;
+    token.interestRateModel := params.interestRateModel;
     token.maxBorrowRate := params.maxBorrowRate;
     s.storage.tokenInfo[params.tokenId] := token;
   } with (noOperations, s)

@@ -8,7 +8,6 @@ module.exports = {
   token_metadata: MichelsonMap.fromLiteral({}),
   minters: [],
   non_transferable: [],
-  tokens_ids: [],
   admin: bob.pkh,
   pending_admin: bob.pkh,
   last_token_id: "0",

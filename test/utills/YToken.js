@@ -6,8 +6,6 @@ const { functions } = require("../../storage/Functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
-
-
 class YToken {
   contract;
   storage;
@@ -167,24 +165,22 @@ class YToken {
   }
 
   async addMarket(
-    interstRateModel,
+    interestRateModel,
     assetAddress,
     collateralFactorFloat,
     reserveFactorFloat,
     maxBorrowRate,
     tokenMetadata,
-    faType,
     type
   ) {
     const operation = await this.contract.methods
       .addMarket(
-        interstRateModel,
+        interestRateModel,
         assetAddress,
         collateralFactorFloat,
         reserveFactorFloat,
         maxBorrowRate,
         tokenMetadata,
-        faType,
         type
       )
       .send();
@@ -196,7 +192,7 @@ class YToken {
     tokenId,
     collateralFactorFloat,
     reserveFactorFloat,
-    interstRateModel,
+    interestRateModel,
     maxBorrowRate
   ) {
     const operation = await this.contract.methods
@@ -204,7 +200,7 @@ class YToken {
         tokenId,
         collateralFactorFloat,
         reserveFactorFloat,
-        interstRateModel,
+        interestRateModel,
         maxBorrowRate
       )
       .send();
@@ -318,6 +314,7 @@ class YToken {
     const operation = await batch.send();
 
     await confirmOperation(this.tezos, operation.opHash);
+    console.log(operation);
     return operation;
   }
 
@@ -366,8 +363,9 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-
+    
     await confirmOperation(this.tezos, operation.opHash);
+    console.log(operation);
     return operation;
   }
 
@@ -387,8 +385,9 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-
+    
     await confirmOperation(this.tezos, operation.opHash);
+    console.log(operation);
     return operation;
   }
 
