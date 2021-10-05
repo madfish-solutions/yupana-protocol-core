@@ -7,3 +7,5 @@ package-lock.json
 yarn.lock
 output
 .vscode
+__pycache__
+integration_tests/compiled
