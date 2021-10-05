@@ -3,14 +3,14 @@
 
 function setUseAction(
   const idx             : nat;
-  const f               : useFunc;
+  const lambda_bytes    : bytes;
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
     if Tezos.sender = s.storage.admin
     then case s.useLambdas[idx] of
         Some(_n) -> failwith("yToken/yToken-function-not-set")
-        | None -> s.useLambdas[idx] := f
+        | None -> s.useLambdas[idx] := lambda_bytes
       end;
     else failwith("yToken/you-not-admin")
   } with (noOperations, s)
@@ -63,12 +63,19 @@ function middleToken(
         | EnterMarket(_tokenId) -> 5n
         | ExitMarket(_tokenId) -> 6n
       end;
-    const res : return = case s.useLambdas[idx] of
-      Some(f) -> f(p, s.storage)
-      | None -> (
-        failwith("yToken/middle-yToken-function-not-set") : return
-      )
-    end;
+   
+    const lambda_bytes : bytes =
+      case s.useLambdas[idx] of
+        | Some(l) -> l
+        | None -> failwith("yToken/middle-yToken-function-not-set")
+      end;
+
+    const res : return = 
+      case (Bytes.unpack(lambda_bytes) : option(useFunc)) of
+        | Some(f) -> f(p, s.storage)
+        | None -> failwith("cant-unpack-use-lambda")
+      end;
+
     s.storage := res.1;
   } with (res.0, s)
 
