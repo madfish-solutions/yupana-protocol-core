@@ -1,14 +1,17 @@
-from os.path import dirname, join
 from unittest import TestCase
-from decimal import Decimal
 
 from helpers import *
+
+from pprint import pprint
 
 from pytezos import ContractInterface, pytezos, MichelsonRuntimeError
 from pytezos.context.mixin import ExecutionContext
 from initial_storage import use_lambdas
 
-import time
+token_a_address = "KT18amZmM5W7qDWVt2pH6uj7sCEd3kbzLrHT"
+token_b_address = "KT1AxaBxkFLCUi3f8rdDAAxBKHfzY8LfKDRA"
+token_a = {"fA12": token_a_address}
+token_b = {"fA12" : token_b_address}
 
 class DexTest(TestCase):
 
@@ -28,7 +31,16 @@ class DexTest(TestCase):
         chain = LocalChain(storage=self.storage)
         res = chain.execute(self.ct.addMarket(
                 alice,
-                {"fA12": "KT18amZmM5W7qDWVt2pH6uj7sCEd3kbzLrHT"},
+                token_a,
+                0,
+                0,
+                10000,
+                {"": ""}
+            ), sender=admin)
+
+        res = chain.execute(self.ct.addMarket(
+                alice,
+                token_b,
                 0,
                 0,
                 10000,
@@ -36,21 +48,21 @@ class DexTest(TestCase):
             ), sender=admin)
 
         res = chain.execute(self.ct.mint(0, 77))
+        res = chain.execute(self.ct.mint(1, 77))
+
+        res = chain.execute(self.ct.borrow(0, 10))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"], me)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 10)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+
+        print(res.operations)
+        # res = chain.execute(self.ct.mint(1, 120))
 
         print(res.storage["storage"])
-        # storage = res.storage["storage"]
-        # self.assertEqual(storage["token_pool"], 100)
-        # self.assertEqual(storage["tez_pool"], 10)
-
-        # res = self.ct.investLiquidity(30).interpret(amount=20, storage=res.storage)
-        # res = self.ct.tezToTokenPayment(2, my_address).interpret(amount=1, storage=res.storage)
-        # print(res.storage)
-        # print(res.operations)
-
-        # res = self.ct.investLiquidity(2, my_address).interpret(amount=1, storage=res.storage)
-
-        # res = self.my.default('bar').interpret(storage='foo')
-        # self.assertEqual('foobar', res.storage)
+        
+        
 
     def test_fail_initialize(self):
         with self.assertRaises(MichelsonRuntimeError):

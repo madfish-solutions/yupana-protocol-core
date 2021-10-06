@@ -55,7 +55,8 @@ def parse_as_fa12(value):
     return {
         "type": "token",
         "amount": int(args[2]["int"]),
-        "destination": args[1]["string"]
+        "destination": args[1]["string"],
+        "source": args[0]["string"]
     }
 
 def parse_as_fa2(values):
@@ -82,23 +83,24 @@ def parse_as_fa2(values):
 
     return result
 
-def parse_token_transfers(res):
+def parse_transfers(res):
     token_transfers = []
     for op in res.operations:
         if op["kind"] == "transaction":
             entrypoint = op["parameters"]["entrypoint"]
             if entrypoint == "transfer":
-                txs = parse_token_transfer(op)
+                txs = parse_transfer(op)
                 token_transfers += txs
     return token_transfers
 
-def parse_token_transfer(op):
+def parse_transfer(op):
     transfers = []
-    if not isinstance(op["parameters"]["value"], list):
-        transfer = parse_as_fa12(op["parameters"]["value"])
+    value = op["parameters"]["value"]
+    if not isinstance(value, list):
+        transfer = parse_as_fa12(value)
         transfers.append(transfer)
     else:
-        transfers += parse_as_fa2(op["parameters"]["value"])
+        transfers += parse_as_fa2(value)
 
     for transfer in transfers:
         transfer["token_address"] = op["destination"]
@@ -176,7 +178,7 @@ def parse_ops(res):
                 mint = parse_mint_list(op)
                 result += mint
             elif entrypoint == "transfer":
-                tx = parse_token_transfer(op)
+                tx = parse_transfer(op)
                 result += tx
             elif entrypoint == "use":
                 tx = parse_vote(op)
@@ -208,15 +210,6 @@ def wrap_fa12_token(address, id):
             "address": address,
         }
     }
-
-# returns amount
-def parse_transfers(res):
-    ops = parse_ops(res)
-    token_txs = [op["amount"] for op in ops if op["type"] == "token"]
-    tez_txs = [op["amount"] for op in ops if op["type"] == "tez"]
-    tez_amount = None if not tez_txs else tez_txs[0]
-    token_amount = None if not token_txs else token_txs[0]
-    return (tez_amount, token_amount)
 
 def calc_out_per_hundred(chain, dex):
     res = chain.interpret(

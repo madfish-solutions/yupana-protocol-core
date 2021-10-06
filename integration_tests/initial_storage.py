@@ -2,7 +2,7 @@ import json
 import glob
 from os.path import dirname, join, basename
 from pytezos.michelson.format import micheline_to_michelson
-from pytezos import ContractInterface, pytezos, MichelsonRuntimeError
+from pytezos import ContractInterface, pytezos
 
 
 def load_use_lambdas():
