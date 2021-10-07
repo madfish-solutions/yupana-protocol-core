@@ -32,33 +32,40 @@ function withdrawReserve(
     );
     s.storage.tokenInfo[params.tokenId] := token;
 
-    var operations : list(operation) := list [
-        case token.mainToken of
-        | FA12(addr) -> Tezos.transaction(
-            TransferOutside(record [
-              from_ = Tezos.self_address;
-              to_ = Tezos.sender;
-              value = params.amount
-            ]),
-            0mutez,
-            getTokenContract(addr)
-          )
-        | FA2(addr, assetId) -> Tezos.transaction(
-            IterateTransferOutside(record [
-              from_ = Tezos.self_address;
-              txs = list[
-                record[
-                  tokenId = assetId;
-                  to_ = Tezos.sender;
-                  amount = params.amount / precision;
-                ]
-              ]
-            ]),
-            0mutez,
-            getIterTransferContract(addr)
-          )
-        end
-    ];
+    var operations : list(operation) := transfer_token(
+      Tezos.self_address,
+      Tezos.sender,
+      params.amount / precision,
+      token.mainToken
+    );
+
+    // var operations : list(operation) := list [
+    //     case token.mainToken of
+    //     | FA12(addr) -> Tezos.transaction(
+    //         TransferOutside(record [
+    //           from_ = Tezos.self_address;
+    //           to_ = Tezos.sender;
+    //           value = params.amount
+    //         ]),
+    //         0mutez,
+    //         getTokenContract(addr)
+    //       )
+    //     | FA2(addr, assetId) -> Tezos.transaction(
+    //         IterateTransferOutside(record [
+    //           from_ = Tezos.self_address;
+    //           txs = list[
+    //             record[
+    //               tokenId = assetId;
+    //               to_ = Tezos.sender;
+    //               amount = params.amount / precision;
+    //             ]
+    //           ]
+    //         ]),
+    //         0mutez,
+    //         getIterTransferContract(addr)
+    //       )
+    //     end
+    // ];
   } with (operations, s)
 
 function addMarket(

@@ -124,7 +124,7 @@ type calcCollParams     is [@layout:comb] record [
 ]
 
 type transferType is TransferOutside of faTransferParams
-type iterTransferType is IterateTransferOutside of transferParam
+type iterTransferType is IterateTransferOutside of transferParams
 
 [@inline] const zeroAddress : address = (
   "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address
