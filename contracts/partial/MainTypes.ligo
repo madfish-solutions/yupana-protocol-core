@@ -1,7 +1,7 @@
-#include "/yToken/FA2Types.ligo"
-#include "/yToken/LendingTypes.ligo"
-#include "/interestRate/InterestRateTypes.ligo"
-#include "/proxy/PriceFeedTypes.ligo"
+#include "/yToken/fa2Types.ligo"
+#include "/yToken/lendingTypes.ligo"
+#include "/interestRate/interestRateTypes.ligo"
+#include "/proxy/priceFeedTypes.ligo"
 
 type useAction          is
   | Mint of yAssetParams

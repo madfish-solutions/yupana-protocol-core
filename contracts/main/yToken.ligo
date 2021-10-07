@@ -1,5 +1,5 @@
-#include "../partial/MainTypes.ligo"
-#include "../partial/yToken/LendingMethods.ligo"
+#include "../partial/mainTypes.ligo"
+#include "../partial/yToken/lendingMethods.ligo"
 
 function setUseAction(
   const idx             : nat;

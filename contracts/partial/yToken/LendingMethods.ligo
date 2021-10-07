@@ -1,6 +1,6 @@
-#include "./FA2Methods.ligo"
-#include "./Common.ligo"
-#include "./AdminMethods.ligo"
+#include "./fa2Methods.ligo"
+#include "./common.ligo"
+#include "./adminMethods.ligo"
 
 function ensureNotZero(
   const amt             : nat)
