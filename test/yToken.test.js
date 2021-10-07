@@ -2,7 +2,8 @@ const { MichelsonMap } = require("@taquito/michelson-encoder");
 
 const { alice, bob, carol } = require("../scripts/sandbox/accounts");
 
-const { strictEqual } = require("assert");
+const { strictEqual, throws } = require("assert");
+
 
 const { Proxy } = require("../test/utills/Proxy");
 const { InterestRate } = require("../test/utills/InterestRate");

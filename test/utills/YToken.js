@@ -6,6 +6,12 @@ const { functions } = require("../../storage/Functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
+function hexToBytes(hex) {
+  for (var bytes = [], c = 0; c < hex.length; c += 2)
+  bytes.push(parseInt(hex.substr(c, 2), 16));
+  return bytes;
+}
+
 class YToken {
   contract;
   storage;
@@ -42,9 +48,11 @@ class YToken {
     console.log("Start setting Token lambdas");
     for (const yTokenFunction of functions.token) {
       const stdout = execSync(
-        `${ligo}  compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetTokenAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
+        `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
         { maxBuffer: 1024 * 1000 }
       );
+
+      const input_params = JSON.parse(stdout.toString());
 
       params.push({
         kind: "transaction",
@@ -52,7 +60,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setTokenAction",
-          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
+          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
         },
       });
     }
@@ -62,27 +70,36 @@ class YToken {
     for (yTokenFunction of functions.yToken) {
       const stdout = execSync(
         `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
-        
+        // `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
+
         // TODO alternative packing to use with direct call below
         // `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
 
         { maxBuffer: 1024 * 1000 }
       );
-      
-      const input_params = JSON.parse(stdout.toString())
 
-      // const setCall = ytokenContract.methods.setUseAction(yTokenFunction.index, input_params.bytes)
+      const input_params = JSON.parse(stdout.toString());
+      // console.log(input_params.bytes);
+
+      // const converted = hexToBytes(input_params.bytes);
+      // console.log(converted);
+
+      // const res = await tezos.contract.at(operation.contractAddress);
+
+      // const setCall = res.methods.setUseAction(yTokenFunction.index, converted);
       // params.push(setCall.toTransferParams());
 
-      params.push({
-        kind: "transaction",
-        to: operation.contractAddress,
-        amount: 0,
-        parameter: {
-          entrypoint: "setUseAction",
-          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
-        },
-      });
+      params.push(
+        {
+          kind: "transaction",
+          to: operation.contractAddress,
+          amount: 0,
+          parameter: {
+            entrypoint: "setUseAction",
+            value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
+          },
+        }
+      );
     }
 
     const batch = tezos.wallet.batch(params);
@@ -323,7 +340,6 @@ class YToken {
     const operation = await batch.send();
 
     await confirmOperation(this.tezos, operation.opHash);
-    console.log(operation);
     return operation;
   }
 
@@ -372,9 +388,8 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-    
+
     await confirmOperation(this.tezos, operation.opHash);
-    console.log(operation);
     return operation;
   }
 
@@ -394,9 +409,8 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-    
+
     await confirmOperation(this.tezos, operation.opHash);
-    console.log(operation);
     return operation;
   }
 

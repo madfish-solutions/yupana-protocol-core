@@ -1,4 +1,5 @@
 #include "./FA2Methods.ligo"
+#include "./Common.ligo"
 #include "./AdminMethods.ligo"
 
 function ensureNotZero(
@@ -47,6 +48,17 @@ function ensureNotZero(
       failwith("yToken/cant-get-interestRate-contract(getBorrowRate)")
         : contract(rateParams)
     )
+  end;
+
+[@inline] function ceil_div(
+  const numerator       : nat;
+  const denominator     : nat)
+                        : nat is
+  case ediv(numerator, denominator) of
+    Some(result) -> if result.1 > 0n
+      then result.0 + 1n
+      else result.0
+  | None -> failwith("ceil-div-error")
   end;
 
 function verifyTokenUpdated(
@@ -179,33 +191,7 @@ function mint(
             + yAssetParams.amount * precision;
           s.tokenInfo[yAssetParams.tokenId] := token;
 
-          operations := list [
-              case token.mainToken of
-              | FA12(addr) -> Tezos.transaction(
-                  TransferOutside(record [
-                    from_ = Tezos.sender;
-                    to_ = Tezos.self_address;
-                    value = yAssetParams.amount
-                  ]),
-                  0mutez,
-                  getTokenContract(addr)
-                )
-              | FA2(addr, assetId) -> Tezos.transaction(
-                  IterateTransferOutside(record [
-                    from_ = Tezos.sender;
-                    txs = list[
-                      record[
-                        tokenId = assetId;
-                        to_ = Tezos.self_address;
-                        amount = yAssetParams.amount
-                      ]
-                    ]
-                  ]),
-                  0mutez,
-                  getIterTransferContract(addr)
-                )
-              end
-          ];
+          operations := transfer_token(Tezos.sender, Tezos.self_address, yAssetParams.amount, token.mainToken);
         }
       | _                         -> skip
       end
@@ -264,33 +250,7 @@ function redeem(
             precision);
           s.tokenInfo[yAssetParams.tokenId] := token;
 
-          operations := list [
-              case token.mainToken of
-              | FA12(addr) -> Tezos.transaction(
-                  TransferOutside(record [
-                    from_ = Tezos.self_address;
-                    to_ = Tezos.sender;
-                    value = redeemAmount
-                  ]),
-                  0mutez,
-                  getTokenContract(addr)
-                )
-              | FA2(addr, assetId) -> Tezos.transaction(
-                  IterateTransferOutside(record [
-                    from_ = Tezos.self_address;
-                    txs = list[
-                      record[
-                        tokenId = assetId;
-                        to_ = Tezos.sender;
-                        amount = redeemAmount
-                      ]
-                    ]
-                  ]),
-                  0mutez,
-                  getIterTransferContract(addr)
-                )
-              end
-          ];
+          operations := transfer_token(Tezos.self_address, Tezos.sender, redeemAmount, token.mainToken);
         }
       | _               -> skip
       end
@@ -354,33 +314,7 @@ function borrow(
           token.totalLiquidFloat := abs(token.totalLiquidFloat - borrowsFloat);
           s.tokenInfo[yAssetParams.tokenId] := token;
 
-          operations := list [
-              case token.mainToken of
-              | FA12(addr) -> Tezos.transaction(
-                  TransferOutside(record [
-                    from_ = Tezos.self_address;
-                    to_ = Tezos.sender;
-                    value = yAssetParams.amount
-                  ]),
-                  0mutez,
-                  getTokenContract(addr)
-                )
-              | FA2(addr, assetId) -> Tezos.transaction(
-                  IterateTransferOutside(record [
-                    from_ = Tezos.self_address;
-                    txs = list[
-                      record[
-                        tokenId = assetId;
-                        to_ = Tezos.sender;
-                        amount = yAssetParams.amount
-                      ]
-                    ]
-                  ]),
-                  0mutez,
-                  getIterTransferContract(addr)
-                )
-              end
-          ];
+          operations := transfer_token(Tezos.self_address, Tezos.sender, yAssetParams.amount, token.mainToken);
         }
       | _                         -> skip
       end
@@ -435,40 +369,8 @@ function repay (
           token.totalLiquidFloat := token.totalLiquidFloat + repayAmountFloat;
           s.tokenInfo[yAssetParams.tokenId] := token;
 
-          var value : nat := case ediv(repayAmountFloat, precision) of
-            Some(result) -> if result.1 > 0n
-              then result.0 + 1n
-              else result.0
-          | None -> failwith("error")
-          end;
-
-          operations := list [
-              case token.mainToken of
-              | FA12(addr) -> Tezos.transaction(
-                  TransferOutside(record [
-                    from_ = Tezos.sender;
-                    to_ = Tezos.self_address;
-                    value = value
-                  ]),
-                  0mutez,
-                  getTokenContract(addr)
-                )
-              | FA2(addr, assetId) -> Tezos.transaction(
-                  IterateTransferOutside(record [
-                    from_ = Tezos.self_address;
-                    txs = list[
-                      record[
-                        tokenId = assetId;
-                        to_ = Tezos.self_address;
-                        amount = value
-                      ]
-                    ]
-                  ]),
-                  0mutez,
-                  getIterTransferContract(addr)
-                )
-              end
-          ];
+          var value : nat := ceil_div(repayAmountFloat, precision);
+          operations := transfer_token(Tezos.sender, Tezos.self_address, value, token.mainToken);
         }
       | _                         -> skip
       end
@@ -555,33 +457,7 @@ function liquidate(
 
           borrowerAccount.balances[params.borrowToken] := borrowerInfo;
 
-          operations := list [
-              case borrowToken.mainToken of
-              | FA12(addr) -> Tezos.transaction(
-                  TransferOutside(record [
-                    from_ = Tezos.sender;
-                    to_ = Tezos.self_address;
-                    value = liqAmountFloat
-                  ]),
-                  0mutez,
-                  getTokenContract(addr)
-                )
-              | FA2(addr, assetId) -> Tezos.transaction(
-                  IterateTransferOutside(record [
-                    from_ = Tezos.self_address;
-                    txs = list[
-                      record[
-                        tokenId = assetId;
-                        to_ = Tezos.self_address;
-                        amount = liqAmountFloat
-                      ]
-                    ]
-                  ]),
-                  0mutez,
-                  getIterTransferContract(addr)
-                )
-              end
-          ];
+          operations := transfer_token(Tezos.sender, Tezos.self_address, liqAmountFloat, borrowToken.mainToken);
 
           if borrowerAccount.markets contains params.collateralToken
           then skip
@@ -645,7 +521,6 @@ function enterMarket(
   var s                 : tokenStorage)
                         : return is
   block {
-    var operations : list(operation) := list[];
       case p of
         EnterMarket(tokenId) -> {
           var userAccount : account := getAccount(Tezos.sender, s);
@@ -663,14 +538,13 @@ function enterMarket(
         }
       | _                         -> skip
       end
-  } with (operations, s)
+  } with (noOperations, s)
 
 function exitMarket(
   const p               : useAction;
   var s                 : tokenStorage)
                         : return is
   block {
-    var operations : list(operation) := list[];
       case p of
         ExitMarket(tokenId) -> {
           var userAccount : account := getAccount(Tezos.sender, s);
@@ -701,7 +575,7 @@ function exitMarket(
         }
       | _                         -> skip
       end
-  } with (operations, s)
+  } with (noOperations, s)
 
 function returnPrice(
   const params          : yAssetParams;
