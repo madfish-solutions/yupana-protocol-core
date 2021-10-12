@@ -28,7 +28,7 @@ type rateParams         is [@layout:comb] record [
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
-  accuracy              : nat;
+  precision              : nat;
   contract              : contract(yAssetParams);
 ]
 
@@ -37,12 +37,12 @@ type interestParams     is [@layout:comb] record [
   borrows               : nat;
   cash                  : nat;
   reserves              : nat;
-  accuracy              : nat;
+  precision              : nat;
 ]
 
 type entryRateAction         is
-  | UpdateRateAdmin of address
-  | UpdateRateYToken of address
+  | UpdateAdmin of address
+  | UpdateYToken of address
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams
@@ -173,7 +173,7 @@ function sendUtil(
           borrows = p.borrows;
           cash = p.cash;
           reserves = p.reserves;
-          accuracy = p.accuracy;
+          precision = p.precision;
           contract = getUpdateUtilRateContract(Tezos.self_address);
         ]),
         0mutez,
@@ -203,7 +203,7 @@ function sendBorrow(
           borrows = p.borrows;
           cash = p.cash;
           reserves = p.reserves;
-          accuracy = p.accuracy;
+          precision = p.precision;
           contract = getUpdateBorrowRateContract(Tezos.self_address)
         ]),
         0mutez,
@@ -233,7 +233,7 @@ function sendSupply(
           borrows = p.borrows;
           cash = p.cash;
           reserves = p.reserves;
-          accuracy = p.accuracy;
+          precision = p.precision;
           contract = getUpdateSupplyRateContract(Tezos.self_address)
         ]),
         0mutez,

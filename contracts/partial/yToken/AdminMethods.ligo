@@ -21,7 +21,7 @@ function withdrawReserve(
   block {
     mustBeAdmin(s.storage);
     var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
-    const amountFloat = params.amount * accuracy;
+    const amountFloat = params.amount * precision;
 
     if amountFloat > token.totalReservesFloat
     then failwith("yToken/withdraw-is-too-big");
@@ -32,33 +32,40 @@ function withdrawReserve(
     );
     s.storage.tokenInfo[params.tokenId] := token;
 
-    var operations : list(operation) := list [
-        case token.faType of
-        | FA12 -> Tezos.transaction(
-            TransferOutside(record [
-              from_ = Tezos.self_address;
-              to_ = Tezos.sender;
-              value = params.amount
-            ]),
-            0mutez,
-            getTokenContract(token.mainToken)
-          )
-        | FA2(assetId) -> Tezos.transaction(
-            IterateTransferOutside(record [
-              from_ = Tezos.self_address;
-              txs = list[
-                record[
-                  tokenId = assetId;
-                  to_ = Tezos.sender;
-                  amount = params.amount / accuracy;
-                ]
-              ]
-            ]),
-            0mutez,
-            getIterTranserContract(token.mainToken)
-          )
-        end
-    ];
+    var operations : list(operation) := transfer_token(
+      Tezos.self_address,
+      Tezos.sender,
+      params.amount / precision,
+      token.mainToken
+    );
+
+    // var operations : list(operation) := list [
+    //     case token.mainToken of
+    //     | FA12(addr) -> Tezos.transaction(
+    //         TransferOutside(record [
+    //           from_ = Tezos.self_address;
+    //           to_ = Tezos.sender;
+    //           value = params.amount
+    //         ]),
+    //         0mutez,
+    //         getTokenContract(addr)
+    //       )
+    //     | FA2(addr, assetId) -> Tezos.transaction(
+    //         IterateTransferOutside(record [
+    //           from_ = Tezos.self_address;
+    //           txs = list[
+    //             record[
+    //               tokenId = assetId;
+    //               to_ = Tezos.sender;
+    //               amount = params.amount / precision;
+    //             ]
+    //           ]
+    //         ]),
+    //         0mutez,
+    //         getIterTransferContract(addr)
+    //       )
+    //     end
+    // ];
   } with (operations, s)
 
 function addMarket(
@@ -70,20 +77,33 @@ function addMarket(
     var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
 
     (* TODO: fail if token exist - not fixed yet *)
-    token.interstRateModel := params.interstRateModel;
+    token.interestRateModel := params.interestRateModel;
     token.mainToken := params.assetAddress;
     token.collateralFactorFloat := params.collateralFactorFloat;
     token.reserveFactorFloat := params.reserveFactorFloat;
     token.maxBorrowRate := params.maxBorrowRate;
-    token.faType := params.faType;
 
-    s.storage.tokenMetadata[s.storage.lastTokenId] := record [
-      tokenId = s.storage.lastTokenId;
+    const lastTokenId : nat = s.storage.lastTokenId;
+
+    s.storage.tokenMetadata[lastTokenId] := record [
+      tokenId = lastTokenId;
       tokenInfo = params.tokenMetadata;
     ];
-    s.storage.tokenInfo[s.storage.lastTokenId] := token;
-    s.storage.lastTokenId := s.storage.lastTokenId + 1n;
+    s.storage.tokenInfo[lastTokenId] := token;
+    s.storage.lastTokenId := lastTokenId + 1n;
   } with (noOperations, s)
+
+// function updateMetadata(
+//   const params          : updateMetadataParams;
+//    var s                : fullTokenStorage)
+//                         : fullReturn is
+//   block {
+//     mustBeAdmin(s.storage);
+//     s.storage.tokenMetadata[params.tokenId] := record [
+//       tokenId = params.tokenId;
+//       tokenInfo = params.tokenMetadata;
+//     ];
+//   } with (noOperations, s)
 
 function setTokenFactors(
   const params          : setTokenParams;
@@ -99,7 +119,7 @@ function setTokenFactors(
 
     token.collateralFactorFloat := params.collateralFactorFloat;
     token.reserveFactorFloat := params.reserveFactorFloat;
-    token.interstRateModel := params.interstRateModel;
+    token.interestRateModel := params.interestRateModel;
     token.maxBorrowRate := params.maxBorrowRate;
     s.storage.tokenInfo[params.tokenId] := token;
   } with (noOperations, s)

@@ -6,6 +6,12 @@ const { functions } = require("../../storage/Functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
+function hexToBytes(hex) {
+  for (var bytes = [], c = 0; c < hex.length; c += 2)
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+  return bytes;
+}
+
 class YToken {
   contract;
   storage;
@@ -42,9 +48,11 @@ class YToken {
     console.log("Start setting Token lambdas");
     for (const yTokenFunction of functions.token) {
       const stdout = execSync(
-        `${ligo}  compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetTokenAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
+        `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
         { maxBuffer: 1024 * 1000 }
       );
+
+      const input_params = JSON.parse(stdout.toString());
 
       params.push({
         kind: "transaction",
@@ -52,7 +60,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setTokenAction",
-          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
+          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
         },
       });
     }
@@ -61,9 +69,25 @@ class YToken {
 
     for (yTokenFunction of functions.yToken) {
       const stdout = execSync(
-        `${ligo} compile-parameter --michelson-format=json $PWD/contracts/main/yToken.ligo main 'SetUseAction(record index =${yTokenFunction.index}n; func = ${yTokenFunction.name}; end)'`,
+        `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
+        // `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
+
+        // TODO alternative packing to use with direct call below
+        // `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
+
         { maxBuffer: 1024 * 1000 }
       );
+
+      const input_params = JSON.parse(stdout.toString());
+      // console.log(input_params.bytes);
+
+      // const converted = hexToBytes(input_params.bytes);
+      // console.log(converted);
+
+      // const res = await tezos.contract.at(operation.contractAddress);
+
+      // const setCall = res.methods.setUseAction(yTokenFunction.index, converted);
+      // params.push(setCall.toTransferParams());
 
       params.push({
         kind: "transaction",
@@ -71,7 +95,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setUseAction",
-          value: JSON.parse(stdout.toString()).args[0].args[0].args[0].args[0],
+          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
         },
       });
     }
@@ -165,27 +189,41 @@ class YToken {
   }
 
   async addMarket(
-    interstRateModel,
+    interestRateModel,
+    type,
     assetAddress,
+    token_id,
     collateralFactorFloat,
     reserveFactorFloat,
     maxBorrowRate,
-    tokenMetadata,
-    faType,
-    type
+    tokenMetadata
   ) {
-    const operation = await this.contract.methods
-      .addMarket(
-        interstRateModel,
-        assetAddress,
-        collateralFactorFloat,
-        reserveFactorFloat,
-        maxBorrowRate,
-        tokenMetadata,
-        faType,
-        type
-      )
-      .send();
+    if (type == "fA2") {
+      const operation = await this.contract.methods
+        .addMarket(
+          interestRateModel,
+          type,
+          assetAddress,
+          token_id,
+          collateralFactorFloat,
+          reserveFactorFloat,
+          maxBorrowRate,
+          tokenMetadata
+        )
+        .send();
+    } else {
+      const operation = await this.contract.methods
+        .addMarket(
+          interestRateModel,
+          type,
+          assetAddress,
+          collateralFactorFloat,
+          reserveFactorFloat,
+          maxBorrowRate,
+          tokenMetadata
+        )
+        .send();
+    }
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
@@ -194,7 +232,7 @@ class YToken {
     tokenId,
     collateralFactorFloat,
     reserveFactorFloat,
-    interstRateModel,
+    interestRateModel,
     maxBorrowRate
   ) {
     const operation = await this.contract.methods
@@ -202,7 +240,7 @@ class YToken {
         tokenId,
         collateralFactorFloat,
         reserveFactorFloat,
-        interstRateModel,
+        interestRateModel,
         maxBorrowRate
       )
       .send();
@@ -281,6 +319,114 @@ class YToken {
   async updatePrice(tokenSet) {
     const operation = await this.contract.methods.updatePrice(tokenSet).send();
     await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  // async updMetadata(tokenId, tokenMetadata) {
+  //   const operation = await this.contract.methods.updateMetadata(tokenId, tokenMetadata).send();
+  //   await confirmOperation(this.tezos, operation.hash);
+  //   return operation;
+  // }
+
+  async updateAndsetTokenFactors(
+    proxy,
+    tokenId,
+    collateralFactorFloat,
+    reserveFactorFloat,
+    interestRateModel,
+    maxBorrowRate
+  ) {
+    const batch = await this.tezos.wallet.batch([
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(1).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([1]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(tokenId).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([tokenId]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods
+          .setTokenFactors(
+            tokenId,
+            collateralFactorFloat,
+            reserveFactorFloat,
+            interestRateModel,
+            maxBorrowRate
+          )
+          .toTransferParams(),
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndMint(proxy, token, amount) {
+    const batch = await this.tezos.wallet.batch([
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(0).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([0]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(token).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([token]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.mint(token, amount).toTransferParams(),
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndMint2(proxy, token, amount) {
+    const batch = await this.tezos.wallet.batch([
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(1).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([1]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(token).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([token]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.mint(token, amount).toTransferParams(),
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
     return operation;
   }
 
@@ -405,6 +551,41 @@ class YToken {
       {
         kind: "transaction",
         ...this.contract.methods.exitMarket(token).toTransferParams(),
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndLiq(proxy, borrowToken, collateralToken, borrower, amount) {
+    const batch = await this.tezos.wallet.batch([
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(borrowToken).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([borrowToken]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods
+          .updateInterest(collateralToken)
+          .toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods
+          .getPrice([collateralToken])
+          .toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods
+          .liquidate(borrowToken, collateralToken, borrower, amount)
+          .toTransferParams(),
       },
     ]);
     const operation = await batch.send();

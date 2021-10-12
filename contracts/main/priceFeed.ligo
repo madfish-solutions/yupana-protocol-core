@@ -1,12 +1,12 @@
-#include "../partial/MainTypes.ligo"
-#include "../partial/Proxy/PriceFeedMethods.ligo"
+#include "../partial/mainTypes.ligo"
+#include "../partial/proxy/priceFeedMethods.ligo"
 
 function main(
   const p               : entryProxyAction;
   const s               : proxyStorage)
                         : proxyReturn is
   case p of
-    | UpdateAdmin(params) -> updateAdmin(params, s)
+    | SetProxyAdmin(params) -> setProxyAdmin(params, s)
     | UpdateOracle(params) -> updateOracle(params, s)
     | UpdateYToken(params) -> updateYToken(params, s)
     | UpdatePair(params) -> updatePair(params, s)

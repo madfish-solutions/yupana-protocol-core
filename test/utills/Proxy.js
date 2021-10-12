@@ -70,7 +70,7 @@ class Proxy {
   }
 
   async updateAdmin(newAdmin) {
-    const operation = await this.contract.methods.updateAdmin(newAdmin).send();
+    const operation = await this.contract.methods.setProxyAdmin(newAdmin).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }

@@ -62,7 +62,6 @@ type fa2_storage is [@layout:comb] record [
   metadata            : big_map(string, bytes);
   token_metadata      : big_map(token_id, token_metadata_info);
   minters             : set(address);
-  tokens_ids          : set(token_id);
   admin               : address;
   pending_admin       : address;
   last_token_id       : nat;
@@ -89,7 +88,7 @@ type fa2_action is
 
 [@inline] const no_operations : list(operation) = nil;
 
-[@inline] const accuracy : nat = 1000000000000000000n;
+[@inline] const precision : nat = 1000000000000000000n;
 
 (* Helper function to get account *)
 function get_account(const user : address; const s : fa2_storage) : account is
@@ -134,7 +133,7 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
           failwith("fa2/not-operator");
 
         (* Token id check *)
-        if s.tokens_ids contains transfer_dst.token_id
+        if s.last_token_id < transfer_dst.token_id
         then skip
         else
           failwith("fa2/token-undefined");
@@ -255,10 +254,6 @@ function mint_asset(
         if param.token_id < s.last_token_id
         then skip
         else failwith("FA2_TOKEN_UNDEFINED");
-
-        if param.token_id = 0n
-        then failwith("MINT_FORBIDDEN");
-        else skip;
 
         (* Get receiver account *)
         var dst_account : account := get_account(param.receiver, s);

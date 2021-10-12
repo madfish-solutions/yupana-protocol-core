@@ -1,8 +1,18 @@
 // test contract for Proxy entrypoint
 
+type updateParam is record [
+  name                  : string;
+  price                 : nat;
+  time                  : timestamp;
+]
+
+type priceParam is [@layout:comb] record [
+  price : nat;
+  time : timestamp;
+]
+
 type storage is record [
-  lastDate        : timestamp;
-  lastPrice       : nat;
+  tokenInfo       : big_map(string, priceParam);
   returnAddress   : address;
 ]
 
@@ -13,15 +23,22 @@ type return is list (operation) * storage
 type contrParam is (string * (timestamp * nat))
 type updParams is (string * contract(contrParam))
 
-type updParamsOracleParams is record [
-  price : nat;
-  time  : timestamp;
-]
-
 type entryAction is
   | Get of updParams
-  | UpdParamsOracle of updParamsOracleParams
+  | UpdParamsOracle of updateParam
   | UpdReturnAddressOracle of address
+
+function getInfo(
+  const name            : string;
+  const s               : storage)
+                        : priceParam is
+  case s.tokenInfo[name] of
+    None -> record [
+      price = 0n;
+      time  = (0 : timestamp)
+    ]
+  | Some(v) -> v
+  end
 
 function get(
   const upd             : updParams;
@@ -30,11 +47,12 @@ function get(
   block {
     var requestedAsset : string := upd.0;
 
-    var lastUpdateTime : timestamp := s.lastDate;
-    var lastPrice : nat := s.lastPrice;
+    const info : priceParam = getInfo(upd.0, s);
+    var lastUpdateTime : timestamp := info.time;
+    var tokenInfo : nat := info.price;
 
     var callbackParam : contrParam := (
-      requestedAsset, (lastUpdateTime, lastPrice)
+      requestedAsset, (lastUpdateTime, tokenInfo)
     );
 
     var operations := list [
@@ -46,13 +64,15 @@ function get(
   } with (operations, s)
 
 function updParamsOracle(
-  const price           : nat;
-  const time            : timestamp;
+  const param           : updateParam;
   var s                 : storage)
                         : return is
   block {
-    s.lastPrice := price;
-    s.lastDate := time;
+    var info : priceParam := getInfo(param.name, s);
+
+    info.price := param.price;
+    info.time := param.time;
+    s.tokenInfo[param.name] := info;
 
   } with (noOperations, s)
 
@@ -73,6 +93,6 @@ function main(
     skip
   } with case action of
     | Get(params) -> get(params, s)
-    | UpdParamsOracle(params) -> updParamsOracle(params.price, params.time, s)
+    | UpdParamsOracle(params) -> updParamsOracle(params, s)
     | UpdReturnAddressOracle(params) -> updReturnAddressOracle(params, s)
   end;

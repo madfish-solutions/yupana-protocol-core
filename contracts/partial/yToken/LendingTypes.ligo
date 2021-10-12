@@ -1,25 +1,27 @@
 type assetType          is
-| FA12
-| FA2                     of nat
+| FA12 of address
+| FA2  of (address * nat)
 
 type allowanceAmount    is [@layout:comb] record [
   src                   : address;
   amount                : nat;
 ]
 
+type balanceInfo        is record [
+  balance               : nat;
+  borrow                : nat;
+  lastBorrowIndex       : nat;
+]
+
 type account            is [@layout:comb] record [
-  (* TODO: join the maps with token id as the key *)
-  balances              : map(tokenId, nat);
   allowances            : set(address);
-  borrows               : map(tokenId, nat);
-  lastBorrowIndex       : map(tokenId, nat);
   markets               : set(tokenId);
+  balances              : map(tokenId, balanceInfo);
 ]
 
 type tokenInfo         is [@layout:comb] record [
-  mainToken             : address;
-  faType                : assetType;
-  interstRateModel      : address;
+  mainToken             : assetType;
+  interestRateModel     : address;
   lastUpdateTime        : timestamp;
   priceUpdateTime       : timestamp;
   totalBorrowsFloat     : nat;
@@ -44,6 +46,7 @@ type tokenStorage       is [@layout:comb] record [
   closeFactorFloat      : nat;
   liqIncentiveFloat     : nat;
   maxMarkets            : nat;
+  typesInfo             : big_map ((address * assetType), tokenId); // ??????????
 ]
 
 type tokenSet is set(tokenId)
@@ -75,7 +78,7 @@ type setTokenParams     is [@layout:comb] record [
   tokenId               : nat;
   collateralFactorFloat : nat;
   reserveFactorFloat    : nat;
-  interstRateModel      : address;
+  interestRateModel     : address;
   maxBorrowRate         : nat;
 ]
 
@@ -88,19 +91,23 @@ type setGlobalParams    is [@layout:comb] record [
 
 type newMetadataParams  is map(string, bytes)
 
+type updateMetadataParams is [@layout:comb] record [
+  tokenId               : nat;
+  tokenMetadata         : newMetadataParams;
+]
+
 type setModelParams     is [@layout:comb] record [
   tokenId               : nat;
   modelAddress          : address;
 ]
 
 type newMarketParams    is [@layout:comb] record [
-  interstRateModel      : address;
-  assetAddress          : address;
+  interestRateModel     : address;
+  assetAddress          : assetType;
   collateralFactorFloat : nat;
   reserveFactorFloat    : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
-  faType                : assetType;
 ]
 
 type oracleParam is (string * (timestamp * nat))
@@ -110,23 +117,18 @@ type pairParam          is [@layout:comb] record [
   pairName              : string;
 ]
 
-type calcCollParams     is [@layout:comb] record [
+type calculateCollParams is [@layout:comb] record [
   s                     : tokenStorage;
   res                   : nat;
   userAccount           : account;
 ]
 
 type transferType is TransferOutside of faTransferParams
-type iterTransferType is IterateTransferOutside of transferParam
-
-type contrParam is (string * (timestamp * nat))
-type updParams is (string * contract(contrParam))
+type iterTransferType is IterateTransferOutside of transferParams
 
 [@inline] const zeroAddress : address = (
   "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address
 );
-[@inline] const zeroTimestamp : timestamp = (
-  "2000-01-01t10:10:10Z" : timestamp
-);
-[@inline] const accuracy : nat = 1000000000000000000n; //1e+18
+[@inline] const zeroTimestamp : timestamp = (0 : timestamp);
+[@inline] const precision : nat = 1000000000000000000n; //1e+18
 [@inline] const noOperations : list (operation) = nil;

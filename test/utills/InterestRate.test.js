@@ -34,14 +34,14 @@ describe("Interest tests", async () => {
     await sendRate.updateStorage();
     strictEqual(sendRate.storage.interestAddress, interestContractAddress);
 
-    await interest.updateRateYToken(sendRateContractAddress);
+    await interest.updateYToken(sendRateContractAddress);
     await interest.updateStorage();
     strictEqual(interest.storage.yToken, sendRateContractAddress);
   });
 
   it("set InterestRate admin", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
-    await interest.updateRateAdmin(bob.pkh);
+    await interest.updateAdmin(bob.pkh);
     await interest.updateStorage();
     strictEqual(interest.storage.admin, bob.pkh);
   });
