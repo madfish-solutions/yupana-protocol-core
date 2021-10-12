@@ -520,23 +520,23 @@ function enterMarket(
   var s                 : tokenStorage)
                         : return is
   block {
-      case p of
-        EnterMarket(tokenId) -> {
-          var userAccount : account := getAccount(Tezos.sender, s);
+    case p of
+      EnterMarket(tokenId) -> {
+        var userAccount : account := getAccount(Tezos.sender, s);
 
-          if tokenId < s.lastTokenId
-          then skip
-          else failwith("yToken/yToken-undefined");
+        if tokenId < s.lastTokenId
+        then skip
+        else failwith("yToken/yToken-undefined");
 
-          if Set.size(userAccount.markets) >= s.maxMarkets
-          then failwith("yToken/max-market-limit");
-          else skip;
+        if Set.size(userAccount.markets) >= s.maxMarkets
+        then failwith("yToken/max-market-limit");
+        else skip;
 
-          userAccount.markets := Set.add(tokenId, userAccount.markets);
-          s.accountInfo[Tezos.sender] := userAccount;
-        }
-      | _                         -> skip
-      end
+        userAccount.markets := Set.add(tokenId, userAccount.markets);
+        s.accountInfo[Tezos.sender] := userAccount;
+      }
+    | _                         -> skip
+    end
   } with (noOperations, s)
 
 function exitMarket(

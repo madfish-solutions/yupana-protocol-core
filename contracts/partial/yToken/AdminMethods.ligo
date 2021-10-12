@@ -6,132 +6,135 @@ function mustBeAdmin(
   else unit
 
 function setAdmin(
-  const newAdmin        : address;
-  var s                 : fullTokenStorage)
-                        : fullReturn is
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
   block {
-    mustBeAdmin(s.storage);
-    s.storage.admin := newAdmin;
+    case p of
+      SetAdmin(newAdmin) -> {
+        mustBeAdmin(s);
+        s.admin := newAdmin;
+      }
+    | _                 -> skip
+    end
   } with (noOperations, s)
 
 function withdrawReserve(
-  const params          : yAssetParams;
-  var s                 : fullTokenStorage)
-                        : fullReturn is
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
   block {
-    mustBeAdmin(s.storage);
-    var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
-    const amountFloat = params.amount * precision;
+    var operations : list(operation) := list[];
+    case p of
+      WithdrawReserve(params) -> {
+        mustBeAdmin(s);
+        var token : tokenInfo := getTokenInfo(params.tokenId, s);
+        const amountFloat = params.amount * precision;
 
-    if amountFloat > token.totalReservesFloat
-    then failwith("yToken/withdraw-is-too-big");
-    else skip;
+        if amountFloat > token.totalReservesFloat
+        then failwith("yToken/withdraw-is-too-big");
+        else skip;
 
-    token.totalReservesFloat := abs(
-      token.totalReservesFloat -amountFloat
-    );
-    s.storage.tokenInfo[params.tokenId] := token;
+        token.totalReservesFloat := abs(
+          token.totalReservesFloat -amountFloat
+        );
+        s.tokenInfo[params.tokenId] := token;
 
-    var operations : list(operation) := transfer_token(
-      Tezos.self_address,
-      Tezos.sender,
-      params.amount / precision,
-      token.mainToken
-    );
-
-    // var operations : list(operation) := list [
-    //     case token.mainToken of
-    //     | FA12(addr) -> Tezos.transaction(
-    //         TransferOutside(record [
-    //           from_ = Tezos.self_address;
-    //           to_ = Tezos.sender;
-    //           value = params.amount
-    //         ]),
-    //         0mutez,
-    //         getTokenContract(addr)
-    //       )
-    //     | FA2(addr, assetId) -> Tezos.transaction(
-    //         IterateTransferOutside(record [
-    //           from_ = Tezos.self_address;
-    //           txs = list[
-    //             record[
-    //               tokenId = assetId;
-    //               to_ = Tezos.sender;
-    //               amount = params.amount / precision;
-    //             ]
-    //           ]
-    //         ]),
-    //         0mutez,
-    //         getIterTransferContract(addr)
-    //       )
-    //     end
-    // ];
+        operations := transfer_token(
+          Tezos.self_address,
+          Tezos.sender,
+          params.amount / precision,
+          token.mainToken
+        );
+      }
+    | _                 -> skip
+    end
   } with (operations, s)
 
 function addMarket(
-  const params          : newMarketParams;
-  var s                 : fullTokenStorage)
-                        : fullReturn is
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
   block {
-    mustBeAdmin(s.storage);
-    var token : tokenInfo := getTokenInfo(s.storage.lastTokenId, s.storage);
+    case p of
+      AddMarket(params) -> {
+        mustBeAdmin(s);
+        var token : tokenInfo := getTokenInfo(s.lastTokenId, s);
 
-    (* TODO: fail if token exist - not fixed yet *)
-    token.interestRateModel := params.interestRateModel;
-    token.mainToken := params.assetAddress;
-    token.collateralFactorFloat := params.collateralFactorFloat;
-    token.reserveFactorFloat := params.reserveFactorFloat;
-    token.maxBorrowRate := params.maxBorrowRate;
+        (* TODO: fail if token exist - not fixed yet *)
+        token.interestRateModel := params.interestRateModel;
+        token.mainToken := params.assetAddress;
+        token.collateralFactorFloat := params.collateralFactorFloat;
+        token.reserveFactorFloat := params.reserveFactorFloat;
+        token.maxBorrowRate := params.maxBorrowRate;
 
-    const lastTokenId : nat = s.storage.lastTokenId;
+        const lastTokenId : nat = s.lastTokenId;
 
-    s.storage.tokenMetadata[lastTokenId] := record [
-      tokenId = lastTokenId;
-      tokenInfo = params.tokenMetadata;
-    ];
-    s.storage.tokenInfo[lastTokenId] := token;
-    s.storage.lastTokenId := lastTokenId + 1n;
+        s.tokenMetadata[lastTokenId] := record [
+          tokenId = lastTokenId;
+          tokenInfo = params.tokenMetadata;
+        ];
+        s.tokenInfo[lastTokenId] := token;
+        s.lastTokenId := lastTokenId + 1n;
+      }
+    | _                 -> skip
+    end
   } with (noOperations, s)
 
-// function updateMetadata(
-//   const params          : updateMetadataParams;
-//    var s                : fullTokenStorage)
-//                         : fullReturn is
-//   block {
-//     mustBeAdmin(s.storage);
-//     s.storage.tokenMetadata[params.tokenId] := record [
-//       tokenId = params.tokenId;
-//       tokenInfo = params.tokenMetadata;
-//     ];
-//   } with (noOperations, s)
+function updateMetadata(
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
+  block {
+    case p of
+      UpdateMetadata(params) -> {
+        mustBeAdmin(s);
+        s.tokenMetadata[params.tokenId] := record [
+          tokenId = params.tokenId;
+          tokenInfo = params.tokenMetadata;
+        ];
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
 
 function setTokenFactors(
-  const params          : setTokenParams;
-  var s                 : fullTokenStorage)
-                        : fullReturn is
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
   block {
-    mustBeAdmin(s.storage);
-    var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+    case p of
+      SetTokenFactors(params) -> {
+        mustBeAdmin(s);
+        var token : tokenInfo := getTokenInfo(params.tokenId, s);
 
-    if token.lastUpdateTime < Tezos.now
-    then failwith("yToken/need-update")
-    else skip;
+        if token.lastUpdateTime < Tezos.now
+        then failwith("yToken/need-update")
+        else skip;
 
-    token.collateralFactorFloat := params.collateralFactorFloat;
-    token.reserveFactorFloat := params.reserveFactorFloat;
-    token.interestRateModel := params.interestRateModel;
-    token.maxBorrowRate := params.maxBorrowRate;
-    s.storage.tokenInfo[params.tokenId] := token;
+        token.collateralFactorFloat := params.collateralFactorFloat;
+        token.reserveFactorFloat := params.reserveFactorFloat;
+        token.interestRateModel := params.interestRateModel;
+        token.maxBorrowRate := params.maxBorrowRate;
+        s.tokenInfo[params.tokenId] := token;
+      }
+    | _                 -> skip
+    end
   } with (noOperations, s)
 
 function setGlobalFactors(
-  const params          : setGlobalParams;
-  var s                 : fullTokenStorage)
-                        : fullReturn is
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
   block {
-    mustBeAdmin(s.storage);
-    s.storage.closeFactorFloat := params.closeFactorFloat;
-    s.storage.liqIncentiveFloat := params.liqIncentiveFloat;
-    s.storage.priceFeedProxy := params.priceFeedProxy;
-    s.storage.maxMarkets := params.maxMarkets;
+    case p of
+      SetGlobalFactors(params) -> {
+        mustBeAdmin(s);
+        s.closeFactorFloat := params.closeFactorFloat;
+        s.liqIncentiveFloat := params.liqIncentiveFloat;
+        s.priceFeedProxy := params.priceFeedProxy;
+        s.maxMarkets := params.maxMarkets;
+      }
+    | _                 -> skip
+    end
   } with (noOperations, s)
