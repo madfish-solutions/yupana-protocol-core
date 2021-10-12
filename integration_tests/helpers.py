@@ -3,6 +3,8 @@ from pytezos import pytezos
 from pytezos.crypto.encoding import base58_encode
 from pytezos.michelson.micheline import micheline_value_to_python_object
 
+from pprint import pprint
+
 PRECISION = pow(10, 18)
 
 TOKEN_ADDRESS = "KT1VHd7ysjnvxEzwtjBAmYAmasvVCfPpSkiG"
@@ -185,6 +187,22 @@ def parse_ops(res):
                 result.append(tx)
 
     return result
+
+def format_numbers(d):
+    for key,val in d.items():        
+        if isinstance(val, dict):
+            format_numbers(val)
+        if isinstance(val, list): # TODO can here be just strings?
+            for i in val:
+                if isinstance(i, dict):
+                    format_numbers(i)
+        elif isinstance(val, int):
+            d[key] = f"{val:_}"
+
+# converts numbers 
+def pprint_aux(d):
+    format_numbers(d)
+    pprint(d)
 
 
 # calculates shares balance
