@@ -31,6 +31,15 @@ class Utils {
     return tezos;
   }
 
+  static async trasferTo(tezos, to, amount) {
+    let operation = await tezos.contract.transfer({
+      to: to,
+      amount: amount,
+      mutez: true,
+    });
+    await confirmOperation(tezos, operation.hash);
+  }
+
   static async bakeBlocks(tezos, count) {
     for (let i = 0; i < count; ++i) {
       const operation = await tezos.contract.transfer({

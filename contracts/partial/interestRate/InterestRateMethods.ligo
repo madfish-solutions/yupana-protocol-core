@@ -39,7 +39,7 @@
   then failwith("interestRate/not-admin")
   else unit
 
-[@inline] function calctUtilRate(
+[@inline] function calcUtilRate(
   const borrowsFloat    : nat;
   const cashFloat       : nat;
   const reservesFloat   : nat;
@@ -47,7 +47,7 @@
                         : nat is
   precision * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat)
 
-[@inline] function calctBorrowRate(
+[@inline] function calcBorrowRate(
   const borrowsFloat    : nat;
   const cashFloat       : nat;
   const reservesFloat   : nat;
@@ -55,7 +55,7 @@
   const s               : rateStorage)
                         : nat is
   block {
-    const utilizationRateFloat : nat = calctUtilRate(
+    const utilizationRateFloat : nat = calcUtilRate(
       borrowsFloat,
       cashFloat,
       reservesFloat,
@@ -105,7 +105,7 @@ function getUtilizationRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const utilizationRateFloat : nat = calctUtilRate(
+    const utilizationRateFloat : nat = calcUtilRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
@@ -127,7 +127,7 @@ function getBorrowRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const borrowRateFloat : nat = calctBorrowRate(
+    const borrowRateFloat : nat = calcBorrowRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
@@ -153,14 +153,14 @@ function getSupplyRate(
   block {
     verifyReserveFactor(s);
 
-    const borrowRateFloat : nat = calctBorrowRate(
+    const borrowRateFloat : nat = calcBorrowRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,
       param.precision,
       s
     );
-    const utilizationRateFloat : nat = calctUtilRate(
+    const utilizationRateFloat : nat = calcUtilRate(
       param.borrowsFloat,
       param.cashFloat,
       param.reservesFloat,

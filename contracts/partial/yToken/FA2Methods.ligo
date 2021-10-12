@@ -5,10 +5,7 @@ function getAccount(
                         : account is
   case s.accountInfo[user] of
     None -> record [
-      // balances          = (Map.empty : map(tokenId, nat));
       allowances        = (set [] : set(address));
-      // borrows           = (Map.empty : map(tokenId, nat));
-      // lastBorrowIndex   = (Map.empty : map(tokenId, nat));
       markets           = (set [] : set(tokenId));
       balances          = (Map.empty : map(tokenId, balanceInfo));
     ]

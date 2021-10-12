@@ -1,5 +1,5 @@
-#include "../partial/MainTypes.ligo"
-#include "../partial/interestRate/InterestRateMethods.ligo"
+#include "../partial/mainTypes.ligo"
+#include "../partial/interestRate/interestRateMethods.ligo"
 
 function main(
   const p               : entryRateAction;

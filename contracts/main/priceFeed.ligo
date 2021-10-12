@@ -1,5 +1,5 @@
-#include "../partial/MainTypes.ligo"
-#include "../partial/proxy/PriceFeedMethods.ligo"
+#include "../partial/mainTypes.ligo"
+#include "../partial/proxy/priceFeedMethods.ligo"
 
 function main(
   const p               : entryProxyAction;
