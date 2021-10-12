@@ -68,15 +68,15 @@ function verifyTokenUpdated(
     then failwith("yToken/need-update")
     else unit;
 
-function calculateMaxCollaterallInCU(
+function calcMaxCollaterallInCU(
   const userAccount     : account;
-  var params            : calcCollParams)
+  var params            : calculateCollParams)
                         : nat is
   block {
     function oneToken(
-      var param         : calcCollParams;
+      var param         : calculateCollParams;
       const tokenId     : tokenId)
-                        : calcCollParams is
+                        : calculateCollParams is
       block {
         const userInfo : balanceInfo = getMapInfo(
           userAccount.balances,
@@ -92,22 +92,22 @@ function calculateMaxCollaterallInCU(
           + token.totalBorrowsFloat - token.totalReservesFloat)
           / token.totalSupplyFloat) / precision);
       } with param;
-    const result : calcCollParams = Set.fold(
+    const result : calculateCollParams = Set.fold(
       oneToken,
       userAccount.markets,
       params
     );
   } with result.res
 
-function calculateOutstandingBorrowInCU(
+function calcOutstandingBorrowInCU(
   var userAccount       : account;
-  var params            : calcCollParams)
+  var params            : calculateCollParams)
                         : nat is
   block {
     function oneToken(
-      var param         : calcCollParams;
+      var param         : calculateCollParams;
       const borrowMap   : tokenId * balanceInfo)
-                        : calcCollParams is
+                        : calculateCollParams is
       block {
         const token : tokenInfo = getTokenInfo(borrowMap.0, param.s);
 
@@ -116,7 +116,7 @@ function calculateOutstandingBorrowInCU(
         (* sum += oraclePrice * balance *)
         param.res := param.res + ((borrowMap.1.borrow * token.lastPrice));
       } with param;
-    const result : calcCollParams = Map.fold(
+    const result : calculateCollParams = Map.fold(
       oneToken,
       userAccount.balances,
       params
@@ -297,11 +297,11 @@ function borrow(
           userAccount.balances[yAssetParams.tokenId] := userInfo;
           s.accountInfo[Tezos.sender] := userAccount;
 
-          const maxBorrowInCU : nat = calculateMaxCollaterallInCU(
+          const maxBorrowInCU : nat = calcMaxCollaterallInCU(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
-          const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
+          const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
@@ -414,11 +414,11 @@ function liquidate(
             params.borrowToken
           );
 
-          const maxBorrowInCU : nat = calculateMaxCollaterallInCU(
+          const maxBorrowInCU : nat = calcMaxCollaterallInCU(
             borrowerAccount,
             record[s = s; res = 0n; userAccount = borrowerAccount]
           );
-          const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
+          const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
             borrowerAccount,
             record[s = s; res = 0n; userAccount = borrowerAccount]
           );
@@ -457,12 +457,11 @@ function liquidate(
 
           borrowerAccount.balances[params.borrowToken] := borrowerInfo;
 
-          operations := transfer_token(Tezos.sender, Tezos.self_address, liqAmountFloat, borrowToken.mainToken);
+          operations := transfer_token(Tezos.sender, Tezos.self_address, params.amount, borrowToken.mainToken);
 
           if borrowerAccount.markets contains params.collateralToken
           then skip
           else failwith("yToken/collateralToken-not-contains-in-borrow-market");
-
 
           var collateralToken : tokenInfo := getTokenInfo(
             params.collateralToken,
@@ -553,18 +552,18 @@ function exitMarket(
           then skip
           else failwith("yToken/yToken-undefined");
 
-          var token : tokenInfo := getTokenInfo(
+          const token : tokenInfo = getTokenInfo(
             tokenId,
             s
           );
           verifyTokenUpdated(token);
 
           userAccount.markets := Set.remove(tokenId, userAccount.markets);
-          const maxBorrowInCU : nat = calculateMaxCollaterallInCU(
+          const maxBorrowInCU : nat = calcMaxCollaterallInCU(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );
-          const outstandingBorrowInCU : nat = calculateOutstandingBorrowInCU(
+          const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
             userAccount,
             record[s = s; res = 0n; userAccount = userAccount]
           );

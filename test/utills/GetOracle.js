@@ -66,8 +66,7 @@ class GetOracle {
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
-      lastDate: storage.lastDate,
-      lastPrice: storage.lastPrice,
+      tokenInfo: storage.tokenInfo,
       returnAddress: storage.returnAddress,
       // assetCodes: storage.assetCodes,
       // assetMap: storage.assetMap,
@@ -99,9 +98,9 @@ class GetOracle {
   //   await confirmOperation(this.tezos, operation.hash);
   //   return operation;
   // }
-  async updParamsOracle(price, time) {
+  async updParamsOracle(name, price, time) {
     const operation = await this.contract.methods
-      .updParamsOracle(price, time)
+      .updParamsOracle(name, price, time)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

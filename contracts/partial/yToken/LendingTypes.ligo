@@ -117,7 +117,7 @@ type pairParam          is [@layout:comb] record [
   pairName              : string;
 ]
 
-type calcCollParams     is [@layout:comb] record [
+type calculateCollParams is [@layout:comb] record [
   s                     : tokenStorage;
   res                   : nat;
   userAccount           : account;
