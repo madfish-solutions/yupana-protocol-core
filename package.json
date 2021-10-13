@@ -19,7 +19,7 @@
   },
   "scripts": {
     "clean": "rm -rf ./build",
-    "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && node -r ts-node/register scripts/cli.js compile -c getOracle && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c FA12 && node -r ts-node/register scripts/cli.js compile -c FA2",
+    "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && node -r ts-node/register scripts/cli.js compile -c getOracle && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c fa12 && node -r ts-node/register scripts/cli.js compile -c fa2",
     "compile-qToken": "node -r ts-node/register scripts/helpers.js build-qToken --no-json -o contracts",
     "migrate": "yarn compile && node -r ts-node/register scripts/cli.js migrate",
     "migrate-gra": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network granadanet",
