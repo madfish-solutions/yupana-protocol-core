@@ -51,6 +51,15 @@ function withdrawReserve(
     end
   } with (operations, s)
 
+[@inline] function checkTypeInfo(
+  const typeInfo        : big_map (assetType, tokenId);
+  const assertType      : assetType)
+                        : unit is
+  case typeInfo[assertType] of
+    None -> unit
+  | Some(_v) -> failwith("yToken/token-has-already-been-added")
+  end
+
 function addMarket(
   const p               : useAction;
   var s                 : tokenStorage)
@@ -60,6 +69,9 @@ function addMarket(
       AddMarket(params) -> {
         mustBeAdmin(s);
         var token : tokenInfo := getTokenInfo(s.lastTokenId, s);
+        const lastTokenId : nat = s.lastTokenId;
+
+        checkTypeInfo(s.typesInfo, params.assetAddress);
 
         (* TODO: fail if token exist - not fixed yet *)
         token.interestRateModel := params.interestRateModel;
@@ -68,8 +80,7 @@ function addMarket(
         token.reserveFactorFloat := params.reserveFactorFloat;
         token.maxBorrowRate := params.maxBorrowRate;
 
-        const lastTokenId : nat = s.lastTokenId;
-
+        s.typesInfo[params.assetAddress] := lastTokenId;
         s.tokenMetadata[lastTokenId] := record [
           tokenId = lastTokenId;
           tokenInfo = params.tokenMetadata;

@@ -46,6 +46,30 @@ let yTokenFunctions = [
     index: 6,
     name: "exitMarket",
   },
+  {
+    index: 7,
+    name: "setAdmin",
+  },
+  {
+    index: 8,
+    name: "withdrawReserve",
+  },
+  {
+    index: 9,
+    name: "addMarket",
+  },
+  {
+    index: 10,
+    name: "updateMetadata",
+  },
+  {
+    index: 11,
+    name: "setTokenFactors",
+  },
+  {
+    index: 12,
+    name: "setGlobalFactors",
+  },
 ];
 
 let proxyFunctions = [

@@ -1,7 +1,7 @@
 type tokenId is nat
 
 type tokenMetadataInfo is [@layout:comb] record [
-  tokenId               : tokenId;
+  tokenId              : tokenId;
   tokenInfo            : map(string, bytes);
 ]
 

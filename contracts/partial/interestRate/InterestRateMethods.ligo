@@ -1,30 +1,3 @@
-[@inline] function getReserveFactorContract(
-  const yToken          : address)
-                        : contract(nat) is
-  case (
-    Tezos.get_entrypoint_opt("%getReserveFactor", yToken)
-                        : option(contract(nat))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("interestRate/cant-get-yToken-entrypoint") : contract(nat)
-    )
-  end;
-
-[@inline] function getEnsuredSupplyRateEntrypoint(
-  const selfAddress     : address)
-                        : contract(entryRateAction) is
-  case (
-    Tezos.get_entrypoint_opt("%rateUse", selfAddress)
-                        : option(contract(entryRateAction))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("interestRate/cant-get-ensuredSupplyRate-entrypoint")
-                        : contract(entryRateAction)
-    )
-  end;
-
 [@inline] function verifyReserveFactor(
   const s               : rateStorage)
                         : unit is

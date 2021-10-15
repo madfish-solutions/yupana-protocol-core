@@ -131,6 +131,10 @@ function updateInterest(
       var _token : tokenInfo := getTokenInfo(tokenId, s.storage);
       var operations : list(operation) := list[];
 
+      if tokenId < s.storage.lastTokenId
+      then skip
+      else failwith("yToken/yToken-undefined");
+
       if _token.totalBorrowsFloat = 0n
       then block {
         _token.lastUpdateTime := Tezos.now;
@@ -205,8 +209,6 @@ function redeem(
     var operations : list(operation) := list[];
       case p of
         Redeem(yAssetParams) -> {
-          ensureNotZero(yAssetParams.amount);
-
           if yAssetParams.tokenId < s.lastTokenId
           then skip
           else failwith("yToken/yToken-undefined");
@@ -232,6 +234,8 @@ function redeem(
           then userInfo.balance * liquidityFloat / token.totalSupplyFloat / precision
           else yAssetParams.amount;
 
+          s.lastTokenId := redeemAmount;
+
           if redeemAmount * precision > token.totalLiquidFloat
           then failwith("yToken/not-enough-liquid")
           else skip;
@@ -241,6 +245,8 @@ function redeem(
           if userInfo.balance < burnTokensFloat
           then failwith("yToken/not-enough-tokens-to-burn")
           else skip;
+
+          s.maxMarkets := burnTokensFloat;
 
           userInfo.balance := abs(userInfo.balance - burnTokensFloat);
           userAccount.balances[yAssetParams.tokenId] := userInfo;

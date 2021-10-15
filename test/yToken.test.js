@@ -1,8 +1,16 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 
-const { alice, bob, carol, peter } = require("../scripts/sandbox/accounts");
+const {
+  alice,
+  bob,
+  carol,
+  peter,
+  dev,
+  dev2,
+} = require("../scripts/sandbox/accounts");
 
 const { strictEqual, rejects, ok } = require("assert");
+var bigInt = require("big-integer");
 
 const { Proxy } = require("../test/utills/Proxy");
 const { InterestRate } = require("../test/utills/InterestRate");
@@ -36,12 +44,14 @@ describe("Proxy tests", async () => {
   let fa12;
   let fa12_2;
   let fa2;
+  let fa2_2;
   let yTokenContractAddress;
   let interestContractAddress;
   let proxyContractAddress;
   let oracleContractAddress;
   let fa12ContractAddress;
   let fa2ContractAddress;
+  let fa2_2ContractAddress;
 
   before("setup Proxy", async () => {
     tezos = await Utils.initTezos();
@@ -52,6 +62,7 @@ describe("Proxy tests", async () => {
     fa12 = await FA12.originate(tezos);
     fa12_2 = await FA12.originate(tezos);
     fa2 = await FA2.originate(tezos);
+    fa2_2 = await FA2.originate(tezos);
     oracle = await GetOracle.originate(tezos);
 
     yTokenContractAddress = yToken.contract.address;
@@ -62,10 +73,13 @@ describe("Proxy tests", async () => {
     fa12ContractAddress = fa12.contract.address;
     fa12_2ContractAddress = fa12_2.contract.address;
     fa2ContractAddress = fa2.contract.address;
+    fa2_2ContractAddress = fa2_2.contract.address;
 
     tezos = await Utils.setProvider(tezos, alice.sk);
     await Utils.trasferTo(tezos, carol.pkh, 50000000);
     await Utils.trasferTo(tezos, peter.pkh, 50000000);
+    await Utils.trasferTo(tezos, dev.pkh, 50000000);
+    await Utils.trasferTo(tezos, dev2.pkh, 50000000);
 
     await interest.setCoefficients(
       800000000000000000,
@@ -118,6 +132,15 @@ describe("Proxy tests", async () => {
     var res = await oracle.storage.tokenInfo.get("ETH-USDT");
     strictEqual(res.price.toString(), "54466755129");
 
+    await oracle.updParamsOracle(
+      "XTZ-USDT",
+      54466755129,
+      "2021-08-20T09:06:50Z"
+    );
+    await oracle.updateStorage();
+    var res = await oracle.storage.tokenInfo.get("XTZ-USDT");
+    strictEqual(res.price.toString(), "54466755129");
+
     await interest.updateYToken(yTokenContractAddress);
     await interest.updateStorage();
     strictEqual(interest.storage.yToken, yTokenContractAddress);
@@ -126,7 +149,7 @@ describe("Proxy tests", async () => {
       "500000000000000000",
       "1050000000000000000",
       proxyContractAddress,
-      "12"
+      "2"
     );
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
@@ -198,10 +221,34 @@ describe("Proxy tests", async () => {
     strictEqual(pairId.toString(), "0");
   });
 
+  it("add market [0] by admin one more time", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await rejects(
+      yToken.addMarket(
+        interest2ContractAddress,
+        "fA12",
+        fa12ContractAddress,
+        0,
+        750000000000000000,
+        400000000000000000,
+        9000000000000,
+        tokenMetadata
+      ),
+      (err) => {
+        ok(
+          err.message == "yToken/token-has-already-been-added",
+          "Error message mismatch"
+        );
+        return true;
+      }
+    );
+  });
+
   // it("update metadata [0] by non admin", async () => {
   //   try {
   //     tezos = await Utils.setProvider(tezos, alice.sk);
-  //     await yToken.updMetadata(
+  //     await yToken.updateMetadata(
   //       0,
   //       tokenMetadata2
   //     );
@@ -215,7 +262,7 @@ describe("Proxy tests", async () => {
 
   // it("update metadata [0] by admin", async () => {
   //   tezos = await Utils.setProvider(tezos, bob.sk);
-  //   await yToken.updMetadata(
+  //   await yToken.updateMetadata(
   //     0,
   //     tokenMetadata2
   //   );
@@ -260,8 +307,34 @@ describe("Proxy tests", async () => {
       tokenMetadata
     );
     await yToken.updateStorage();
-    // var r = await yToken.storage.storage.tokenInfo.get(1);
-    // strictEqual(r.mainToken, fa12_2ContractAddress);
+    var r = await yToken.storage.storage.tokenInfo.get(2);
+    console.log(fa2ContractAddress);
+    console.log(r.mainToken);
+
+    await proxy.updatePair(2, "XTZ-USDT");
+    await proxy.updateStorage();
+    strictEqual(await proxy.storage.pairName.get(2), "XTZ-USDT");
+
+    let pairId = await proxy.storage.pairId.get("XTZ-USDT");
+    strictEqual(pairId.toString(), "2");
+
+    await fa2.create_token(tokenMetadata);
+    await fa2.updateStorage();
+  });
+
+  it("add market [3]", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.addMarket(
+      interestContractAddress,
+      "fA2",
+      fa2_2ContractAddress,
+      0,
+      750000000000000000,
+      150000000000000000,
+      5000000000000,
+      tokenMetadata2
+    );
+    await yToken.updateStorage();
 
     await proxy.updatePair(2, "XTZ-USDT");
     await proxy.updateStorage();
@@ -289,7 +362,7 @@ describe("Proxy tests", async () => {
     strictEqual(await res.balance.toString(), "10000000000000000000");
   });
 
-  it("mint 2 by alice and carol", async () => {
+  it("mint fa12_2 by alice and carol", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await fa12_2.mint(10000000000000000000);
     await fa12_2.updateStorage();
@@ -312,6 +385,36 @@ describe("Proxy tests", async () => {
       ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
       return true;
     });
+  });
+
+  it("mint zero yToken by alice", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await rejects(yToken.mint(1, 0), (err) => {
+      ok(err.message == "yToken/amount-is-zero", "Error message mismatch");
+      return true;
+    });
+  });
+
+  it("mint fa2 by dev", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await fa2.mint([
+      { token_id: 0, receiver: dev.pkh, amount: 10000000000000000000 },
+    ]);
+    await fa2.updateStorage();
+
+    let res = await fa2.storage.account_info.get(dev.pkh);
+    strictEqual(await res.balances.get("0").toString(), "10000000000000000000");
+  });
+
+  it("mint fa2_2 by dev2", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await fa2.mint([
+      { token_id: 0, receiver: dev2.pkh, amount: 10000000000000000000 },
+    ]);
+    await fa2.updateStorage();
+
+    let res = await fa2.storage.account_info.get(dev2.pkh);
+    strictEqual(await res.balances.get("0").toString(), "10000000000000000000");
   });
 
   it("mint yTokens by alice", async () => {
@@ -392,9 +495,55 @@ describe("Proxy tests", async () => {
     );
   });
 
-  it("enterMarket non-existent yToken by bob", async () => {
-    await rejects(yToken.enterMarket(3), (err) => {
+  it("mint yTokens by dev", async () => {
+    tezos = await Utils.setProvider(tezos, dev.sk);
+    await fa2.updateOperators([{
+      add_operator: {
+        owner: dev.pkh,
+        operator: yTokenContractAddress,
+        token_id: 0,
+      },
+    }]);
+    await fa2.updateStorage();
+    let res1 = await fa2.storage.account_info.get(dev.pkh);
+    console.log(res1.permits);
+
+    await yToken.updateAndMint2(proxy, 2, 1000);
+    await yToken.updateStorage();
+
+    let res = await fa12.storage.ledger.get(peter.pkh);
+    strictEqual(await res.balance.toString(), "9999999999999999000");
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(peter.pkh);
+    let yTokenBalance = await yTokenRes.balances.get("2");
+    strictEqual(
+      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      "1000000000000000000000"
+    );
+  });
+
+  it("update Interest Rate yToken undefined", async () => {
+    await rejects(yToken.updateInterest(4), (err) => {
       ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
+      return true;
+    });
+  });
+
+  it("return price by not oracle", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await rejects(yToken.returnPrice(0, 2000), (err) => {
+      ok(err.message == "yToken/permition-error", "Error message mismatch");
+      return true;
+    });
+  });
+
+  it("borrow when not enter market by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await rejects(yToken.updateAndBorrow(proxy, 1, 50000), (err) => {
+      ok(
+        err.message == "yToken/exceeds-the-permissible-debt",
+        "Error message mismatch"
+      );
       return true;
     });
   });
@@ -404,8 +553,43 @@ describe("Proxy tests", async () => {
 
     await yToken.enterMarket(0);
     await yToken.updateStorage();
+    await yToken.enterMarket(1);
+    await yToken.updateStorage();
+    await rejects(yToken.enterMarket(2), (err) => {
+      ok(err.message == "yToken/max-market-limit", "Error message mismatch");
+      return true;
+    });
     res = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    strictEqual(res.markets.toString(), "0");
+    strictEqual(res.markets.toString(), "0,1");
+  });
+
+  it("setGlobalFactors update maxMarket", async () => {
+    await yToken.setGlobalFactors(
+      "500000000000000000",
+      "1050000000000000000",
+      proxyContractAddress,
+      "10"
+    );
+    await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
+  });
+
+  it("exit market yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await yToken.updateAndExit2(proxy, 1);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    strictEqual(await res.markets.toString(), "0");
+  });
+
+  it("enterMarket non-existent yToken by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await rejects(yToken.enterMarket(4), (err) => {
+      ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
+      return true;
+    });
   });
 
   it("enterMarket [0] by peter", async () => {
@@ -415,15 +599,6 @@ describe("Proxy tests", async () => {
     await yToken.updateStorage();
     res = await yToken.storage.storage.accountInfo.get(peter.pkh);
     strictEqual(res.markets.toString(), "0");
-  });
-
-  it("enterMarket [1] by alice", async () => {
-    tezos = await Utils.setProvider(tezos, alice.sk);
-
-    await yToken.enterMarket(1);
-    await yToken.updateStorage();
-    res = await yToken.storage.storage.accountInfo.get(alice.pkh);
-    strictEqual(res.markets.toString(), "1");
   });
 
   it("borrow yTokens by bob", async () => {
@@ -451,6 +626,93 @@ describe("Proxy tests", async () => {
     let balances = await res.balances.get("1");
 
     console.log(balances.borrow.toPrecision(40).split(".")[0]); // not static result
+  });
+
+  it("redeem 0 by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await yToken.updateAndRedeem(proxy, 1, 0);
+    await yToken.updateStorage();
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(carol.pkh);
+    let yTokenBalance = await yTokenRes.balances.get("1");
+
+    console.log(await yTokenBalance.balance.toPrecision(40).split(".")[0]);
+
+    let res = await yToken.storage.storage.tokenInfo.get(1);
+    console.log(res.totalLiquidFloat);
+  });
+
+  it("redeem borrowed yTokens by alice", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await rejects(yToken.updateAndRedeem(proxy, 1, 0), (err) => {
+      ok(err.message == "yToken/not-enough-liquid", "Error message mismatch");
+      return true;
+    });
+  });
+
+  it("try to mint without updateInterest yTokens by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await rejects(yToken.mint(1, 10000000000), (err) => {
+      ok(err.message == "yToken/need-update", "Error message mismatch");
+      return true;
+    });
+  });
+
+  //!!!!!
+  it("mint yTokens by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+
+    let tokenInfo = await yToken.storage.storage.tokenInfo.get(1);
+    let mintTokensFloat = ("10000000000" * "1000000000000000000")
+      .toPrecision(40)
+      .split(".")[0];
+    console.log(mintTokensFloat);
+    let totalLiquid = tokenInfo.totalLiquidFloat.toPrecision(40).split(".")[0];
+    console.log("totalLiquid", +totalLiquid);
+    let totalBorrows = tokenInfo.totalBorrowsFloat
+      .toPrecision(40)
+      .split(".")[0];
+    console.log("totalBorrows", +totalBorrows);
+    let totalReserves = tokenInfo.totalReservesFloat
+      .toPrecision(40)
+      .split(".")[0];
+    console.log("totalReserves", +totalReserves);
+
+    let calculateTotal = +totalLiquid + +totalBorrows - +totalReserves;
+    console.log(calculateTotal.toPrecision(40).split(".")[0]);
+    mintTokensFloat =
+      (mintTokensFloat * tokenInfo.totalSupplyFloat.toString()) /
+      calculateTotal;
+    console.log(mintTokensFloat.toPrecision(40).split(".")[0]);
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get(carol.pkh);
+    let yTokenBalance = await yTokenRes.balances.get("1");
+    console.log(yTokenBalance.balance.toPrecision(40).split(".")[0]);
+    let res = yTokenBalance.balance + mintTokensFloat;
+    console.log(+res);
+    // 19999999999999864690496826044
+    //  9999999999999891830980214784
+
+    await yToken.updateAndMint(proxy, 1, 10000000000);
+    await yToken.updateStorage();
+
+    // mintTokensFloat := mintTokensFloat * token.totalSupplyFloat /
+    // abs(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat);
+
+    yTokenRes = await yToken.storage.storage.accountInfo.get(carol.pkh);
+    yTokenBalance = await yTokenRes.balances.get("1");
+    console.log(await yTokenBalance.balance.toPrecision(40).split(".")[0]);
+  });
+
+  it("redeem more than allowed yTokens by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await rejects(yToken.updateAndRedeem(proxy, 1, 19000000000), (err) => {
+      ok(
+        err.message == "yToken/not-enough-tokens-to-burn",
+        "Error message mismatch"
+      );
+      return true;
+    });
   });
 
   it("borrow yTokens by peter", async () => {
@@ -482,7 +744,7 @@ describe("Proxy tests", async () => {
   it("borrow more than exists yTokens by alice", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await rejects(yToken.updateAndBorrow2(proxy, 0, 20000000), (err) => {
+    await rejects(yToken.updateAndBorrow2(proxy, 0, 20000000000), (err) => {
       ok(err.message == "yToken/amount-too-big", "Error message mismatch");
       return true;
     });
@@ -502,7 +764,7 @@ describe("Proxy tests", async () => {
     console.log(yTokenBorrow.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
-  it("redeem yTokens by bob", async () => {
+  it("redeem yTokens by bob (token-taken-as-collateral)", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.updateAndRedeem(proxy, 0, 1), (err) => {
       ok(
@@ -558,7 +820,10 @@ describe("Proxy tests", async () => {
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 250), (err) => {
-      ok(err.message == "yToken/liquidation-not-achieved", "Error message mismatch");
+      ok(
+        err.message == "yToken/liquidation-not-achieved",
+        "Error message mismatch"
+      );
       return true;
     });
   });
@@ -620,7 +885,10 @@ describe("Proxy tests", async () => {
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 250), (err) => {
-      ok(err.message == "yToken/liquidation-not-achieved", "Error message mismatch");
+      ok(
+        err.message == "yToken/liquidation-not-achieved",
+        "Error message mismatch"
+      );
       return true;
     });
   });
@@ -678,7 +946,10 @@ describe("Proxy tests", async () => {
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 19), (err) => {
-      ok(err.message == "yToken/liquidation-not-achieved", "Error message mismatch");
+      ok(
+        err.message == "yToken/liquidation-not-achieved",
+        "Error message mismatch"
+      );
       return true;
     });
   });

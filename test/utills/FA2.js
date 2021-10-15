@@ -77,18 +77,8 @@ class FA2 {
   }
 
   async updateOperators(params) {
-    const operation = await this.contract.methods
-      .update_operators(
-        params.map((param) => {
-          return {
-            [param.option]: param.param,
-          };
-        })
-      )
-      .send();
-
+    const operation = await this.contract.methods.update_operators(params).send();
     await confirmOperation(this.tezos, operation.hash);
-
     return operation;
   }
 

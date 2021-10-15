@@ -50,12 +50,6 @@ type entryAction        is
   | AccrueInterest of yAssetParams
   | GetReserveFactor of tokenId
   | ReturnPrice of yAssetParams
-  // | SetAdmin of address
-  // | WithdrawReserve of yAssetParams
-  // | AddMarket of newMarketParams
-  // | UpdateMetadata of updateMetadataParams
-  // | SetTokenFactors of setTokenParams
-  // | SetGlobalFactors of setGlobalParams
   | Use of useAction
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams
