@@ -14,10 +14,10 @@ function getAccount(
 
 (* Helper function to get token info *)
 function getTokenInfo(
-  const tokenId         : tokenId;
+  const token_id        : tokenId;
   const s               : tokenStorage)
                         : tokenInfo is
-  case s.tokenInfo[tokenId] of
+  case s.tokenInfo[token_id] of
     None -> record [
       mainToken               = FA12(zeroAddress);
       interestRateModel       = zeroAddress;
@@ -38,9 +38,9 @@ function getTokenInfo(
 
 function getMapInfo(
   const currentMap      : map(tokenId, balanceInfo);
-  const tokenId         : nat)
+  const token_id        : nat)
                         : balanceInfo is
-  case currentMap[tokenId] of
+  case currentMap[token_id] of
     None -> record [
       balance = 0n;
       borrow = 0n;
@@ -95,9 +95,9 @@ function getTotalSupply(
 (* Helper function to get acount balance by token *)
 function getBalanceByToken(
   const user            : account;
-  const tokenId         : tokenId)
+  const token_id        : tokenId)
                         : balanceInfo is
-  case user.balances[tokenId] of
+  case user.balances[token_id] of
     None -> record [
       balance = 0n;
       borrow = 0n;
@@ -140,17 +140,17 @@ function iterateTransfer(
         else failwith("yToken/FA2-not-operator");
 
         (* Check the entered markets *)
-        if Set.mem(transferDst.tokenId, srcAccount.markets)
+        if Set.mem(transferDst.token_id, srcAccount.markets)
         then failwith("yToken/token-taken-as-collateral")
         else skip;
 
         (* Token id check *)
-        if transferDst.tokenId < s.lastTokenId
+        if transferDst.token_id < s.lastTokenId
         then skip
         else failwith("FA2/token-undefined");
 
         (* Get source info *)
-        var srcInfo : balanceInfo := getBalanceByToken(srcAccount, transferDst.tokenId);
+        var srcInfo : balanceInfo := getBalanceByToken(srcAccount, transferDst.token_id);
 
         (* Balance check *)
         if srcInfo.balance < transferDst.amount
@@ -159,7 +159,7 @@ function iterateTransfer(
 
         (* Update source balance *)
         srcInfo.balance := abs(srcInfo.balance - transferDst.amount);
-        srcAccount.balances[transferDst.tokenId] := srcInfo;
+        srcAccount.balances[transferDst.token_id] := srcInfo;
 
         (* Update storage *)
         s.accountInfo[params.from_] := srcAccount;
@@ -168,11 +168,11 @@ function iterateTransfer(
         var dstAccount : account := getAccount(transferDst.to_, s);
 
         (* Get receiver balance *)
-        var dstInfo : balanceInfo := getBalanceByToken(dstAccount, transferDst.tokenId);
+        var dstInfo : balanceInfo := getBalanceByToken(dstAccount, transferDst.token_id);
 
         (* Update destination balance *)
         dstInfo.balance := dstInfo.balance + transferDst.amount;
-        dstAccount.balances[transferDst.tokenId] := dstInfo;
+        dstAccount.balances[transferDst.token_id] := dstInfo;
 
         (* Update storage *)
         s.accountInfo[transferDst.to_] := dstAccount;
@@ -238,7 +238,7 @@ function getBalance(
               (* Retrieve the asked account from the storage *)
               const user : account = getAccount(request.owner, s);
 
-              const userBalance : balanceInfo = getBalanceByToken(user, request.tokenId);
+              const userBalance : balanceInfo = getBalanceByToken(user, request.token_id);
 
               (* Form the response *)
               const response : balanceOfResponse = record [

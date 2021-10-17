@@ -46,6 +46,7 @@ class FA2 {
       admin: storage.admin,
       pending_admin: storage.pending_admin,
       last_token_id: storage.last_token_id,
+      test: storage.test,
     };
 
     for (const key in maps) {

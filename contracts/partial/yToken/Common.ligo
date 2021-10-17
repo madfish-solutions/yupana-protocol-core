@@ -20,8 +20,8 @@ function wrap_fa2_transfer_trx(
       from_ = from_;
       txs = list[
         record[
-          tokenId = id;
           to_ = to_;
+          token_id = id;
           amount = amt
         ]
       ]

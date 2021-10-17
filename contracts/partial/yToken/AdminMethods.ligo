@@ -82,7 +82,7 @@ function addMarket(
 
         s.typesInfo[params.assetAddress] := lastTokenId;
         s.tokenMetadata[lastTokenId] := record [
-          tokenId = lastTokenId;
+          token_id = lastTokenId;
           tokenInfo = params.tokenMetadata;
         ];
         s.tokenInfo[lastTokenId] := token;
@@ -101,7 +101,7 @@ function updateMetadata(
       UpdateMetadata(params) -> {
         mustBeAdmin(s);
         s.tokenMetadata[params.tokenId] := record [
-          tokenId = params.tokenId;
+          token_id = params.tokenId;
           tokenInfo = params.tokenMetadata;
         ];
       }

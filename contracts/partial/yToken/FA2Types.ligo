@@ -1,13 +1,13 @@
 type tokenId is nat
 
 type tokenMetadataInfo is [@layout:comb] record [
-  tokenId              : tokenId;
+  token_id             : tokenId;
   tokenInfo            : map(string, bytes);
 ]
 
 type transferDestination is [@layout:comb] record [
   to_                   : address;
-  tokenId               : tokenId;
+  token_id              : tokenId;
   amount                : nat;
 ]
 
@@ -20,7 +20,7 @@ type transferParams is list(transferParam)
 
 type balanceOfRequest is [@layout:comb] record [
   owner                 : address;
-  tokenId               : tokenId;
+  token_id              : tokenId;
 ]
 
 type balanceOfResponse is [@layout:comb] record [
@@ -36,7 +36,7 @@ type balanceParams is [@layout:comb] record [
 type operatorParam is [@layout:comb] record [
   owner                 : address;
   operator              : address;
-  tokenId               : tokenId;
+  token_id              : tokenId;
 ]
 
 type updateOperatorParam is
