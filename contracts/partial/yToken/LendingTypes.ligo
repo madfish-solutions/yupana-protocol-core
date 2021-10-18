@@ -33,6 +33,7 @@ type tokenInfo         is [@layout:comb] record [
   collateralFactorFloat : nat;
   reserveFactorFloat    : nat;
   lastPrice             : nat;
+  borrowPause           : bool;
 ]
 
 type tokenStorage       is [@layout:comb] record [
@@ -87,6 +88,11 @@ type setGlobalParams    is [@layout:comb] record [
   liqIncentiveFloat     : nat;
   priceFeedProxy        : address;
   maxMarkets            : nat;
+]
+
+type borrowPauseParams is [@layout:comb] record [
+  tokenId               : nat;
+  condition             : bool;
 ]
 
 type newMetadataParams  is map(string, bytes)

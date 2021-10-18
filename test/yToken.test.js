@@ -353,6 +353,36 @@ describe("Proxy tests", async () => {
     strictEqual(pairId.toString(), "3");
   });
 
+  it("set borrow pause by alice", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    await rejects(yToken.setBorrowPause(2, true), (err) => {
+      ok(err.message == "yToken/not-admin", "Error message mismatch");
+      return true;
+    });
+  });
+
+  it("set borrow pause by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    let res = await yToken.storage.storage.tokenInfo.get(2);
+    strictEqual(res.borrowPause, false);
+
+    await yToken.setBorrowPause(2, true);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.tokenInfo.get(2);
+    strictEqual(res.borrowPause, true);
+  });
+
+  it("unset borrow pause by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.setBorrowPause(2, false);
+    await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.tokenInfo.get(2);
+    strictEqual(res.borrowPause, false);
+  });
+
   it("mint fa12 tokens by bob and peter", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await fa12.mint(10000000000000000000);

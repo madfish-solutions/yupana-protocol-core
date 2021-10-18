@@ -70,6 +70,10 @@ let yTokenFunctions = [
     index: 12,
     name: "setGlobalFactors",
   },
+  {
+    index: 13,
+    name: "setBorrowPause",
+  },
 ];
 
 let proxyFunctions = [

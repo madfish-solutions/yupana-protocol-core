@@ -17,6 +17,7 @@ type useAction          is
   | UpdateMetadata of updateMetadataParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
+  | SetBorrowPause of borrowPauseParams
 
 type tokenAction        is
   | ITransfer of transferParams

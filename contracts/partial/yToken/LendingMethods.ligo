@@ -280,6 +280,10 @@ function borrow(
           var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s);
           verifyTokenUpdated(token);
 
+          if token.borrowPause
+          then failwith("yToken/forbidden-for-borrow");
+          else skip;
+
           const borrowsFloat : nat = yAssetParams.amount * precision;
 
           if borrowsFloat > token.totalLiquidFloat

@@ -338,6 +338,14 @@ class YToken {
     return operation;
   }
 
+  async setBorrowPause(tokenId, condition) {
+    const operation = await this.contract.methods.setBorrowPause(tokenId, condition).send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  setBorrowPause
+
   async updateAndsetTokenFactors(
     proxy,
     tokenId,

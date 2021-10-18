@@ -75,6 +75,7 @@ function middleToken(
         | UpdateMetadata(_updateMetadataParams) -> 10n
         | SetTokenFactors(_setTokenParams) -> 11n
         | SetGlobalFactors(_setGlobalParams) -> 12n
+        | SetBorrowPause(_tokenId) -> 13n
       end;
 
     const lambda_bytes : bytes =

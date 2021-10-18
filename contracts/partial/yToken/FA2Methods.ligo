@@ -32,6 +32,7 @@ function getTokenInfo(
       collateralFactorFloat   = 0n;
       reserveFactorFloat      = 0n;
       lastPrice               = 0n;
+      borrowPause             = False;
     ]
   | Some(v) -> v
   end

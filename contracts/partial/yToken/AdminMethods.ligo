@@ -149,3 +149,20 @@ function setGlobalFactors(
     | _                 -> skip
     end
   } with (noOperations, s)
+
+function setBorrowPause(
+  const p               : useAction;
+  var s                 : tokenStorage)
+                        : return is
+  block {
+    case p of
+      SetBorrowPause(borrowPauseParams) -> {
+        mustBeAdmin(s);
+        var token : tokenInfo := getTokenInfo(borrowPauseParams.tokenId, s);
+        token.borrowPause := borrowPauseParams.condition;
+        s.tokenInfo[borrowPauseParams.tokenId] := token;
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
+
