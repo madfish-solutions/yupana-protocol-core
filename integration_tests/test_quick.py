@@ -180,22 +180,21 @@ class DexTest(TestCase):
         chain.execute(self.ct.enterMarket(0))
         chain.execute(self.ct.borrow(1, 50))
 
-
-        chain.execute(self.ct.returnPrice(0, 50), sender=price_feed)
+        res = chain.execute(self.ct.returnPrice(0, 50), sender=price_feed)
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 47), sender=bob)
         transfers = parse_transfers(res)
+        self.assertEqual(len(transfers), 1)
         self.assertEqual(transfers[0]["source"], bob)
         self.assertEqual(transfers[0]["destination"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 47)
         self.assertEqual(transfers[0]["token_address"], token_b_address)
 
-        pprint_aux(res.storage["storage"])
-        return
+        # TODO why do we have to repay and redeem after position has been liquidated?
+        chain.execute(self.ct.repay(1, 3))
+        chain.execute(self.ct.exitMarket(0))
 
-        chain.execute(self.ct.exitMarket(0), sender=alice)
-
-        res = chain.execute(self.ct.redeem(0, 80))
+        res = chain.execute(self.ct.redeem(0, 1))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)

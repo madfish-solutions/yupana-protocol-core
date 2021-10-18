@@ -201,6 +201,7 @@ def format_numbers(d):
 
 # converts numbers 
 def pprint_aux(d):
+    print("\n")
     format_numbers(d)
     pprint(d)
 
@@ -282,7 +283,6 @@ class LocalChain:
 
         # calculate total xtz payouts from contract
         ops = parse_ops(res)
-        json.dump(ops, open("ops.json", "w"))
         for op in ops:
             if op["type"] == "tez":
                 dest = op["destination"]
