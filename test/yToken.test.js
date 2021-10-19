@@ -12,13 +12,13 @@ const {
 const { strictEqual, rejects, ok } = require("assert");
 var bigInt = require("big-integer");
 
-const { Proxy } = require("../test/utills/Proxy");
-const { InterestRate } = require("../test/utills/InterestRate");
-const { GetOracle } = require("../test/utills/GetOracle");
-const { YToken } = require("../test/utills/YToken");
-const { FA12 } = require("../test/utills/FA12");
-const { FA2 } = require("../test/utills/FA2");
-const { Utils } = require("../test/utills/Utils");
+const { Proxy } = require("../test/utills/proxy");
+const { InterestRate } = require("../test/utills/interestRate");
+const { GetOracle } = require("../test/utills/getOracle");
+const { YToken } = require("../test/utills/yToken");
+const { FA12 } = require("../test/utills/fa12");
+const { FA2 } = require("../test/utills/fa2");
+const { Utils } = require("../test/utills/utils");
 
 const tokenMetadata = MichelsonMap.fromLiteral({
   symbol: Buffer.from("TST").toString("hex"),

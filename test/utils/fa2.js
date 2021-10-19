@@ -2,7 +2,7 @@ const fs = require("fs");
 
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/FA2");
+const storage = require("../../storage/fa2");
 
 class FA2 {
   contract;

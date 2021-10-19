@@ -1,7 +1,7 @@
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/GetOracle");
+const storage = require("../../storage/getOracle");
 // const contract = require("../../KT1MwuujtBodVQFm1Jk1KTGNc49wygqoLvpe.tz");
 
 class GetOracle {

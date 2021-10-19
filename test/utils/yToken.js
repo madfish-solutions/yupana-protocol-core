@@ -1,8 +1,8 @@
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/YToken");
-const { functions } = require("../../storage/Functions");
+const storage = require("../../storage/yToken");
+const { functions } = require("../../storage/functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 

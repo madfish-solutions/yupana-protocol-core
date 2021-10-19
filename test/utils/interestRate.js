@@ -1,15 +1,12 @@
-require("ts-node").register({
-  files: true,
-});
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/Proxy");
-const { functions } = require("../../storage/Functions");
+const storage = require("../../storage/interestRate");
+const { functions } = require("../../storage/functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
-class Proxy {
+class InterestRate {
   contract;
   storage;
   tezos;
@@ -20,12 +17,12 @@ class Proxy {
   }
 
   static async init(qsAddress, tezos) {
-    return new Proxy(await tezos.contract.at(qsAddress), tezos);
+    return new InterestRate(await tezos.contract.at(qsAddress), tezos);
   }
 
   static async originate(tezos) {
     const artifacts = JSON.parse(
-      fs.readFileSync(`${env.buildDir}/priceFeed.json`)
+      fs.readFileSync(`${env.buildDir}/interestRate.json`)
     );
     const operation = await tezos.contract
       .originate({
@@ -39,17 +36,23 @@ class Proxy {
       });
     await confirmOperation(tezos, operation.hash);
 
-    return new Proxy(await tezos.contract.at(operation.contractAddress), tezos);
+    return new InterestRate(
+      await tezos.contract.at(operation.contractAddress),
+      tezos
+    );
   }
 
   async updateStorage(maps = {}) {
     let storage = await this.contract.storage();
     this.storage = {
       admin: storage.admin,
-      oracle: storage.oracle,
       yToken: storage.yToken,
-      pairName: storage.pairName,
-      pairId: storage.pairId,
+      kickRateFloat: storage.kickRateFloat,
+      baseRateFloat: storage.baseRateFloat,
+      multiplierFloat: storage.multiplierFloat,
+      jumpMultiplierFloat: storage.jumpMultiplierFloat,
+      reserveFactorFloat: storage.reserveFactorFloat,
+      lastUpdTime: storage.lastUpdTime,
     };
 
     for (const key in maps) {
@@ -70,48 +73,34 @@ class Proxy {
   }
 
   async updateAdmin(newAdmin) {
-    const operation = await this.contract.methods.setProxyAdmin(newAdmin).send();
+    const operation = await this.contract.methods.updateAdmin(newAdmin).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async updateOracle(newOracle) {
+  async updateYToken(newToken) {
+    const operation = await this.contract.methods.setYToken(newToken).send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  async setCoefficients(
+    kickRateFloat,
+    baseRateFloat,
+    multiplierFloat,
+    jumpMultiplierFloat
+  ) {
     const operation = await this.contract.methods
-      .updateOracle(newOracle)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async updateYToken(newYToken) {
-    const operation = await this.contract.methods
-      .updateYToken(newYToken)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async updatePair(tokenId, pairName) {
-    const operation = await this.contract.methods
-      .updatePair(tokenId, pairName)
-      .send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async getPrice(tokenSet) {
-    const operation = await this.contract.methods.getPrice(tokenSet).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
-  async receivePrice(name, lastTime, amount) {
-    const operation = await this.contract.methods
-      .receivePrice(name, lastTime, amount)
+      .setCoefficients(
+        kickRateFloat,
+        baseRateFloat,
+        multiplierFloat,
+        jumpMultiplierFloat
+      )
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 }
 
-module.exports.Proxy = Proxy;
+module.exports.InterestRate = InterestRate;
