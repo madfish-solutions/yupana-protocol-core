@@ -219,8 +219,6 @@ describe("Proxy tests", async () => {
       tokenMetadata
     );
     await yToken.updateStorage();
-    var r = await yToken.storage.storage.tokenInfo.get(0);
-    // strictEqual(await r.mainToken, );
 
     await proxy.updatePair(0n, "BTC-USDT");
     await proxy.updateStorage();
@@ -292,7 +290,7 @@ describe("Proxy tests", async () => {
       tokenMetadata
     );
     await yToken.updateStorage();
-    var r = await yToken.storage.storage.tokenInfo.get(1);
+    // var r = await yToken.storage.storage.tokenInfo.get("1");
     // strictEqual(r.mainToken, fa12_2ContractAddress);
 
     await proxy.updatePair(1, "ETH-USDT");
@@ -364,23 +362,14 @@ describe("Proxy tests", async () => {
 
   it("set borrow pause by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
-    let res = await yToken.storage.storage.tokenInfo.get(2);
+    let res = await yToken.storage.storage.tokenInfo.get('1');
     strictEqual(res.borrowPause, false);
 
-    await yToken.setBorrowPause(2, true);
+    await yToken.setBorrowPause(1, true);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.tokenInfo.get(2);
+    res = await yToken.storage.storage.tokenInfo.get('1');
     strictEqual(res.borrowPause, true);
-  });
-
-  it("unset borrow pause by bob", async () => {
-    tezos = await Utils.setProvider(tezos, bob.sk);
-    await yToken.setBorrowPause(2, false);
-    await yToken.updateStorage();
-
-    let res = await yToken.storage.storage.tokenInfo.get(2);
-    strictEqual(res.borrowPause, false);
   });
 
   it("mint fa12 tokens by bob and peter", async () => {
@@ -469,11 +458,10 @@ describe("Proxy tests", async () => {
     let res = await fa12_2.storage.ledger.get(alice.pkh);
     strictEqual(await res.balance.toString(), "9999999990000000000");
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get(alice.pkh);
-    let yTokenBalance = await yTokenRes.balances.get("1");
+    let yTokenRes = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
 
     strictEqual(
-      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      yTokenRes.toPrecision(40).split(".")[0],
       "10000000000000000000000000000"
     );
   });
@@ -489,11 +477,10 @@ describe("Proxy tests", async () => {
     let res = await fa12_2.storage.ledger.get(carol.pkh);
     strictEqual(await res.balance.toString(), "9999999990000000000");
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get(carol.pkh);
-    let yTokenBalance = await yTokenRes.balances.get("1");
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([carol.pkh, 1]);
 
     strictEqual(
-      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      yTokenRes.toPrecision(40).split(".")[0],
       "10000000000000000000000000000"
     );
   });
@@ -509,10 +496,9 @@ describe("Proxy tests", async () => {
     let res = await fa12.storage.ledger.get(bob.pkh);
     strictEqual(await res.balance.toString(), "9999999999999900000");
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get(bob.pkh);
-    let yTokenBalance = await yTokenRes.balances.get("0");
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 0]);
     strictEqual(
-      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      yTokenRes.toPrecision(40).split(".")[0],
       "100000000000000000000000"
     );
   });
@@ -528,10 +514,9 @@ describe("Proxy tests", async () => {
     let res = await fa12.storage.ledger.get(peter.pkh);
     strictEqual(await res.balance.toString(), "9999999999999999000");
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get(peter.pkh);
-    let yTokenBalance = await yTokenRes.balances.get("0");
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([peter.pkh, 0]);
     strictEqual(
-      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      yTokenRes.toPrecision(40).split(".")[0],
       "1000000000000000000000"
     );
   });
@@ -554,10 +539,9 @@ describe("Proxy tests", async () => {
     let res2 = await res.balances.get('0');
     strictEqual(await res2.toString(), "9999999999999999000");
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get(dev.pkh);
-    let yTokenBalance = await yTokenRes.balances.get("2");
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([dev.pkh, 2]);
     strictEqual(
-      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      yTokenRes.toPrecision(40).split(".")[0],
       "1000000000000000000000"
     );
   });
@@ -580,10 +564,9 @@ describe("Proxy tests", async () => {
     let res2 = await res.balances.get('0');
     strictEqual(await res2.toString(), "9999999999900000000");
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get(dev2.pkh);
-    let yTokenBalance = await yTokenRes.balances.get("3");
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([dev2.pkh, 3]);
     strictEqual(
-      await yTokenBalance.balance.toPrecision(40).split(".")[0],
+      yTokenRes.toPrecision(40).split(".")[0],
       "100000000000000000000000000"
     );
   });
@@ -601,6 +584,26 @@ describe("Proxy tests", async () => {
       ok(err.message == "yToken/permition-error", "Error message mismatch");
       return true;
     });
+  });
+
+  it("borrow when token forbidden for borrow bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await rejects(yToken.updateAndBorrow(proxy, 1, 50000), (err) => {
+      ok(
+        err.message == "yToken/forbidden-for-borrow",
+        "Error message mismatch"
+      );
+      return true;
+    });
+  });
+
+  it("unset borrow pause by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.setBorrowPause(1, false);
+    await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.tokenInfo.get("1");
+    strictEqual(res.borrowPause, false);
   });
 
   it("borrow when not enter market by bob", async () => {
@@ -625,7 +628,7 @@ describe("Proxy tests", async () => {
       ok(err.message == "yToken/max-market-limit", "Error message mismatch");
       return true;
     });
-    res = await yToken.storage.storage.accountInfo.get(bob.pkh);
+    res = await yToken.storage.storage.accountInfo.get([bob.pkh, ]);
     strictEqual(res.markets.toString(), "0,1");
   });
 
@@ -712,9 +715,6 @@ describe("Proxy tests", async () => {
     let yTokenBalance = await yTokenRes.balances.get("1");
 
     console.log(await yTokenBalance.balance.toPrecision(40).split(".")[0]);
-
-    let res = await yToken.storage.storage.tokenInfo.get(1);
-    console.log(res.totalLiquidFloat);
   });
 
   it("redeem borrowed yTokens by alice", async () => {
@@ -886,9 +886,6 @@ describe("Proxy tests", async () => {
     let yTokenBalance = await yTokenRes.balances.get("3");
 
     console.log(await yTokenBalance.balance.toPrecision(40).split(".")[0]);
-
-    let res = await yToken.storage.storage.tokenInfo.get(3);
-    console.log(res.totalLiquidFloat);
   });
 
   it("redeem yTokens by bob (token-taken-as-collateral)", async () => {

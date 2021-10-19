@@ -7,16 +7,18 @@ type allowanceAmount    is [@layout:comb] record [
   amount                : nat;
 ]
 
-type balanceInfo        is record [
-  balance               : nat;
-  borrow                : nat;
-  lastBorrowIndex       : nat;
-]
+// type balanceInfo        is record [
+//   balance               : nat;
+//   borrow                : nat;
+//   lastBorrowIndex       : nat;
+// ]
 
 type account            is [@layout:comb] record [
   allowances            : set(address);
+  borrow                : nat;
+  lastBorrowIndex       : nat;
   markets               : set(tokenId);
-  balances              : map(tokenId, balanceInfo);
+  // balances              : map(tokenId, balanceInfo);
 ]
 
 type tokenInfo         is [@layout:comb] record [
@@ -38,8 +40,10 @@ type tokenInfo         is [@layout:comb] record [
 
 type tokenStorage       is [@layout:comb] record [
   admin                 : address;
-  accountInfo           : big_map(address, account);
-  tokenInfo             : big_map(tokenId, tokenInfo);
+  // accountInfo           : big_map(address, account);
+  ledger                : big_map((address * tokenId), nat);
+  accountInfo           : big_map((address * tokenId), account);
+  tokenInfo             : map(tokenId, tokenInfo);
   metadata              : big_map(string, bytes);
   tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
@@ -47,7 +51,7 @@ type tokenStorage       is [@layout:comb] record [
   closeFactorFloat      : nat;
   liqIncentiveFloat     : nat;
   maxMarkets            : nat;
-  typesInfo             : big_map (assetType, tokenId);
+  typesInfo             : big_map(assetType, tokenId);
 ]
 
 type tokenSet is set(tokenId)
@@ -125,8 +129,10 @@ type pairParam          is [@layout:comb] record [
 
 type calculateCollParams is [@layout:comb] record [
   s                     : tokenStorage;
+  user                  : address;
   res                   : nat;
-  userAccount           : account;
+  tokenId               : tokenId;
+  // userAccount           : account;
 ]
 
 type transferType is TransferOutside of faTransferParams

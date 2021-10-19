@@ -19,7 +19,7 @@ class FA2 {
   }
 
   static async originate(tezos) {
-    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/FA2.json`));
+    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/fa2.json`));
     const operation = await tezos.contract
       .originate({
         code: artifacts.michelson,
