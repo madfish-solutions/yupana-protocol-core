@@ -13,7 +13,8 @@ const tokenStorage = {
   closeFactorFloat: "0",
   liqIncentiveFloat: "0",
   maxMarkets: "0",
-  typesInfo: MichelsonMap.fromLiteral({})
+  markets: MichelsonMap.fromLiteral({}),
+  typesInfo: MichelsonMap.fromLiteral({}),
 };
 
 module.exports = {

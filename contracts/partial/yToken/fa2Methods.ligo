@@ -7,10 +7,18 @@ function getAccount(
   case s.accountInfo[(user, tokenId)] of
     None -> record [
       allowances        = (set [] : set(address));
-      markets           = (set [] : set(tokenId));
       borrow            = 0n;
       lastBorrowIndex   = 0n;
     ]
+  | Some(v) -> v
+  end
+
+function getMarkets(
+  const user            : address;
+  const s               : tokenStorage)
+                        : set(tokenId) is
+  case s.markets[user] of
+    None -> (set [] : set(tokenId))
   | Some(v) -> v
   end
 
@@ -128,7 +136,7 @@ function iterateTransfer(
         else failwith("yToken/FA2-not-operator");
 
         (* Check the entered markets *)
-        if Set.mem(transferDst.token_id, srcAccount.markets)
+        if Set.mem(transferDst.token_id, getMarkets(params.from_, s))
         then failwith("yToken/token-taken-as-collateral")
         else skip;
 

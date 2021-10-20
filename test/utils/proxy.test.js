@@ -4,10 +4,10 @@ const { alice, bob, carol } = require("../scripts/sandbox/accounts");
 
 const { strictEqual } = require("assert");
 
-const { Proxy } = require("../test/utills/proxy");
-const { GetOracle } = require("../test/utills/getOracle");
-const { YToken } = require("../test/utills/yToken");
-const { Utils } = require("../test/utills/utils");
+const { Proxy } = require("../test/utils/proxy");
+const { GetOracle } = require("../test/utils/getOracle");
+const { YToken } = require("../test/utils/yToken");
+const { Utils } = require("../test/utils/utils");
 
 const { confirmOperation } = require("../scripts/confirmation");
 

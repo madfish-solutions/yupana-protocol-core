@@ -2,9 +2,9 @@ const { alice, bob, carol } = require("../scripts/sandbox/accounts");
 
 const { strictEqual } = require("assert");
 
-const { InterestRate } = require("../test/utills/interestRate");
-const { SendRate } = require("../test/utills/sendRate");
-const { Utils } = require("../test/utills/utils");
+const { InterestRate } = require("../test/utils/interestRate");
+const { SendRate } = require("../test/utils/sendRate");
+const { Utils } = require("../test/utils/utils");
 
 const { confirmOperation } = require("../scripts/confirmation");
 
