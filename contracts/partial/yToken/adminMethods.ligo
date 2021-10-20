@@ -99,9 +99,11 @@ function updateMetadata(
   block {
     case p of
       UpdateMetadata(params) -> {
+        const tokenId : nat = params.tokenId;
+
         mustBeAdmin(s);
-        s.tokenMetadata[params.tokenId] := record [
-          token_id = params.tokenId;
+        s.tokenMetadata[tokenId] := record [
+          token_id = tokenId;
           tokenInfo = params.tokenMetadata;
         ];
       }
