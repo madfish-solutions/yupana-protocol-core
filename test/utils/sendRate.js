@@ -1,7 +1,7 @@
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/SendRate");
+const storage = require("../../storage/sendRate");
 
 class SendRate {
   contract;

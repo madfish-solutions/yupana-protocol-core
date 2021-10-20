@@ -50,7 +50,7 @@ function middleToken(
     const res : return =
       case (Bytes.unpack(lambda_bytes) : option(tokenFunc)) of
         | Some(f) -> f(p, s.storage)
-        | None -> failwith("cant-unpack-use-lambda")
+        | None -> failwith("cant-unpack-token-lambda")
       end;
 
     s.storage := res.1;
@@ -69,6 +69,13 @@ function middleToken(
         | Liquidate(_liquidateParams) -> 4n
         | EnterMarket(_tokenId) -> 5n
         | ExitMarket(_tokenId) -> 6n
+        | SetAdmin(_addr) -> 7n
+        | WithdrawReserve(_yAssetParams) -> 8n
+        | AddMarket(_newMarketParams) -> 9n
+        | UpdateMetadata(_updateMetadataParams) -> 10n
+        | SetTokenFactors(_setTokenParams) -> 11n
+        | SetGlobalFactors(_setGlobalParams) -> 12n
+        | SetBorrowPause(_tokenId) -> 13n
       end;
 
     const lambda_bytes : bytes =
@@ -99,12 +106,6 @@ function main(
     | AccrueInterest(params)        -> accrueInterest(params, s)
     | GetReserveFactor(params)      -> getReserveFactor(params, s)
     | ReturnPrice(params)           -> returnPrice(params, s)
-    | SetAdmin(params)              -> setAdmin(params, s)
-    | WithdrawReserve(params)       -> withdrawReserve(params, s)
-    | AddMarket(params)             -> addMarket(params, s)
-    // | UpdateMetadata(params)        -> updateMetadata(params, s)
-    | SetTokenFactors(params)       -> setTokenFactors(params, s)
-    | SetGlobalFactors(params)      -> setGlobalFactors(params, s)
     | Use(params)                   -> middleUse(params, s)
     | SetUseAction(params)          -> setUseAction(params.index, params.func, s)
     | SetTokenAction(params)        -> setTokenAction(params.index, params.func, s)

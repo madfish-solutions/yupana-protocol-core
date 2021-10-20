@@ -1,7 +1,7 @@
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/FA12");
+const storage = require("../../storage/fa12");
 
 class FA12 {
   contract;
@@ -18,7 +18,7 @@ class FA12 {
   }
 
   static async originate(tezos) {
-    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/FA12.json`));
+    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/fa12.json`));
     const operation = await tezos.contract
       .originate({
         code: artifacts.michelson,
