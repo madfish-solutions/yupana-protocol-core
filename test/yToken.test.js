@@ -252,30 +252,30 @@ describe("Proxy tests", async () => {
     );
   });
 
-  // it("update metadata [0] by non admin", async () => {
-  //   try {
-  //     tezos = await Utils.setProvider(tezos, alice.sk);
-  //     await yToken.updateMetadata(
-  //       0,
-  //       tokenMetadata2
-  //     );
-  //     await yToken.updateStorage();
-  //     console.log("no error found!");
-  //   }
-  //   catch(e) {
-  //     console.log('permition');
-  //   }
-  // });
+  it("update metadata [0] by non admin", async () => {
+    try {
+      tezos = await Utils.setProvider(tezos, alice.sk);
+      await yToken.updateMetadata(
+        0,
+        tokenMetadata2
+      );
+      await yToken.updateStorage();
+      console.log("no error found!");
+    }
+    catch(e) {
+      console.log('permition');
+    }
+  });
 
-  // it("update metadata [0] by admin", async () => {
-  //   tezos = await Utils.setProvider(tezos, bob.sk);
-  //   await yToken.updateMetadata(
-  //     0,
-  //     tokenMetadata2
-  //   );
-  //   await yToken.updateStorage();
-  //   console.log(await yToken.storage.storage.tokenMetadata.get(0));
-  // });
+  it("update metadata [0] by admin", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.updateMetadata(
+      0,
+      tokenMetadata2
+    );
+    await yToken.updateStorage();
+    console.log(await yToken.storage.storage.tokenMetadata.get(0));
+  });
 
   it("add market [1]", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
