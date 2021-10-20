@@ -89,6 +89,8 @@ type setGlobalParams    is [@layout:comb] record [
 type borrowPauseParams is [@layout:comb] record [
   tokenId               : nat;
   condition             : bool;
+]
+
 type newMetadataParams  is map(string, bytes)
 
 type updateMetadataParams is [@layout:comb] record [
