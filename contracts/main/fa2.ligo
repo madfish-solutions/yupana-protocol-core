@@ -132,10 +132,12 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
         else
           failwith("fa2/not-operator");
 
+
         // (* Token id check *)
         if transfer_dst.token_id > s.last_token_id
         then failwith("fa2/token-undefined");
         else skip;
+
 
         (* Get source balance *)
         const src_balance : nat = get_balance_by_token(src_account, transfer_dst.token_id);

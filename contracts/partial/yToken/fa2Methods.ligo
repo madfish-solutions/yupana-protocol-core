@@ -141,6 +141,7 @@ function iterateTransfer(
         else skip;
 
         (* Token id check *)
+
         if transferDst.token_id < s.lastTokenId
         then skip
         else failwith("FA2/token-undefined");

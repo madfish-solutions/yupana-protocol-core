@@ -165,4 +165,3 @@ function setBorrowPause(
     | _                 -> skip
     end
   } with (noOperations, s)
-
