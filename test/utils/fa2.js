@@ -2,7 +2,7 @@ const fs = require("fs");
 
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/FA2");
+const storage = require("../../storage/fa2");
 
 class FA2 {
   contract;
@@ -19,7 +19,7 @@ class FA2 {
   }
 
   static async originate(tezos) {
-    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/FA2.json`));
+    const artifacts = JSON.parse(fs.readFileSync(`${env.buildDir}/fa2.json`));
     const operation = await tezos.contract
       .originate({
         code: artifacts.michelson,
@@ -46,6 +46,7 @@ class FA2 {
       admin: storage.admin,
       pending_admin: storage.pending_admin,
       last_token_id: storage.last_token_id,
+      test: storage.test,
     };
 
     for (const key in maps) {
@@ -77,18 +78,8 @@ class FA2 {
   }
 
   async updateOperators(params) {
-    const operation = await this.contract.methods
-      .update_operators(
-        params.map((param) => {
-          return {
-            [param.option]: param.param,
-          };
-        })
-      )
-      .send();
-
+    const operation = await this.contract.methods.update_operators(params).send();
     await confirmOperation(this.tezos, operation.hash);
-
     return operation;
   }
 

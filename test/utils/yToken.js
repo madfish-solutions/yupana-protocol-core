@@ -1,8 +1,8 @@
 const fs = require("fs");
 const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
-const storage = require("../../storage/YToken");
-const { functions } = require("../../storage/Functions");
+const storage = require("../../storage/yToken");
+const { functions } = require("../../storage/functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
@@ -78,8 +78,10 @@ class YToken {
         { maxBuffer: 1024 * 1000 }
       );
 
+      // const util = require('util')
       const input_params = JSON.parse(stdout.toString());
-      // console.log(input_params.bytes);
+      // console.log(input_params);
+      // console.log(util.inspect(input_params, false, null, true /* enable colors */))
 
       // const converted = hexToBytes(input_params.bytes);
       // console.log(converted);
@@ -169,6 +171,14 @@ class YToken {
   async updateInterest(token_id) {
     const operation = await this.contract.methods
       .updateInterest(token_id)
+      .send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  async returnPrice(token_id, amount) {
+    const operation = await this.contract.methods
+      .returnPrice(token_id, amount)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
@@ -322,11 +332,19 @@ class YToken {
     return operation;
   }
 
-  // async updMetadata(tokenId, tokenMetadata) {
-  //   const operation = await this.contract.methods.updateMetadata(tokenId, tokenMetadata).send();
-  //   await confirmOperation(this.tezos, operation.hash);
-  //   return operation;
-  // }
+  async updateMetadata(tokenId, tokenMetadata) {
+    const operation = await this.contract.methods.updateMetadata(tokenId, tokenMetadata).send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  async setBorrowPause(tokenId, condition) {
+    const operation = await this.contract.methods.setBorrowPause(tokenId, condition).send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
+  setBorrowPause
 
   async updateAndsetTokenFactors(
     proxy,
@@ -539,6 +557,35 @@ class YToken {
       {
         kind: "transaction",
         ...proxy.contract.methods.getPrice([1]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(token).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([token]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.exitMarket(token).toTransferParams(),
+      },
+    ]);
+    const operation = await batch.send();
+
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndExit2(proxy, token) {
+    const batch = await this.tezos.wallet.batch([
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(0).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([0]).toTransferParams(),
       },
       {
         kind: "transaction",

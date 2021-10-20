@@ -7,16 +7,10 @@ type allowanceAmount    is [@layout:comb] record [
   amount                : nat;
 ]
 
-type balanceInfo        is record [
-  balance               : nat;
-  borrow                : nat;
-  lastBorrowIndex       : nat;
-]
-
 type account            is [@layout:comb] record [
   allowances            : set(address);
-  markets               : set(tokenId);
-  balances              : map(tokenId, balanceInfo);
+  borrow                : nat;
+  lastBorrowIndex       : nat;
 ]
 
 type tokenInfo         is [@layout:comb] record [
@@ -33,20 +27,23 @@ type tokenInfo         is [@layout:comb] record [
   collateralFactorFloat : nat;
   reserveFactorFloat    : nat;
   lastPrice             : nat;
+  borrowPause           : bool;
 ]
 
 type tokenStorage       is [@layout:comb] record [
   admin                 : address;
-  accountInfo           : big_map(address, account);
-  tokenInfo             : big_map(tokenId, tokenInfo);
+  ledger                : big_map((address * tokenId), nat);
+  accountInfo           : big_map((address * tokenId), account);
+  tokenInfo             : map(tokenId, tokenInfo);
   metadata              : big_map(string, bytes);
   tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
   priceFeedProxy        : address;
   closeFactorFloat      : nat;
   liqIncentiveFloat     : nat;
+  markets               : big_map(address, set(tokenId));
   maxMarkets            : nat;
-  typesInfo             : big_map ((address * assetType), tokenId); // ??????????
+  typesInfo             : big_map(assetType, tokenId);
 ]
 
 type tokenSet is set(tokenId)
@@ -89,6 +86,9 @@ type setGlobalParams    is [@layout:comb] record [
   maxMarkets            : nat;
 ]
 
+type borrowPauseParams is [@layout:comb] record [
+  tokenId               : nat;
+  condition             : bool;
 type newMetadataParams  is map(string, bytes)
 
 type updateMetadataParams is [@layout:comb] record [
@@ -119,8 +119,8 @@ type pairParam          is [@layout:comb] record [
 
 type calculateCollParams is [@layout:comb] record [
   s                     : tokenStorage;
+  user                  : address;
   res                   : nat;
-  userAccount           : account;
 ]
 
 type transferType is TransferOutside of faTransferParams

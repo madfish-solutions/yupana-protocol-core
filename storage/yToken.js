@@ -3,6 +3,7 @@ const { alice } = require("../scripts/sandbox/accounts");
 
 const tokenStorage = {
   admin: alice.pkh,
+  ledger: MichelsonMap.fromLiteral({}),
   accountInfo: MichelsonMap.fromLiteral({}),
   tokenInfo: MichelsonMap.fromLiteral({}),
   metadata: MichelsonMap.fromLiteral({}),
@@ -12,7 +13,8 @@ const tokenStorage = {
   closeFactorFloat: "0",
   liqIncentiveFloat: "0",
   maxMarkets: "0",
-  typesInfo: MichelsonMap.fromLiteral({})
+  markets: MichelsonMap.fromLiteral({}),
+  typesInfo: MichelsonMap.fromLiteral({}),
 };
 
 module.exports = {

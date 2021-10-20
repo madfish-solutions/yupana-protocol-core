@@ -7,20 +7,20 @@
     "@taquito/rpc": "^10.1.0",
     "@taquito/signer": "^10.1.0",
     "@taquito/taquito": "^10.1.0",
+    "big-integer": "^1.6.50",
     "child_process": "^1.0.2",
+    "commander": "^7.0.0",
     "dotenv": "^10.0.0",
     "fs": "^0.0.1-security",
     "ganache-cli": "6.12.1-tezos.0",
     "mocha": "^8.4.0",
     "ts-node": "^10.0.0",
     "typescript": "^4.3.2",
-    "yargs": "^17.0.1",
-    "commander": "^7.0.0"
+    "yargs": "^17.0.1"
   },
   "scripts": {
     "clean": "rm -rf ./build",
     "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && node -r ts-node/register scripts/cli.js compile -c getOracle && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c fa12 && node -r ts-node/register scripts/cli.js compile -c fa2",
-    "compile-qToken": "node -r ts-node/register scripts/helpers.js build-qToken --no-json -o contracts",
     "migrate": "yarn compile && node -r ts-node/register scripts/cli.js migrate",
     "migrate-gra": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network granadanet",
     "migrate-s": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network development_server",

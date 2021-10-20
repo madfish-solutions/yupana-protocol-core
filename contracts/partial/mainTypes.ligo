@@ -11,6 +11,13 @@ type useAction          is
   | Liquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
+  | SetAdmin of address
+  | WithdrawReserve of yAssetParams
+  | AddMarket of newMarketParams
+  | UpdateMetadata of updateMetadataParams
+  | SetTokenFactors of setTokenParams
+  | SetGlobalFactors of setGlobalParams
+  | SetBorrowPause of borrowPauseParams
 
 type tokenAction        is
   | ITransfer of transferParams
@@ -44,12 +51,6 @@ type entryAction        is
   | AccrueInterest of yAssetParams
   | GetReserveFactor of tokenId
   | ReturnPrice of yAssetParams
-  | SetAdmin of address
-  | WithdrawReserve of yAssetParams
-  | AddMarket of newMarketParams
-  // | UpdateMetadata of updateMetadataParams
-  | SetTokenFactors of setTokenParams
-  | SetGlobalFactors of setGlobalParams
   | Use of useAction
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams
