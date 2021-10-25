@@ -6,6 +6,7 @@ from pytezos.michelson.micheline import micheline_value_to_python_object
 from pprint import pprint
 
 PRECISION = pow(10, 18)
+SECONDS_PER_BLOCK = 30
 
 TOKEN_ADDRESS = "KT1VHd7ysjnvxEzwtjBAmYAmasvVCfPpSkiG"
 
@@ -189,21 +190,27 @@ def parse_ops(res):
     return result
 
 def format_numbers(d):
+    res = {}
     for key,val in d.items():        
         if isinstance(val, dict):
-            format_numbers(val)
+            res[key] = format_numbers(val)
         if isinstance(val, list): # TODO can here be just strings?
+            new_list = []
             for i in val:
                 if isinstance(i, dict):
-                    format_numbers(i)
+                    new_val = format_numbers(i)
+                    new_list.append(new_val)
+            res[key] = new_list
         elif isinstance(val, int):
-            d[key] = f"{val:_}"
+            res[key] = f"{val:_}"
+    return res
+
 
 # converts numbers 
 def pprint_aux(d):
     print("\n")
-    format_numbers(d)
-    pprint(d)
+    res = format_numbers(d)
+    pprint(res)
 
 
 # calculates shares balance
@@ -213,7 +220,7 @@ def calc_total_balance(res, address):
 
 
 def generate_random_address() -> str:
-    return base58_encode(urandom(20), b"tz1").decode()
+    return base58_encode(urandom(20), b"KT1").decode()
 
 def wrap_fa2_token(address, id):
     return {
@@ -320,5 +327,5 @@ class LocalChain:
         return res
 
     def advance_blocks(self, count=1):
-        self.now += count * 60
+        self.now += count * SECONDS_PER_BLOCK
 

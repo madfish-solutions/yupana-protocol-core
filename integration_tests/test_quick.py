@@ -10,12 +10,16 @@ from initial_storage import use_lambdas
 
 token_a_address = "KT18amZmM5W7qDWVt2pH6uj7sCEd3kbzLrHT"
 token_b_address = "KT1AxaBxkFLCUi3f8rdDAAxBKHfzY8LfKDRA"
+token_c_address = "KT1XXAavg3tTj12W1ADvd3EEnm1pu6XTmiEF"
 token_a = {"fA12": token_a_address}
 token_b = {"fA12" : token_b_address}
+token_c = {"fA12" : token_c_address}
 
 token_a_interest_model = "KT1LzyPS8rN375tC31WPAVHaQ4HyBvTSLwBu"
 token_b_interest_model = "KT1ND1bkLahTzVUt93zbDtGugpWcL23gyqgQ"
 price_feed = "KT1Qf46j2x37sAN4t2MKRQRVt9gc4FZ5duMs"
+
+interest_model = token_a_interest_model
 
 class DexTest(TestCase):
 
@@ -34,6 +38,29 @@ class DexTest(TestCase):
         storage["storage"]["closeFactorFloat"] = int(1 * PRECISION)
         storage["storage"]["liqIncentiveFloat"] = int(1.05 * PRECISION)
         cls.storage = storage
+
+    def add_token(self, chain, token, config=None):
+        if not config:
+            config = {
+                "collateral_factor": 0.5,
+                "reserve_factor": 0.5,
+                "price": 100,
+                "liquidity": 100_000,
+            }
+        res = chain.execute(self.ct.addMarket(
+                interestRateModel = interest_model,
+                assetAddress = token,
+                collateralFactorFloat = int(config["collateral_factor"] * PRECISION),
+                reserveFactorFloat = int(config["reserve_factor"]  * PRECISION),
+                maxBorrowRate = 1*PRECISION,
+                tokenMetadata = {"": ""}
+            ), sender=admin)
+
+        token_num = res.storage["storage"]["lastTokenId"] - 1
+
+        chain.execute(self.ct.returnPrice(token_num, config["price"]), sender=price_feed)
+
+        chain.execute(self.ct.mint(token_num, config["liquidity"]), sender=admin)
 
 
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
@@ -58,7 +85,7 @@ class DexTest(TestCase):
                 assetAddress = token_a,
                 collateralFactorFloat = int(config_a["collateral_factor"] * PRECISION),
                 reserveFactorFloat = int(config_a["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 10000,
+                maxBorrowRate = 1*PRECISION,
                 tokenMetadata = {"": ""}
             ), sender=admin)
 
@@ -67,7 +94,7 @@ class DexTest(TestCase):
                 assetAddress = token_b,
                 collateralFactorFloat = int(config_b["collateral_factor"] * PRECISION),
                 reserveFactorFloat = int(config_b["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 10000,
+                maxBorrowRate = 1*PRECISION,
                 tokenMetadata = {"": ""}
             ), sender=admin)
 
@@ -358,296 +385,84 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["amount"], 50_000) 
         self.assertEqual(transfers[0]["token_address"], token_b_address)
 
+    def test_multicollateral_cant_exit(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+        self.add_token(chain, token_c)
 
-    def test_fail_initialize(self):
-        with self.assertRaises(MichelsonRuntimeError):
-            res = self.ct.initializeExchange(100).interpret(amount=0)
+        chain.execute(self.ct.mint(0, 100_000))
+        chain.execute(self.ct.mint(1, 100_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.enterMarket(1))
         
         with self.assertRaises(MichelsonRuntimeError):
-            res = self.ct.initializeExchange(0).interpret(amount=1)
-
-    def test_fail_invest_not_init(self):
-        with self.assertRaises(MichelsonRuntimeError):
-            res = self.ct.investLiquidity(30).interpret(amount=1)
-
-    def test_fail_divest_not_init(self):
-        with self.assertRaises(MichelsonRuntimeError):
-            res = self.ct.divestLiquidity(10, 20, 30).interpret(amount=1)
-
-    def test_swap_not_init(self):
-        with self.assertRaises(MichelsonRuntimeError):
-            res = self.ct.tokenToTezPayment(amount=10, min_out=20, receiver=julian).interpret(amount=1)
+            chain.execute(self.ct.borrow(2, 100_001))
         
+        chain.execute(self.ct.borrow(2, 100_000))
+
+        # none of collaterals can leave
         with self.assertRaises(MichelsonRuntimeError):
-            res = self.ct.tezToTokenPayment(10, julian).interpret(amount=1)
+            chain.execute(self.ct.exitMarket(0))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.exitMarket(1))
 
-    def test_reward_payment(self):
-        my_address = self.ct.context.get_sender()
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100000), amount=100)
-        storage = res.storage["storage"]
+        # after returning the half one collateral can fully leave
+        chain.execute(self.ct.repay(2, 50_000))
+        chain.execute(self.ct.exitMarket(0))
 
-        res = chain.execute(self.ct.default(), amount=12)
-        chain.advance_period()
+    def test_multicollateral_can_switch_collateral(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+        self.add_token(chain, token_c)
 
-        res = chain.execute(self.ct.withdrawProfit(my_address), amount=0)
-        ops = parse_ops(res)
+        chain.execute(self.ct.mint(0, 100_000))
+        chain.execute(self.ct.mint(1, 100_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.enterMarket(1))
+            
+        chain.execute(self.ct.borrow(2, 50_000))
 
-        firstProfit = ops[0]["amount"]
+        # second collateral is basically unused
+        chain.interpret(self.ct.exitMarket(1))
 
-        chain.advance_period()
+        chain.execute(self.ct.returnPrice(0, 0), sender=price_feed)
 
-        res = chain.execute(self.ct.withdrawProfit(my_address), amount=0)
-        ops = parse_ops(res)
-        secondProfit = ops[0]["amount"]
+        # even though the price has changed, nothing to liquidate
+        # second collateral fully covers the debt
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.liquidate(2, 0, me, 1), sender=bob)
 
-        # TODO it is actually super close to 12
-        self.assertEqual(firstProfit+secondProfit, 11)
+        chain.execute(self.ct.repay(2, 50_000))
 
-        # nothing is payed after all
-        chain.advance_period()
-        res = chain.execute(self.ct.withdrawProfit(my_address), amount=0)
-        self.assertEqual(res.operations, [])
-
-
-
-    def test_divest_everything(self):
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000), amount=100_000)
-
-        res = chain.execute(self.ct.divestLiquidity(min_tez=100_000, min_tokens=100_000, shares=100_000), amount=0)
-
-        ops = parse_ops(res)
-
-        self.assertEqual(ops[0]["type"], "token")
-        self.assertEqual(ops[0]["amount"], 100_000)
-
-        self.assertEqual(ops[1]["type"], "tez")
-        self.assertEqual(ops[1]["amount"], 100_000)
-
-    def test_divest_amount_after_swap(self):
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000), amount=100_000)
-
-        # swap tokens to tezos
-        res = chain.execute(self.ct.tokenToTezPayment(amount=10_000, min_out=1, receiver=julian), amount=0)
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.enterMarket(1))
+                
         
-        ops = parse_ops(res)
-        tez_received = ops[1]["amount"]
 
-        # swap the received tezos back to tokens
-        res = chain.execute(self.ct.tezToTokenPayment(min_out=1, receiver=julian), amount=tez_received)
+    def test_interest_rate(self):
+        chain = self.create_chain_with_ab_markets()
 
-        # take all the funds out
-        res = chain.execute(self.ct.divestLiquidity(min_tez=100_000, min_tokens=100_000, shares=100_000), amount=0)
-
-        ops = parse_ops(res)
-
-        self.assertEqual(ops[0]["type"], "token")
-        # ensure we got more tokens cause it should include some fee
-        self.assertGreater(ops[0]["amount"], 100_000) 
-
-        self.assertEqual(ops[1]["type"], "tez")
-        self.assertGreaterEqual(ops[1]["amount"], 100_000)
-
-    def test_rewards_dont_affect_price(self):
-        my_address = self.ct.context.get_sender()
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000), amount=100)
-        res = chain.execute(self.ct.investLiquidity(1_000_000), amount=100) # way less tokens is invested actually
-
-        tez_pool_before = res.storage["storage"]["tez_pool"]
-        token_pool_before = res.storage["storage"]["token_pool"]
-
-        res = chain.interpret(self.ct.tokenToTezPayment(amount=10_000, min_out=1, receiver=julian))
-        ops = parse_ops(res)
-        tez_out_before = ops[0]["amount"]
-
-        # give reward
-        res = chain.execute(self.ct.default(), amount=100)
-
-        tez_pool_after_reward = res.storage["storage"]["tez_pool"]
-        token_pool_after_reward = res.storage["storage"]["token_pool"]
-
-        res = chain.interpret(self.ct.tokenToTezPayment(amount=10_000, min_out=1, receiver=julian))
-        ops = parse_ops(res)
-        tez_out_after_reward = ops[0]["amount"]
-
-        self.assertEqual(tez_pool_before, tez_pool_after_reward)
-        self.assertEqual(token_pool_before, token_pool_after_reward)
-        self.assertEqual(tez_out_before, tez_out_after_reward)
-
-        # withdraw reward
-        chain.advance_period()
-        res = chain.execute(self.ct.withdrawProfit(my_address), amount=0)
-
-        ops = parse_ops(res)
-        profit = ops[0]["amount"]
-
-        self.assertGreater(profit, 0) # some rewards are withdrawn
-
-        tez_pool_after_withdraw = res.storage["storage"]["tez_pool"]
-        token_pool_after_withdraw = res.storage["storage"]["token_pool"]
-
-        res = chain.interpret(self.ct.tokenToTezPayment(amount=10_000, min_out=1, receiver=julian), amount=0)
-        ops = parse_ops(res)
-        tez_out_after_withdraw = ops[0]["amount"]
-
-        self.assertEqual(tez_pool_before, tez_pool_after_withdraw)
-        self.assertEqual(token_pool_before, token_pool_after_withdraw)
-        self.assertEqual(tez_out_before, tez_out_after_withdraw)
-
-
-
-    def test_voting_doesnt_affect_price(self):
-        my_address = self.ct.context.get_sender()
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000), amount=100)
-
-        (tez_before, token_before) = get_pool_stats(res)
-
-        res = chain.execute(self.ct.vote(voter=my_address, \
-            candidate=dummy_candidate, \
-            value=100), \
-            amount = 1)
-
-        (tez_after, token_after) = get_pool_stats(res)
-
-        self.assertEqual(tez_before, tez_after)
-        self.assertEqual(token_before, token_after)
-
-    def test_divest_after_unvote(self):
-        candidate = julian
-        my_address = self.ct.context.get_sender()
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000), amount=100)
-
-        (tez_before, token_before) = get_pool_stats(res)
-
-        # vote all-in
-        res = chain.execute(self.ct.vote(voter=my_address, \
-            candidate=candidate, \
-            value=100), \
-            amount=0)
-
-        # voting doesn't affect the price
-        (tez_after, token_after) = get_pool_stats(res)
-        self.assertEqual(tez_before, tez_after)
-        self.assertEqual(token_before, token_after)
-        self.assertEqual(res.storage["storage"]["reward"], 0)
+        res = chain.execute(self.ct.mint(0, 100_000))
+        res = chain.execute(self.ct.enterMarket(0))
+        res = chain.execute(self.ct.borrow(1, 10_000))
         
-        # can't divest after voting
+        chain.advance_blocks(1)
+        res = chain.execute(self.ct.accrueInterest(0, 0), sender=token_a_interest_model)
+        res = chain.execute(self.ct.returnPrice(0, 100_000), sender=price_feed)
+
+        # at this rate one second accues 1 token of interest
+        res = chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=token_b_interest_model)
+        res = chain.execute(self.ct.returnPrice(1, 100_000), sender=price_feed)
+                  
+        # res = chain.execute(self.ct.redeem(0, 101_000))
         with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.divestLiquidity(min_tez=1, min_tokens=1, shares=1))
+            res = chain.execute(self.ct.repay(1, 10_029))
+            res = chain.execute(self.ct.exitMarket(0))
 
-        res = chain.execute(self.ct.vote(voter=my_address, \
-            candidate=dummy_candidate, \
-            value=0), \
-            amount=0)
+        res = chain.execute(self.ct.repay(1, 10_030))
+        res = chain.execute(self.ct.exitMarket(0))
 
-        # unvoting doesn't affect the price
-        (tez_after, token_after) = get_pool_stats(res)
-        self.assertEqual(tez_before, tez_after)
-        self.assertEqual(token_before, token_after)
-        self.assertEqual(res.storage["storage"]["reward"], 0)
-
-        res = chain.execute(self.ct.divestLiquidity(min_tez=100, min_tokens=100_000, shares=100), amount=0)
-
-        ops = parse_ops(res)
-
-        self.assertEqual(ops[0]["type"], "token")
-        self.assertEqual(ops[0]["amount"], 100_000)
-
-        self.assertEqual(ops[1]["type"], "tez")
-        self.assertEqual(ops[1]["amount"], 100)
-        
-        self.assertEqual(res.storage["storage"]["reward"], 0)
-
-
-    def test_reward_even_distribution(self):
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000), amount=10_000, sender=alice)
-
-        (tez_out_before, token_out_before) = calc_out_per_hundred(chain, self.dex)
-
-        res = chain.execute(self.ct.investLiquidity(100_000), amount=10_000, sender=bob)
-
-        (tez_out_after, token_out_after) = calc_out_per_hundred(chain, self.dex)
-
-        # throw in some votes and vetos
-        res = chain.execute(self.ct.vote(voter=alice, candidate=julian, value=333), sender=alice)
-        res = chain.execute(self.ct.veto(voter=alice, value=33), sender=alice)
-
-        # throw in fully voted member just to be sure
-        res = chain.execute(self.ct.vote(voter=bob, candidate=julian, value=10_000), sender=bob)
-
-        res = chain.execute(self.ct.default(), amount=100)
-
-        chain.advance_period()
-
-        res = chain.execute(self.ct.withdrawProfit(alice), sender=alice)
-        ops = parse_ops(res)
-        alice_profit = ops[0]["amount"]
-
-        res = chain.execute(self.ct.withdrawProfit(bob), sender=bob)
-        ops = parse_ops(res)
-        bob_profit = ops[0]["amount"]
-
-        self.assertEqual(alice_profit, bob_profit)
-
-    def test_multiple_swaps(self):
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000_000), amount=100_000)
-
-        total_tokens_gained = 0
-        total_tezos_spent = 0
-        for i in range(0, 5):
-            tez = 1_000
-            res = chain.execute(self.ct.tezToTokenPayment(min_out=1, receiver=julian), amount=tez)
-            (_, tok) = parse_transfers(res)
-            total_tezos_spent += tez
-            total_tokens_gained += tok
-
-        res = chain.execute(self.ct.tokenToTezPayment(amount=total_tokens_gained, min_out=1, receiver=julian))
-        (tez, tok) = parse_transfers(res)
-        
-        self.assertLessEqual(tez, total_tezos_spent)   
-
-    def test_zeroing_everything(self):
-        me = self.ct.context.get_sender()
-
-        chain = LocalChain()
-        res = chain.execute(self.ct.initializeExchange(100_000_000), amount=100_000_000)
-
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.investLiquidity(0), amount=1)
-
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.investLiquidity(1), amount=0)
-
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.divestLiquidity(min_tez=1, min_tokens=1, shares=0))
-
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.divestLiquidity(min_tez=0, min_tokens=1, shares=1))
-        
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.divestLiquidity(min_tez=1, min_tokens=0, shares=1))
-
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.tezToTokenPayment(min_out=1, receiver=julian), amount=0)
-        
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.tezToTokenPayment(min_out=0, receiver=julian), amount=1)
-
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.tokenToTezPayment(amount=1, min_out=0, receiver=julian), amount=0)
-        
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.tokenToTezPayment(amount=0, min_out=1, receiver=julian), amount=0)
-        
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.tokenToTezPayment(amount=0, min_out=0, receiver=julian), amount=1)
-
-        # NOTE vote and veto with zero are tested in voting tests
+        # self.assertEqual(old_storage, res.storage["storage"])
 
