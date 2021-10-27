@@ -21,6 +21,7 @@ type rateParams         is [@layout:comb] record [
   borrowsFloat          : nat;
   cashFloat             : nat;
   reservesFloat         : nat;
-  precision              : nat;
-  contract              : contract(yAssetParams);
+  precision             : nat;
+  reserveFactorFloat    : nat;
+  callback              : contract(yAssetParams);
 ]

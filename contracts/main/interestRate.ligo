@@ -12,5 +12,4 @@ function main(
     | GetBorrowRate(params) -> getBorrowRate(params, s)
     | GetUtilizationRate(params) -> getUtilizationRate(params, s)
     | GetSupplyRate(params) -> getSupplyRate(params, s)
-    | UpdReserveFactor(params) -> updReserveFactor(params, s)
   end

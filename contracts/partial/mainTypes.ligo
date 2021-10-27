@@ -49,7 +49,6 @@ type entryAction        is
   | GetTotalSupply of totalSupplyParams
   | UpdateInterest of tokenId
   | AccrueInterest of yAssetParams
-  | GetReserveFactor of tokenId
   | ReturnPrice of yAssetParams
   | Use of useAction
   | SetUseAction of setUseParams
@@ -84,6 +83,5 @@ type entryRateAction   is
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams
   | GetSupplyRate of rateParams
-  | UpdReserveFactor of nat
 
 type rateReturn is list (operation) * rateStorage

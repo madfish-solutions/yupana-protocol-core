@@ -58,7 +58,7 @@ type entryAction is
   | UpdateBorrowRate of yAssetParams
   | SendSupply of interestParams
   | UpdateSupplyRate of yAssetParams
-  | GetReserveFactor of nat
+  // | GetReserveFactor of nat
 
 
 [@inline] function getUtilRateContract(
@@ -250,26 +250,6 @@ function updateSupplyRate(
     s.supplyRate := p.amount;
   } with (noOperations, s)
 
-
-function getReserveFactor(
-  const _tokenId        : nat;
-  var s                 : storage)
-                        : return is
-  block {
-    if Tezos.sender =/= s.interestAddress
-    then failwith("yToken/permition-error");
-    else skip;
-    const reserveFactor : nat = 250n;
-
-    const operations : list(operation) = list [
-      Tezos.transaction(
-        UpdReserveFactor(reserveFactor),
-        0mutez,
-        getUpdRateContract(s.interestAddress)
-      )
-    ];
-  } with (operations, s)
-
 function main(
   const action          : entryAction;
   var s                 : storage)
@@ -282,5 +262,4 @@ function main(
     | UpdateBorrowRate(params) -> updateBorrowRate(params, s)
     | SendSupply(params) -> sendSupply(params, s)
     | UpdateSupplyRate(params) -> updateSupplyRate(params, s)
-    | GetReserveFactor(params) -> getReserveFactor(params , s)
   end;
