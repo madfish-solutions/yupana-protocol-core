@@ -52,7 +52,7 @@ function withdrawReserve(
   } with (operations, s)
 
 [@inline] function checkTypeInfo(
-  const typeInfo        : big_map (assetType, tokenId);
+  const typeInfo        : big_map(assetType, tokenId);
   const assertType      : assetType)
                         : unit is
   case typeInfo[assertType] of
@@ -121,7 +121,7 @@ function setTokenFactors(
         mustBeAdmin(s);
         var token : tokenInfo := getTokenInfo(params.tokenId, s);
 
-        if token.lastUpdateTime < Tezos.now
+        if token.interestUpdateTime < Tezos.now
         then failwith("yToken/need-update")
         else skip;
 

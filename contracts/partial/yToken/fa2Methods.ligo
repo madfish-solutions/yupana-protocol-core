@@ -32,7 +32,7 @@ function getTokenInfo(
       mainToken               = FA12(zeroAddress);
       interestRateModel       = zeroAddress;
       priceUpdateTime         = zeroTimestamp;
-      lastUpdateTime          = zeroTimestamp;
+      interestUpdateTime      = zeroTimestamp;
       totalBorrowsFloat       = 0n;
       totalLiquidFloat        = 0n;
       totalSupplyFloat        = 0n;
@@ -43,6 +43,7 @@ function getTokenInfo(
       reserveFactorFloat      = 0n;
       lastPrice               = 0n;
       borrowPause             = False;
+      isInterestUpdating      = False;
     ]
   | Some(v) -> v
   end

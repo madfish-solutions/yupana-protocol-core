@@ -16,7 +16,7 @@ type account            is [@layout:comb] record [
 type tokenInfo         is [@layout:comb] record [
   mainToken             : assetType;
   interestRateModel     : address;
-  lastUpdateTime        : timestamp;
+  interestUpdateTime    : timestamp;
   priceUpdateTime       : timestamp;
   totalBorrowsFloat     : nat;
   totalLiquidFloat      : nat;
@@ -28,6 +28,7 @@ type tokenInfo         is [@layout:comb] record [
   reserveFactorFloat    : nat;
   lastPrice             : nat;
   borrowPause           : bool;
+  isInterestUpdating    : bool;
 ]
 
 type tokenStorage       is [@layout:comb] record [

@@ -6,12 +6,6 @@ const { functions } = require("../../storage/functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
 
-function hexToBytes(hex) {
-  for (var bytes = [], c = 0; c < hex.length; c += 2)
-    bytes.push(parseInt(hex.substr(c, 2), 16));
-  return bytes;
-}
-
 class YToken {
   contract;
   storage;
@@ -343,8 +337,6 @@ class YToken {
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
-
-  setBorrowPause
 
   async updateAndsetTokenFactors(
     proxy,
