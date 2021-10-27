@@ -1,10 +1,3 @@
-[@inline] function verifyReserveFactor(
-  const s               : rateStorage)
-                        : unit is
-  if s.lastUpdTime < Tezos.now
-  then failwith("interestRate/need-update-reserveFactorFloat")
-  else unit
-
 [@inline] function mustBeAdmin(
   const s               : rateStorage)
                         : unit is
@@ -90,7 +83,7 @@ function getUtilizationRate(
           amount = utilizationRateFloat;
         ],
         0mutez,
-        param.contract
+        param.callback
       )
     ];
   } with (operations, s)
@@ -114,7 +107,7 @@ function getBorrowRate(
           amount = borrowRateFloat;
         ],
         0mutez,
-        param.contract
+        param.callback
       )
     ];
   } with (operations, s)
@@ -124,8 +117,6 @@ function getSupplyRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    verifyReserveFactor(s);
-
     const borrowRateFloat : nat = calcBorrowRate(
       param.borrowsFloat,
       param.cashFloat,
@@ -144,23 +135,10 @@ function getSupplyRate(
       Tezos.transaction(record[
           tokenId = param.tokenId;
           amount = borrowRateFloat * utilizationRateFloat *
-            abs(precision - s.reserveFactorFloat);
+            abs(precision - param.reserveFactorFloat);
         ],
         0mutez,
-        param.contract
+        param.callback
       )
     ];
   } with (operations, s)
-
-function updReserveFactor(
-  const amt             : nat;
-  var s                 : rateStorage)
-                        : rateReturn is
-  block {
-    if Tezos.sender = s.yToken
-    then block {
-      s.reserveFactorFloat := amt;
-      s.lastUpdTime := Tezos.now;
-    }
-    else failwith("interestRate/not-yToken")
-  } with (noOperations, s)

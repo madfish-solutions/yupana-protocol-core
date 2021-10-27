@@ -104,7 +104,6 @@ function main(
     | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
     | UpdateInterest(params)        -> updateInterest(params, s)
     | AccrueInterest(params)        -> accrueInterest(params, s)
-    | GetReserveFactor(params)      -> getReserveFactor(params, s)
     | ReturnPrice(params)           -> returnPrice(params, s)
     | Use(params)                   -> middleUse(params, s)
     | SetUseAction(params)          -> setUseAction(params.index, params.func, s)

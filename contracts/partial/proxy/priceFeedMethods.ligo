@@ -38,7 +38,7 @@ function mustBeAdmin(
     )
   end;
 
-[@inline] function getYtokenContract(
+[@inline] function getYTokenReturnPriceMethod(
   const s               : proxyStorage)
                         : contract(yAssetParams) is
   case (
@@ -103,15 +103,18 @@ function receivePrice(
                         : proxyReturn is
   block {
     mustBeOracle(s);
-    const tokenId : nat = checkPairId(param.0, s);
+    const pairName : string = param.0;
+    const price : nat = param.1.1;
+
+    const tokenId : nat = checkPairId(pairName, s);
     var operations : list(operation) := list[
       Tezos.transaction(
         record [
           tokenId = tokenId;
-          amount = param.1.1;
+          amount = price;
         ],
         0mutez,
-        getYtokenContract(s)
+        getYTokenReturnPriceMethod(s)
       )
     ];
   } with (operations, s)
@@ -121,28 +124,25 @@ function getPrice(
   const s               : proxyStorage)
                         : proxyReturn is
   block {
-    var operations : list(operation) := list [];
     function oneTokenUpd(
-      var operations    : list(operation);
+      const operations  : list(operation);
       const tokenId     : nat)
                         : list(operation) is
       block {
         const strName : string = checkPairName(tokenId, s);
-        const param : contract(oracleParam) = getReceivePriceEntrypoint(
-          Tezos.self_address
-        );
+        const param : contract(oracleParam) = Tezos.self("%receivePrice");
 
-        operations := Tezos.transaction(
+        const receivePriceOp = Tezos.transaction(
           Get(strName, param),
           0mutez,
           getNormalizerContract(s.oracle)
-        ) # operations
-      } with operations;
+        );
+      } with receivePriceOp # operations;
 
-      operations := Set.fold(
+      const operations = Set.fold(
         oneTokenUpd,
         tokenSet,
-        operations
+        (nil : list(operation))
       );
   } with (operations, s)
 

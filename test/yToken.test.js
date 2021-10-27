@@ -10,7 +10,7 @@ const {
 } = require("../scripts/sandbox/accounts");
 
 const { strictEqual, rejects, ok } = require("assert");
-var bigInt = require("big-integer");
+// var bigInt = require("big-integer");
 
 const { Proxy } = require("../test/utils/proxy");
 const { InterestRate } = require("../test/utils/interestRate");
@@ -62,8 +62,8 @@ describe("Proxy tests", async () => {
     fa12 = await FA12.originate(tezos);
     fa12_2 = await FA12.originate(tezos);
     fa2 = await FA2.originate(tezos);
-    fa2_2 = await FA2.originate(tezos);
     oracle = await GetOracle.originate(tezos);
+    fa2_2 = await FA2.originate(tezos);
 
     yTokenContractAddress = yToken.contract.address;
     interestContractAddress = interest.contract.address;
@@ -97,15 +97,6 @@ describe("Proxy tests", async () => {
     );
     await interest2.updateStorage();
 
-    console.log("oracle ", oracleContractAddress);
-
-    // await oracle.updOracle([new Date(), new Date(), 1, 2, 3, 4, 5]);
-    // await oracle.updateStorage();
-
-    // await oracle.updReturnAddressOracle(proxyContractAddress);
-    // await oracle.updateStorage();
-    // strictEqual(oracle.storage.returnAddress, proxyContractAddress);
-
     await proxy.updateOracle(oracleContractAddress);
     await proxy.updateStorage();
     strictEqual(proxy.storage.oracle, oracleContractAddress);
@@ -114,41 +105,41 @@ describe("Proxy tests", async () => {
     await proxy.updateStorage();
     strictEqual(proxy.storage.yToken, yTokenContractAddress);
 
-    await oracle.updParamsOracle(
-      "BTC-USDT",
-      54466755129,
-      "2021-08-20T09:06:50Z"
-    );
-    await oracle.updateStorage();
-    var res = await oracle.storage.tokenInfo.get("BTC-USDT");
-    strictEqual(res.price.toString(), "54466755129");
+    // await oracle.updParamsOracle(
+    //   "BTC-USDT",
+    //   54466755129,
+    //   "2021-08-20T09:06:50Z"
+    // );
+    // await oracle.updateStorage();
+    // var res = await oracle.storage.tokenInfo.get("BTC-USD");
+    // strictEqual(res.price.toString(), "54466755129");
 
-    await oracle.updParamsOracle(
-      "ETH-USDT",
-      54466755129,
-      "2021-08-20T09:06:50Z"
-    );
-    await oracle.updateStorage();
-    var res = await oracle.storage.tokenInfo.get("ETH-USDT");
-    strictEqual(res.price.toString(), "54466755129");
+    // await oracle.updParamsOracle(
+    //   "ETH-USDT",
+    //   54466755129,
+    //   "2021-08-20T09:06:50Z"
+    // );
+    // await oracle.updateStorage();
+    // var res = await oracle.storage.tokenInfo.get("ETH-USD");
+    // strictEqual(res.price.toString(), "54466755129");
 
-    await oracle.updParamsOracle(
-      "XTZ-USDT",
-      54466755129,
-      "2021-08-20T09:06:50Z"
-    );
-    await oracle.updateStorage();
-    var res = await oracle.storage.tokenInfo.get("XTZ-USDT");
-    strictEqual(res.price.toString(), "54466755129");
+    // await oracle.updParamsOracle(
+    //   "XTZ-USDT",
+    //   54466755129,
+    //   "2021-08-20T09:06:50Z"
+    // );
+    // await oracle.updateStorage();
+    // var res = await oracle.storage.tokenInfo.get("XTZ-USD");
+    // strictEqual(res.price.toString(), "54466755129");
 
-    await oracle.updParamsOracle(
-      "BNB-USDT",
-      54466755129,
-      "2021-08-20T09:06:50Z"
-    );
-    await oracle.updateStorage();
-    var res = await oracle.storage.tokenInfo.get("BNB-USDT");
-    strictEqual(res.price.toString(), "54466755129");
+    // await oracle.updParamsOracle(
+    //   "COMP-USD",
+    //   54466755129,
+    //   "2021-08-20T09:06:50Z"
+    // );
+    // await oracle.updateStorage();
+    // var res = await oracle.storage.tokenInfo.get("COMP-USD");
+    // strictEqual(res.price.toString(), "54466755129");
 
     await interest.updateYToken(yTokenContractAddress);
     await interest.updateStorage();
@@ -220,11 +211,11 @@ describe("Proxy tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(0n, "BTC-USDT");
+    await proxy.updatePair(0n, "COMP-USD");
     await proxy.updateStorage();
-    strictEqual(await proxy.storage.pairName.get(0), "BTC-USDT");
+    strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
 
-    let pairId = await proxy.storage.pairId.get("BTC-USDT");
+    let pairId = await proxy.storage.pairId.get("COMP-USD");
     strictEqual(pairId.toString(), "0");
   });
 
@@ -255,24 +246,17 @@ describe("Proxy tests", async () => {
   it("update metadata [0] by non admin", async () => {
     try {
       tezos = await Utils.setProvider(tezos, alice.sk);
-      await yToken.updateMetadata(
-        0,
-        tokenMetadata2
-      );
+      await yToken.updateMetadata(0, tokenMetadata2);
       await yToken.updateStorage();
       console.log("no error found!");
-    }
-    catch(e) {
-      console.log('permition');
+    } catch (e) {
+      console.log("permition");
     }
   });
 
   it("update metadata [0] by admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
-    await yToken.updateMetadata(
-      0,
-      tokenMetadata2
-    );
+    await yToken.updateMetadata(0, tokenMetadata2);
     await yToken.updateStorage();
     console.log(await yToken.storage.storage.tokenMetadata.get(0));
   });
@@ -291,11 +275,11 @@ describe("Proxy tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(1, "ETH-USDT");
+    await proxy.updatePair(1, "XTZ-USD");
     await proxy.updateStorage();
-    strictEqual(await proxy.storage.pairName.get(1), "ETH-USDT");
+    strictEqual(await proxy.storage.pairName.get(1), "XTZ-USD");
 
-    let pairId = await proxy.storage.pairId.get("ETH-USDT");
+    let pairId = await proxy.storage.pairId.get("XTZ-USD");
     strictEqual(pairId.toString(), "1");
   });
 
@@ -313,11 +297,11 @@ describe("Proxy tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(2, "XTZ-USDT");
+    await proxy.updatePair(2, "BTC-USD");
     await proxy.updateStorage();
-    strictEqual(await proxy.storage.pairName.get(2), "XTZ-USDT");
+    strictEqual(await proxy.storage.pairName.get(2), "BTC-USD");
 
-    let pairId = await proxy.storage.pairId.get("XTZ-USDT");
+    let pairId = await proxy.storage.pairId.get("BTC-USD");
     strictEqual(pairId.toString(), "2");
 
     await fa2.create_token(tokenMetadata);
@@ -341,11 +325,11 @@ describe("Proxy tests", async () => {
     await fa2_2.create_token(tokenMetadata2);
     await fa2_2.updateStorage();
 
-    await proxy.updatePair(3, "BNB-USDT");
+    await proxy.updatePair(3, "ETH-USD");
     await proxy.updateStorage();
-    strictEqual(await proxy.storage.pairName.get(3), "BNB-USDT");
+    strictEqual(await proxy.storage.pairName.get(3), "ETH-USD");
 
-    let pairId = await proxy.storage.pairId.get("BNB-USDT");
+    let pairId = await proxy.storage.pairId.get("ETH-USD");
     strictEqual(pairId.toString(), "3");
   });
 
@@ -474,10 +458,9 @@ describe("Proxy tests", async () => {
     let res = await fa12_2.storage.ledger.get(carol.pkh);
     strictEqual(await res.balance.toString(), "9999999990000000000");
 
-    let yTokenRes = await yToken.storage.storage.ledger.get([
-      carol.pkh,
-      1,
-    ]);
+    let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
+    let yTokenInfo = await yToken.storage.storage.tokenInfo.get("1");
+    console.log(yTokenInfo.lastPrice.toString());
 
     strictEqual(
       await yTokenRes.toPrecision(40).split(".")[0],
@@ -514,10 +497,7 @@ describe("Proxy tests", async () => {
     let res = await fa12.storage.ledger.get(peter.pkh);
     strictEqual(await res.balance.toString(), "9999999999999999000");
 
-    let yTokenRes = await yToken.storage.storage.ledger.get([
-      peter.pkh,
-      0,
-    ]);
+    let yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
     strictEqual(
       yTokenRes.toPrecision(40).split(".")[0],
       "1000000000000000000000"
@@ -734,8 +714,7 @@ describe("Proxy tests", async () => {
     });
   });
 
-  !!!!!
-  it("mint yTokens by carol", async () => {
+  !!!!!it("mint yTokens by carol", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
 
     // let tokenInfo = await yToken.storage.storage.tokenInfo.get(1);
@@ -819,7 +798,7 @@ describe("Proxy tests", async () => {
   it("borrow more than allowed yTokens by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
 
-    await rejects(yToken.updateAndBorrow(proxy, 1, 200000), (err) => {
+    await rejects(yToken.updateAndBorrow(proxy, 1, 20000000), (err) => {
       ok(
         err.message == "yToken/exceeds-the-permissible-debt",
         "Error message mismatch"
@@ -844,7 +823,10 @@ describe("Proxy tests", async () => {
     await fa12_2.updateStorage();
 
     await rejects(yToken.updateAndRepay(proxy, 1, 20000000000), (err) => {
-      ok(err.message == "yToken/amount-should-be-less-or-equal", "Error message mismatch");
+      ok(
+        err.message == "yToken/amount-should-be-less-or-equal",
+        "Error message mismatch"
+      );
       return true;
     });
   });
@@ -978,8 +960,6 @@ describe("Proxy tests", async () => {
   });
 
   it("liquidate by carol (collateral factor 0)", async () => {
-    await oracle.updateStorage();
-
     tezos = await Utils.setProvider(tezos, carol.sk);
 
     await yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 250);
@@ -1016,12 +996,38 @@ describe("Proxy tests", async () => {
     });
   });
 
-  it("liquidate by carol 2 (collateral price fell)", async () => {
-    await oracle.updParamsOracle(
-      "BTC-USDT",
-      21786702051,
-      "2021-08-20T09:06:50Z"
+  it("update price", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await oracle.updateStorage();
+
+    let res = await oracle.storage.assetMap.get("COMP-USD");
+    strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "321748180");
+
+    await oracle.update(
+      MichelsonMap.fromLiteral({
+        ["COMP-USD"]: [
+          "2021-10-23T07:01:00Z",
+          "2021-10-23T07:02:00Z",
+          2049393,
+          2049393,
+          2049393,
+          2049393,
+          2,
+        ],
+      })
     );
+    await oracle.updateStorage();
+    res = await oracle.storage.assetMap.get("COMP-USD");
+    strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "2049393");
+  });
+
+  it("liquidate by carol 2 (collateral price fell)", async () => {
+    // await oracle.updParamsOracle(
+    //   "BTC-USDT",
+    //   21786702051,
+    //   "2021-08-20T09:06:50Z"
+    // );
+    // await oracle.updateStorage();
     tezos = await Utils.setProvider(tezos, carol.sk);
 
     await yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 100);
@@ -1050,7 +1056,7 @@ describe("Proxy tests", async () => {
   it("liquidate by carol 4 (collateral price fell)", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
 
-    await yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 37);
+    await yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 35);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
@@ -1060,9 +1066,9 @@ describe("Proxy tests", async () => {
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
-  it("liquidate not achieved", async () => {
+  it("liquidation not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
-    await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 19), (err) => {
+    await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 15), (err) => {
       ok(
         err.message == "yToken/liquidation-not-achieved",
         "Error message mismatch"
