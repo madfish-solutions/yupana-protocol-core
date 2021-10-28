@@ -56,8 +56,6 @@ function calcMaxCollaterallInCU(
         const userInfo : nat = getBalanceByToken(user, tokenId, s);
         const token : tokenInfo = getTokenInfo(tokenId, s);
 
-        verifyTokenUpdated(token);
-
         (* sum += collateralFactorFloat * exchangeRate * oraclePrice * balance *)
         acc := acc + ((userInfo * token.lastPrice
           * token.collateralFactorFloat) * (abs(token.totalLiquidFloat
