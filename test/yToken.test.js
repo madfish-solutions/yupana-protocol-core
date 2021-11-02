@@ -34,7 +34,7 @@ const tokenMetadata2 = MichelsonMap.fromLiteral({
   icon: Buffer.from("").toString("hex"),
 });
 
-describe("Proxy tests", async () => {
+describe("yToken tests", async () => {
   let tezos;
   let yToken;
   let interest;
@@ -140,10 +140,6 @@ describe("Proxy tests", async () => {
     // await oracle.updateStorage();
     // var res = await oracle.storage.tokenInfo.get("COMP-USD");
     // strictEqual(res.price.toString(), "54466755129");
-
-    await interest.updateYToken(yTokenContractAddress);
-    await interest.updateStorage();
-    strictEqual(interest.storage.yToken, yTokenContractAddress);
 
     await yToken.setGlobalFactors(
       "500000000000000000",
@@ -602,6 +598,189 @@ describe("Proxy tests", async () => {
       );
       return true;
     });
+  });
+
+  it("(should fail not operator) transfer alice to bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await rejects(
+      yToken.transfer([
+        {
+          from_: alice.pkh,
+          txs: [{ to_: bob.pkh, token_id: 1, amount: 100 }],
+        },
+      ]),
+      (err) => {
+        ok(err.message == "FA2_NOT_OPERATOR", "Error message mismatch");
+        return true;
+      }
+    );
+  });
+
+  it("(should fail insufficient balance) transfer alice to bob", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    await rejects(
+      yToken.transfer([
+        {
+          from_: alice.pkh,
+          txs: [{ to_: bob.pkh, token_id: 0, amount: 100 }],
+        },
+      ]),
+      (err) => {
+        ok(err.message == "FA2_INSUFFICIENT_BALANCE", "Error message mismatch");
+        return true;
+      }
+    );
+  });
+
+  it("(should fail undefined token) transfer alice to bob", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    await rejects(
+      yToken.transfer([
+        {
+          from_: alice.pkh,
+          txs: [{ to_: bob.pkh, token_id: 1111, amount: 100 }],
+        },
+      ]),
+      (err) => {
+        ok(err.message == "FA2_TOKEN_UNDEFINED", "Error message mismatch");
+        return true;
+      }
+    );
+  });
+
+  it("transfer alice to bob", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    let res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
+    strictEqual(res, undefined);
+
+    let res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
+    strictEqual(
+      res2.toPrecision(40).split(".")[0],
+      "10000000000000000000000000000"
+    );
+
+    await yToken.transfer([
+      {
+        from_: alice.pkh,
+        txs: [{ to_: bob.pkh, token_id: 1, amount: 100 }],
+      },
+    ]);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
+    strictEqual(res.toPrecision(40).split(".")[0], "100");
+
+    res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
+    strictEqual(
+      res2.toPrecision(40).split(".")[0],
+      "9999999999999999999999999900"
+    );
+  });
+
+  it("add operator alice to bob", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    await yToken.updateOperators([
+      {
+        addOperator: {
+          owner: alice.pkh,
+          operator: bob.pkh,
+          token_id: 1,
+        },
+      },
+    ]);
+    await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.accountInfo.get([alice.pkh, 1]);
+    strictEqual(res.allowances.toString(), `${bob.pkh}`);
+  });
+
+  it("add operator (should fail not owner)", async () => {
+    tezos = await Utils.setProvider(tezos, peter.sk);
+
+    await rejects(
+      yToken.updateOperators([
+        {
+          addOperator: {
+            owner: alice.pkh,
+            operator: peter.pkh,
+            token_id: 1,
+          },
+        },
+      ]),
+      (err) => {
+        ok(err.message == "FA2_NOT_OWNER", "Error message mismatch");
+        return true;
+      }
+    );
+  });
+
+  it("add operator alice to peter", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    await yToken.updateOperators([
+      {
+        addOperator: {
+          owner: alice.pkh,
+          operator: peter.pkh,
+          token_id: 1,
+        },
+      },
+    ]);
+    await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.accountInfo.get([alice.pkh, 1]);
+    strictEqual(res.allowances.toString(), `${peter.pkh},${bob.pkh}`);
+  });
+
+  it("remove operator alice to peter", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+
+    await yToken.updateOperators([
+      {
+        removeOperator: {
+          owner: alice.pkh,
+          operator: peter.pkh,
+          token_id: 1,
+        },
+      },
+    ]);
+    await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.accountInfo.get([alice.pkh, 1]);
+    strictEqual(res.allowances.toString(), `${bob.pkh}`);
+  });
+
+  it("transfer alice to bob by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    let res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
+    strictEqual(res.toPrecision(40).split(".")[0], "100");
+
+    let res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
+    strictEqual(
+      res2.toPrecision(40).split(".")[0],
+      "9999999999999999999999999900"
+    );
+
+    await yToken.transfer([
+      {
+        from_: alice.pkh,
+        txs: [{ to_: bob.pkh, token_id: 1, amount: 100 }],
+      },
+    ]);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
+    strictEqual(res.toPrecision(40).split(".")[0], "200");
+
+    res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
+    strictEqual(
+      res2.toPrecision(40).split(".")[0],
+      "9999999999999999999999999800"
+    );
   });
 
   it("enterMarket [0] by bob", async () => {

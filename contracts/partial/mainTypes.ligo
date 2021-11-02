@@ -78,7 +78,6 @@ type entryProxyAction   is
 // interestRate
 type entryRateAction   is
   | UpdateAdmin of address
-  | SetYToken of address
   | SetCoefficients of setCoeffParams
   | GetBorrowRate of rateParams
   | GetUtilizationRate of rateParams

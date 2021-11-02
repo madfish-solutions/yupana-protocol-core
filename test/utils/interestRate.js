@@ -78,12 +78,6 @@ class InterestRate {
     return operation;
   }
 
-  async updateYToken(newToken) {
-    const operation = await this.contract.methods.setYToken(newToken).send();
-    await confirmOperation(this.tezos, operation.hash);
-    return operation;
-  }
-
   async setCoefficients(
     kickRateFloat,
     baseRateFloat,

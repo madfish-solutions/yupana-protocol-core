@@ -11,7 +11,13 @@
   const reservesFloat   : nat;
   const precision        : nat)
                         : nat is
-  precision * borrowsFloat / abs(cashFloat + borrowsFloat - reservesFloat)
+  block {
+    const formula : nat =
+    case is_nat(cashFloat + borrowsFloat - reservesFloat) of
+      | None -> (failwith("interestRate-utilRate/amount-is-very-large") : nat)
+      | Some(value) -> value
+    end;
+  } with precision * borrowsFloat / formula
 
 [@inline] function calcBorrowRate(
   const borrowsFloat    : nat;
@@ -31,8 +37,16 @@
 
     if utilizationRateFloat < s.kickRateFloat
     then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / precision);
-    else borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / precision + s.baseRateFloat) +
-      (abs(utilizationRateFloat - s.kickRateFloat) * s.jumpMultiplierFloat) / precision);
+    else block {
+      const utilizationSubKick : nat =
+      case is_nat(utilizationRateFloat - s.kickRateFloat) of
+        | None -> (failwith("interestRate-borrow/amount-is-very-large") : nat)
+        | Some(value) -> value
+      end;
+
+      borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / precision + s.baseRateFloat) +
+      (utilizationSubKick * s.jumpMultiplierFloat) / precision);
+    }
 
   } with borrowRateFloat
 
@@ -43,15 +57,6 @@ function updateAdmin(
   block {
     mustBeAdmin(s);
     s.admin := addr;
-  } with (noOperations, s)
-
-function setYToken(
-  const addr            : address;
-  var s                 : rateStorage)
-                        : rateReturn is
-  block {
-    mustBeAdmin(s);
-    s.yToken := addr;
   } with (noOperations, s)
 
 function setCoefficients(
@@ -131,11 +136,18 @@ function getSupplyRate(
       param.precision
     );
 
+    const precisionSubReserve : nat =
+    case is_nat(param.precision - param.reserveFactorFloat) of
+      | None -> (failwith("fa2/amount-is-very-large") : nat)
+      | Some(value) -> value
+    end;
+
+
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
           amount = borrowRateFloat * utilizationRateFloat *
-            abs(precision - param.reserveFactorFloat);
+            precisionSubReserve;
         ],
         0mutez,
         param.callback
