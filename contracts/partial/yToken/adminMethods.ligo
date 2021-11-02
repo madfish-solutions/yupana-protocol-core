@@ -35,9 +35,12 @@ function withdrawReserve(
         then failwith("yToken/withdraw-is-too-big");
         else skip;
 
-        token.totalReservesFloat := abs(
-          token.totalReservesFloat -amountFloat
-        );
+        token.totalReservesFloat :=
+        case is_nat(token.totalReservesFloat - amountFloat) of
+          | None -> (failwith("yToken/amount-is-very-large") : nat)
+          | Some(value) -> value
+        end;
+
         s.tokenInfo[params.tokenId] := token;
 
         operations := transfer_token(

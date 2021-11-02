@@ -7,7 +7,6 @@ function main(
                         : rateReturn is
   case p of
     | UpdateAdmin(params) -> updateAdmin(params, s)
-    | SetYToken(params) -> setYToken(params, s)
     | SetCoefficients(params) -> setCoefficients(params, s)
     | GetBorrowRate(params) -> getBorrowRate(params, s)
     | GetUtilizationRate(params) -> getUtilizationRate(params, s)

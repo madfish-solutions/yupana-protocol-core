@@ -113,7 +113,7 @@ function getBalanceByToken(
   block {
     const operator : address = Tezos.sender;
     const owner : address = transferParam.from_;
-    const user : account = getAccount(owner, token_id,s);
+    const user : account = getAccount(owner, token_id, s);
   } with owner = operator or Set.mem(operator, user.allowances)
 
 (* Perform transfers *)
@@ -128,13 +128,10 @@ function iterateTransfer(
       const transferDst : transferDestination)
                         : tokenStorage is
       block {
-        (* Create or get source account *)
-        var srcAccount : account := getAccount(params.from_, transferDst.token_id, s);
-
         (* Check permissions *)
         if isApprovedOperator(params, transferDst.token_id, s)
         then skip
-        else failwith("yToken/FA2-not-operator");
+        else failwith("FA2_NOT_OPERATOR");
 
         (* Check the entered markets *)
         if Set.mem(transferDst.token_id, getMarkets(params.from_, s))
@@ -145,35 +142,31 @@ function iterateTransfer(
 
         if transferDst.token_id < s.lastTokenId
         then skip
-        else failwith("FA2/token-undefined");
+        else failwith("FA2_TOKEN_UNDEFINED");
 
         (* Get source info *)
-        var srcInfo : nat := getBalanceByToken(params.from_, transferDst.token_id, s);
+        var srcBalanceInfo : nat := getBalanceByToken(params.from_, transferDst.token_id, s);
 
         (* Balance check *)
-        if srcInfo < transferDst.amount
-        then failwith("FA2/insufficient-balance")
+        if srcBalanceInfo < transferDst.amount
+        then failwith("FA2_INSUFFICIENT_BALANCE")
         else skip;
 
         (* Update source balance *)
-        srcInfo := abs(srcInfo - transferDst.amount);
-        s.ledger[(params.from_, transferDst.token_id)] := srcInfo;
+        srcBalanceInfo :=
+        case is_nat(srcBalanceInfo - transferDst.amount) of
+          | None -> (failwith("fa2/amount-is-very-large") : nat)
+          | Some(value) -> value
+        end;
 
-        (* Update storage *)
-        s.accountInfo[(params.from_, transferDst.token_id)] := srcAccount;
-
-        (* Create or get destination account *)
-        var dstAccount : account := getAccount(transferDst.to_, transferDst.token_id, s);
+        s.ledger[(params.from_, transferDst.token_id)] := srcBalanceInfo;
 
         (* Get receiver balance *)
-        var dstInfo : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s);
+        var dstBalanceInfo : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s);
 
         (* Update destination balance *)
-        dstInfo := dstInfo + transferDst.amount;
-        s.ledger[(transferDst.to_, transferDst.token_id)] := dstInfo;
-
-        (* Update storage *)
-        s.accountInfo[(transferDst.to_, transferDst.token_id)] := dstAccount;
+        dstBalanceInfo := dstBalanceInfo + transferDst.amount;
+        s.ledger[(transferDst.to_, transferDst.token_id)] := dstBalanceInfo;
     } with s
 } with List.fold(makeTransfer, params.txs, s)
 
@@ -187,7 +180,7 @@ function iterateUpdateOperators(
       AddOperator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("FA2/not-owner")
+      then failwith("FA2_NOT_OWNER")
       else skip;
 
       (* Create or get source account *)
@@ -202,7 +195,7 @@ function iterateUpdateOperators(
     | RemoveOperator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("FA2/not-owner")
+      then failwith("FA2_NOT_OWNER")
       else skip;
 
       (* Create or get source account *)

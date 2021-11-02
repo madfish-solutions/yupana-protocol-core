@@ -138,10 +138,8 @@ class YToken {
     return operation;
   }
 
-  async updateOperators(updateParams) {
-    const operation = await this.contract.methods
-      .updateOperators(updateParams)
-      .send();
+  async updateOperators(params) {
+    const operation = await this.contract.methods.updateOperators(params).send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }

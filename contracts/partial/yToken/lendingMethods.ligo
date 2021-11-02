@@ -42,7 +42,7 @@ function verifyTokenUpdated(
     else unit;
 
 
-function calcMaxCollaterallInCU(
+function calcMaxCollateralInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
   const s               : tokenStorage)
@@ -53,14 +53,17 @@ function calcMaxCollaterallInCU(
       const tokenId     : tokenId)
                         : nat is
       block {
-        const userInfo : nat = getBalanceByToken(user, tokenId, s);
+        const userBalanceInfo : nat = getBalanceByToken(user, tokenId, s);
         const token : tokenInfo = getTokenInfo(tokenId, s);
+        const formula : nat =
+        case is_nat(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat) of
+          | None -> (failwith("yToken/amount-is-very-large") : nat)
+          | Some(value) -> value
+        end;
 
         (* sum += collateralFactorFloat * exchangeRate * oraclePrice * balance *)
-        acc := acc + ((userInfo * token.lastPrice
-          * token.collateralFactorFloat) * (abs(token.totalLiquidFloat
-          + token.totalBorrowsFloat - token.totalReservesFloat)
-          / token.totalSupplyFloat) / precision);
+        acc := acc + ((userBalanceInfo * token.lastPrice
+          * token.collateralFactorFloat) * (formula / token.totalSupplyFloat) / precision);
       } with acc;
     const result : nat = Set.fold(
       oneToken,
@@ -152,15 +155,20 @@ function mint(
           if token.totalSupplyFloat =/= 0n
           then {
             verifyTokenUpdated(token);
-            mintTokensFloat := mintTokensFloat * token.totalSupplyFloat /
-              abs(token.totalLiquidFloat + token.totalBorrowsFloat
-                - token.totalReservesFloat);
+
+            const formula : nat =
+            case is_nat(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat) of
+              | None -> (failwith("yToken/amount-is-very-large") : nat)
+              | Some(value) -> value
+            end;
+
+            mintTokensFloat := mintTokensFloat * token.totalSupplyFloat / formula;
           } else skip;
 
-          var userInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s);
-          userInfo := userInfo + mintTokensFloat;
+          var userBalanceInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s);
+          userBalanceInfo := userBalanceInfo + mintTokensFloat;
 
-          s.ledger[(Tezos.sender, yAssetParams.tokenId)] := userInfo;
+          s.ledger[(Tezos.sender, yAssetParams.tokenId)] := userBalanceInfo;
           token.totalSupplyFloat := token.totalSupplyFloat + mintTokensFloat;
           token.totalLiquidFloat := token.totalLiquidFloat
             + yAssetParams.amount * precision;
@@ -192,13 +200,16 @@ function redeem(
           then failwith("yToken/token-taken-as-collateral")
           else skip;
 
-          var userInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s);
+          var userBalanceInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s);
 
-          const liquidityFloat : nat = abs(token.totalLiquidFloat
-            + token.totalBorrowsFloat - token.totalReservesFloat);
+          const liquidityFloat : nat =
+          case is_nat(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
 
           const redeemAmount : nat = if yAssetParams.amount = 0n
-          then userInfo * liquidityFloat / token.totalSupplyFloat / precision
+          then userBalanceInfo * liquidityFloat / token.totalSupplyFloat / precision
           else yAssetParams.amount;
 
           if redeemAmount * precision > token.totalLiquidFloat
@@ -207,15 +218,29 @@ function redeem(
 
           var burnTokensFloat : nat := redeemAmount * precision *
             token.totalSupplyFloat / liquidityFloat;
-          if userInfo < burnTokensFloat
+          if userBalanceInfo < burnTokensFloat
           then failwith("yToken/not-enough-tokens-to-burn")
           else skip;
 
-          userInfo := abs(userInfo - burnTokensFloat);
-          s.ledger[(Tezos.sender, yAssetParams.tokenId)] := userInfo;
-          token.totalSupplyFloat := abs(token.totalSupplyFloat - burnTokensFloat);
-          token.totalLiquidFloat := abs(token.totalLiquidFloat - redeemAmount *
-            precision);
+          userBalanceInfo :=
+          case is_nat(userBalanceInfo - burnTokensFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
+          s.ledger[(Tezos.sender, yAssetParams.tokenId)] := userBalanceInfo;
+          token.totalSupplyFloat :=
+          case is_nat(token.totalSupplyFloat - burnTokensFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
+          token.totalLiquidFloat :=
+          case is_nat(token.totalLiquidFloat - redeemAmount * precision) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
           s.tokenInfo[yAssetParams.tokenId] := token;
 
           operations := transfer_token(Tezos.self_address, Tezos.sender, redeemAmount, token.mainToken);
@@ -262,7 +287,7 @@ function borrow(
           userAccount.borrow := userAccount.borrow + borrowsFloat;
           s.accountInfo[(Tezos.sender, yAssetParams.tokenId)] := userAccount;
 
-          const maxBorrowInCU : nat = calcMaxCollaterallInCU(
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
             getMarkets(Tezos.sender, s),
             Tezos.sender,
             s
@@ -278,7 +303,12 @@ function borrow(
           else skip;
 
           token.totalBorrowsFloat := token.totalBorrowsFloat + borrowsFloat;
-          token.totalLiquidFloat := abs(token.totalLiquidFloat - borrowsFloat);
+          token.totalLiquidFloat :=
+          case is_nat(token.totalLiquidFloat - borrowsFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
           s.tokenInfo[yAssetParams.tokenId] := token;
 
           operations := transfer_token(Tezos.self_address, Tezos.sender, yAssetParams.amount, token.mainToken);
@@ -320,14 +350,20 @@ function repay(
           then failwith("yToken/amount-should-be-less-or-equal")
           else skip;
 
-          userAccount.borrow := abs(
-            userAccount.borrow - repayAmountFloat
-          );
+          userAccount.borrow :=
+          case is_nat(userAccount.borrow - repayAmountFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
 
           userAccount.lastBorrowIndex := token.borrowIndex;
           s.accountInfo[(Tezos.sender, yAssetParams.tokenId)] := userAccount;
-          token.totalBorrowsFloat := abs(token.totalBorrowsFloat
-            - repayAmountFloat);
+          token.totalBorrowsFloat :=
+          case is_nat(token.totalBorrowsFloat - repayAmountFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
           token.totalLiquidFloat := token.totalLiquidFloat + repayAmountFloat;
           s.tokenInfo[yAssetParams.tokenId] := token;
 
@@ -372,7 +408,13 @@ function liquidate(
           then failwith("yToken/borrower-cannot-be-liquidator")
           else skip;
 
-          const maxBorrowInCU : nat = calcMaxCollaterallInCU(
+          if borrowerAccount.lastBorrowIndex =/= 0n
+          then borrowerAccount.borrow := borrowerAccount.borrow *
+            borrowToken.borrowIndex /
+            borrowerAccount.lastBorrowIndex;
+          else skip;
+
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
             getMarkets(params.borrower, s),
             params.borrower,
             s
@@ -392,11 +434,6 @@ function liquidate(
 
           var liqAmountFloat : nat := params.amount * precision;
 
-          if borrowerAccount.lastBorrowIndex =/= 0n
-          then borrowerAccount.borrow := borrowerAccount.borrow *
-            borrowToken.borrowIndex /
-            borrowerAccount.lastBorrowIndex;
-          else skip;
 
           (* liquidate amount can't be more than allowed close factor *)
           const maxClose : nat = borrowerAccount.borrow * s.closeFactorFloat
@@ -406,13 +443,18 @@ function liquidate(
           then skip
           else failwith("yToken/too-much-repay");
 
-          borrowerAccount.borrow := abs(
-            borrowerAccount.borrow - liqAmountFloat
-          );
+          borrowerAccount.borrow :=
+          case is_nat(borrowerAccount.borrow - liqAmountFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
           borrowerAccount.lastBorrowIndex := borrowToken.borrowIndex;
-          borrowToken.totalBorrowsFloat := abs(
-            borrowToken.totalBorrowsFloat - liqAmountFloat
-          );
+          borrowToken.totalBorrowsFloat :=
+          case is_nat(borrowToken.totalBorrowsFloat - liqAmountFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
           borrowToken.totalLiquidFloat := borrowToken.totalLiquidFloat + liqAmountFloat;
 
           operations := transfer_token(Tezos.sender, Tezos.self_address, params.amount, borrowToken.mainToken);
@@ -435,10 +477,14 @@ function liquidate(
           const seizeAmount : nat = liqAmountFloat * s.liqIncentiveFloat
             * borrowToken.lastPrice * collateralToken.totalSupplyFloat;
 
-          const exchangeRateFloat : nat = abs(
-            collateralToken.totalLiquidFloat + collateralToken.totalBorrowsFloat
-            - collateralToken.totalReservesFloat
-          ) * precision * collateralToken.lastPrice;
+          const formula : nat =
+          case is_nat(collateralToken.totalLiquidFloat + collateralToken.totalBorrowsFloat
+          - collateralToken.totalReservesFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
+
+          const exchangeRateFloat : nat = formula * precision * collateralToken.lastPrice;
 
           const seizeTokensFloat : nat = seizeAmount / exchangeRateFloat;
 
@@ -448,19 +494,24 @@ function liquidate(
             s
           );
 
-          var borrowerCollateralInfo : nat := getBalanceByToken(params.borrower, params.collateralToken, s);
+          var borrowerBalanceInfo : nat := getBalanceByToken(params.borrower, params.collateralToken, s);
 
-          if borrowerCollateralInfo < seizeTokensFloat
+          if borrowerBalanceInfo < seizeTokensFloat
           then failwith("yToken/seize/not-enough-tokens")
           else skip;
 
-          var liquidatorInfo : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s);
+          var liquidatorBalanceInfo : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s);
 
-          borrowerCollateralInfo := abs(borrowerCollateralInfo - seizeTokensFloat);
-          liquidatorInfo := liquidatorInfo + seizeTokensFloat;
+          borrowerBalanceInfo :=
+          case is_nat(borrowerBalanceInfo - seizeTokensFloat) of
+            | None -> (failwith("yToken/amount-is-very-large") : nat)
+            | Some(value) -> value
+          end;
 
-          s.ledger[(params.borrower, params.collateralToken)] := borrowerCollateralInfo;
-          s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorInfo;
+          liquidatorBalanceInfo := liquidatorBalanceInfo + seizeTokensFloat;
+
+          s.ledger[(params.borrower, params.collateralToken)] := borrowerBalanceInfo;
+          s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalanceInfo;
           s.accountInfo[(params.borrower, params.borrowToken)] := borrowerAccount;
           s.accountInfo[(Tezos.sender, params.collateralToken)] := liquidatorAccount;
           s.tokenInfo[params.collateralToken] := collateralToken;
@@ -516,7 +567,7 @@ function exitMarket(
 
           userMarkets := Set.remove(tokenId, userMarkets);
 
-          const maxBorrowInCU : nat = calcMaxCollaterallInCU(
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
             userMarkets,
             Tezos.sender,
             s
@@ -574,7 +625,11 @@ function accrueInterest(
     else skip;
 
     //  Calculate the number of blocks elapsed since the last accrual
-    const blockDelta : nat = abs(Tezos.now - token.interestUpdateTime);
+    const blockDelta : nat =
+    case is_nat(Tezos.now - token.interestUpdateTime) of
+      | None -> (failwith("yToken/amount-is-very-large") : nat)
+      | Some(value) -> value
+    end;
 
     const simpleInterestFactorFloat : nat = borrowRate * blockDelta;
     const interestAccumulatedFloat : nat = simpleInterestFactorFloat *
