@@ -12,12 +12,12 @@
   const precision        : nat)
                         : nat is
   block {
-    const formula : nat =
-    case is_nat(cashFloat + borrowsFloat - reservesFloat) of
-      | None -> (failwith("interestRate-utilRate/amount-is-very-large") : nat)
-      | Some(value) -> value
-    end;
-  } with precision * borrowsFloat / formula
+    const numerator : nat =
+      case is_nat(cashFloat + borrowsFloat - reservesFloat) of
+        | None -> (failwith("underflow/cashFloat+borrowsFloat") : nat)
+        | Some(value) -> value
+      end;
+  } with precision * borrowsFloat / numerator
 
 [@inline] function calcBorrowRate(
   const borrowsFloat    : nat;
@@ -39,10 +39,10 @@
     then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / precision);
     else block {
       const utilizationSubKick : nat =
-      case is_nat(utilizationRateFloat - s.kickRateFloat) of
-        | None -> (failwith("interestRate-borrow/amount-is-very-large") : nat)
-        | Some(value) -> value
-      end;
+        case is_nat(utilizationRateFloat - s.kickRateFloat) of
+          | None -> (failwith("underflow/utilizationRateFloat") : nat)
+          | Some(value) -> value
+        end;
 
       borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / precision + s.baseRateFloat) +
       (utilizationSubKick * s.jumpMultiplierFloat) / precision);
@@ -137,10 +137,10 @@ function getSupplyRate(
     );
 
     const precisionSubReserve : nat =
-    case is_nat(param.precision - param.reserveFactorFloat) of
-      | None -> (failwith("fa2/amount-is-very-large") : nat)
-      | Some(value) -> value
-    end;
+      case is_nat(param.precision - param.reserveFactorFloat) of
+        | None -> (failwith("underflow/precision") : nat)
+        | Some(value) -> value
+      end;
 
 
     var operations : list(operation) := list[
