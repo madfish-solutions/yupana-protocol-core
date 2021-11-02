@@ -36,10 +36,10 @@ function withdrawReserve(
         else skip;
 
         token.totalReservesFloat :=
-        case is_nat(token.totalReservesFloat - amountFloat) of
-          | None -> (failwith("yToken/amount-is-very-large") : nat)
-          | Some(value) -> value
-        end;
+          case is_nat(token.totalReservesFloat - amountFloat) of
+            | None -> (failwith("underflow/totalReservesFloat") : nat)
+            | Some(value) -> value
+          end;
 
         s.tokenInfo[params.tokenId] := token;
 

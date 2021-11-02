@@ -43,6 +43,7 @@ type tokenStorage       is [@layout:comb] record [
   closeFactorFloat      : nat;
   liqIncentiveFloat     : nat;
   markets               : big_map(address, set(tokenId));
+  borrowInfo            : big_map(address, set(tokenId));
   maxMarkets            : nat;
   typesInfo             : big_map(assetType, tokenId);
 ]

@@ -893,7 +893,7 @@ describe("yToken tests", async () => {
     });
   });
 
-  !!!!!it("mint yTokens by carol", async () => {
+  it("mint yTokens by carol", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
 
     // let tokenInfo = await yToken.storage.storage.tokenInfo.get(1);

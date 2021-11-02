@@ -62,13 +62,13 @@ describe("Interest tests", async () => {
     var borrows = 100;
     var cash = 100000;
     var reserves = 10;
-    var formula = (cash + borrows - reserves) / borrows;
+    var numerator = (cash + borrows - reserves) / borrows;
     await sendRate.sendUtil(0, borrows, cash, reserves);
     await sendRate.updateStorage();
 
     strictEqual(
       await sendRate.storage.utilRate.toString(),
-      Math.floor(formula).toString()
+      Math.floor(numerator).toString()
     );
   });
 

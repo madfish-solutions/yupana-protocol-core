@@ -1031,4 +1031,234 @@ describe("AddMarkets tests", async () => {
     );
     await yToken.updateStorage();
   });
+
+  it("mint fa12_0 tokens by bob and peter", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await fa12_0.mint(10000000000000000000);
+    await fa12_0.updateStorage();
+
+    let res = await fa12_0.storage.ledger.get(bob.pkh);
+
+    strictEqual(await res.balance.toString(), "10000000000000000000");
+
+    tezos = await Utils.setProvider(tezos, peter.sk);
+    await fa12_0.mint(10000000000000000000);
+    await fa12_0.updateStorage();
+
+    res = await fa12_0.storage.ledger.get(peter.pkh);
+
+    strictEqual(await res.balance.toString(), "10000000000000000000");
+  });
+
+  it("mint fa12_1 by alice and carol", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await fa12_1.mint(10000000000000000000);
+    await fa12_1.updateStorage();
+
+    res = await fa12_1.storage.ledger.get(alice.pkh);
+
+    strictEqual(await res.balance.toString(), "10000000000000000000");
+
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await fa12_1.mint(10000000000000000000);
+    await fa12_1.updateStorage();
+
+    res = await fa12_1.storage.ledger.get(carol.pkh);
+
+    strictEqual(await res.balance.toString(), "10000000000000000000");
+  });
+
+  it("mint yTokens by alice", async () => {
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await fa12_1.approve(yTokenContractAddress, 100000000000);
+    await fa12_1.updateStorage();
+
+    await yToken.updateAndMint(proxy, 1, 10000000000);
+    await yToken.updateStorage();
+
+    let res = await fa12_1.storage.ledger.get(alice.pkh);
+    strictEqual(await res.balance.toString(), "9999999990000000000");
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
+
+    strictEqual(
+      yTokenRes.toPrecision(40).split(".")[0],
+      "10000000000000000000000000000"
+    );
+  });
+
+  it("mint yTokens by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await fa12_1.approve(yTokenContractAddress, 100000000000);
+    await fa12_1.updateStorage();
+
+    await yToken.updateAndMint(proxy, 1, 10000000000);
+    await yToken.updateStorage();
+
+    let res = await fa12_1.storage.ledger.get(carol.pkh);
+    strictEqual(await res.balance.toString(), "9999999990000000000");
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
+    let yTokenInfo = await yToken.storage.storage.tokenInfo.get("1");
+    console.log(yTokenInfo.lastPrice.toString());
+
+    strictEqual(
+      await yTokenRes.toPrecision(40).split(".")[0],
+      "10000000000000000000000000000"
+    );
+  });
+
+  it("mint yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await fa12_0.approve(yTokenContractAddress, 100000000000);
+    await fa12_0.updateStorage();
+
+    await yToken.updateAndMint2(proxy, 0, 100000);
+    await yToken.updateStorage();
+
+    let res = await fa12_0.storage.ledger.get(bob.pkh);
+    strictEqual(await res.balance.toString(), "9999999999999900000");
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([bob.pkh, 0]);
+    strictEqual(
+      yTokenRes.toPrecision(40).split(".")[0],
+      "100000000000000000000000"
+    );
+  });
+
+  it("mint yTokens by peter", async () => {
+    tezos = await Utils.setProvider(tezos, peter.sk);
+    await fa12_0.approve(yTokenContractAddress, 100000000000);
+    await fa12_0.updateStorage();
+
+    await yToken.updateAndMint2(proxy, 0, 1000);
+    await yToken.updateStorage();
+
+    let res = await fa12_0.storage.ledger.get(peter.pkh);
+    strictEqual(await res.balance.toString(), "9999999999999999000");
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
+    strictEqual(
+      yTokenRes.toPrecision(40).split(".")[0],
+      "1000000000000000000000"
+    );
+  });
+
+  it("enterMarket [0] by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await yToken.enterMarket(0);
+    await yToken.updateStorage();
+    res = await yToken.storage.storage.markets.get(bob.pkh);
+    strictEqual(res.toString(), "0");
+  });
+
+  it("enterMarket [0] by peter", async () => {
+    tezos = await Utils.setProvider(tezos, peter.sk);
+
+    await yToken.enterMarket(0);
+    await yToken.updateStorage();
+    res = await yToken.storage.storage.markets.get(peter.pkh);
+    strictEqual(res.toString(), "0");
+  });
+
+  it("borrow yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.updateAndBorrow(proxy, 1, 50000);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    strictEqual(
+      res.borrow.toPrecision(40).split(".")[0],
+      "50000000000000000000000"
+    );
+  });
+
+  it("borrow yTokens by bob (2)", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await Utils.bakeBlocks(tezos, 7);
+
+    await yToken.updateAndBorrow(proxy, 1, 1000);
+    await yToken.updateStorage();
+
+    let res = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
+  });
+
+  it("redeem 0 by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await yToken.updateAndRedeem(proxy, 1, 0);
+    await yToken.updateStorage();
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
+    console.log(yTokenRes.toPrecision(40).split(".")[0]);
+  });
+
+  it("mint yTokens by carol", async () => {
+    tezos = await Utils.setProvider(tezos, carol.sk);
+
+    await yToken.updateAndMint(proxy, 1, 10000000000);
+    await yToken.updateStorage();
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
+    console.log(yTokenRes.toPrecision(40).split(".")[0]);
+  });
+
+  it("borrow yTokens by peter", async () => {
+    tezos = await Utils.setProvider(tezos, peter.sk);
+    await yToken.updateAndBorrow(proxy, 1, 500);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+
+    strictEqual(
+      res.borrow.toPrecision(40).split(".")[0],
+      "500000000000000000000"
+    );
+  });
+
+  it("repay yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await fa12_1.approve(yTokenContractAddress, 100000);
+    await fa12_1.updateStorage();
+
+    await yToken.updateAndRepay(proxy, 1, 40000);
+    await yToken.updateStorage();
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
+  });
+
+  it("repay 5 yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    await fa12_2.mint(10000);
+    await fa12_2.updateStorage();
+
+    let res = await fa12_2.storage.ledger.get(bob.pkh);
+    console.log(await res.balance.toString()); // not static result
+
+    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
+
+    await yToken.updateAndRepay(proxy, 1, 0);
+    await yToken.updateStorage();
+
+    yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    strictEqual(yTokenRes.borrow.toString(), "0");
+  });
+
+  it("exit market yTokens by bob", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+
+    let res = await yToken.storage.storage.markets.get(bob.pkh);
+    strictEqual(await res.toString(), "0");
+
+    await yToken.updateAndExit(proxy, 0);
+    await yToken.updateStorage();
+
+    res = await yToken.storage.storage.markets.get(bob.pkh);
+    strictEqual(await res.toString(), "");
+  });
 });
