@@ -22,6 +22,15 @@ function getMarkets(
   | Some(v) -> v
   end
 
+function getBorrow(
+  const user            : address;
+  const s               : tokenStorage)
+                        : set(tokenId) is
+  case s.borrowInfo[user] of
+    None -> (set [] : set(tokenId))
+  | Some(v) -> v
+  end
+
 (* Helper function to get token info *)
 function getTokenInfo(
   const token_id        : tokenId;
@@ -154,10 +163,10 @@ function iterateTransfer(
 
         (* Update source balance *)
         srcBalanceInfo :=
-        case is_nat(srcBalanceInfo - transferDst.amount) of
-          | None -> (failwith("fa2/amount-is-very-large") : nat)
-          | Some(value) -> value
-        end;
+          case is_nat(srcBalanceInfo - transferDst.amount) of
+            | None -> (failwith("underflow/srcBalanceInfo") : nat)
+            | Some(value) -> value
+          end;
 
         s.ledger[(params.from_, transferDst.token_id)] := srcBalanceInfo;
 

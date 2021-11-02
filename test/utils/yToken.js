@@ -132,6 +132,23 @@ class YToken {
     }
   }
 
+  async calcGas (batchArray) {
+    const est = await this.tezos.estimate.batch(batchArray);
+
+    var gasRes = 0;
+    for (const i of est) {
+      res += i.minimalFeeMutez;
+    }
+    console.log("gasCost ", gasRes);
+
+    var storageRes = 0;
+    for (const i of est) {
+      storageRes += i.burnFeeMutez;
+    }
+    console.log("storageCost ", storageRes);
+    console.log("total", gasRes + storageRes);
+  }
+
   async transfer(txs) {
     const operation = await this.contract.methods.transfer(txs).send();
     await confirmOperation(this.tezos, operation.hash);
@@ -227,6 +244,7 @@ class YToken {
         .send();
     }
     await confirmOperation(this.tezos, operation.hash);
+    // console.log(operation.params.fee);
     return operation;
   }
 
@@ -309,6 +327,7 @@ class YToken {
   async enterMarket(token_id) {
     const operation = await this.contract.methods.enterMarket(token_id).send();
     await confirmOperation(this.tezos, operation.hash);
+    // console.log(operation.params.fee);
     return operation;
   }
 
@@ -344,7 +363,7 @@ class YToken {
     interestRateModel,
     maxBorrowRate
   ) {
-    const batch = await this.tezos.wallet.batch([
+    const batchArray = [
       {
         kind: "transaction",
         ...this.contract.methods.updateInterest(1).toTransferParams(),
@@ -373,15 +392,16 @@ class YToken {
           )
           .toTransferParams(),
       },
-    ]);
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
     const operation = await batch.send();
-
+    // calcGas(batchArray);
     await confirmOperation(this.tezos, operation.opHash);
     return operation;
   }
 
   async updateAndMint(proxy, token, amount) {
-    const batch = await this.tezos.wallet.batch([
+    const batchArray = [
       {
         kind: "transaction",
         ...this.contract.methods.updateInterest(0).toTransferParams(),
@@ -402,15 +422,18 @@ class YToken {
         kind: "transaction",
         ...this.contract.methods.mint(token, amount).toTransferParams(),
       },
-    ]);
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
     const operation = await batch.send();
+    // calcGas(batchArray);
 
     await confirmOperation(this.tezos, operation.opHash);
+
     return operation;
   }
 
   async updateAndMint2(proxy, token, amount) {
-    const batch = await this.tezos.wallet.batch([
+    const batchArray = [
       {
         kind: "transaction",
         ...this.contract.methods.updateInterest(1).toTransferParams(),
@@ -431,15 +454,16 @@ class YToken {
         kind: "transaction",
         ...this.contract.methods.mint(token, amount).toTransferParams(),
       },
-    ]);
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
     const operation = await batch.send();
-
+    // calcGas(batchArray);
     await confirmOperation(this.tezos, operation.opHash);
     return operation;
   }
 
   async updateAndBorrow(proxy, borrowToken, amount) {
-    const batch = await this.tezos.wallet.batch([
+    const batchArray = [
       {
         kind: "transaction",
         ...this.contract.methods.updateInterest(0).toTransferParams(),
@@ -460,15 +484,17 @@ class YToken {
         kind: "transaction",
         ...this.contract.methods.borrow(borrowToken, amount).toTransferParams(),
       },
-    ]);
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
     const operation = await batch.send();
-
+    // calcGas(batchArray);
     await confirmOperation(this.tezos, operation.opHash);
+    // console.log(operation.params.fee);
     return operation;
   }
 
   async updateAndBorrow2(proxy, borrowToken, amount) {
-    const batch = await this.tezos.wallet.batch([
+    const batchArray = [
       {
         kind: "transaction",
         ...this.contract.methods.updateInterest(1).toTransferParams(),
@@ -489,15 +515,16 @@ class YToken {
         kind: "transaction",
         ...this.contract.methods.borrow(borrowToken, amount).toTransferParams(),
       },
-    ]);
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
     const operation = await batch.send();
-
+    // calcGas(batchArray);
     await confirmOperation(this.tezos, operation.opHash);
     return operation;
   }
 
   async updateAndRepay(proxy, repayToken, amount) {
-    const batch = await this.tezos.wallet.batch([
+    const batchArray = [
       {
         kind: "transaction",
         ...this.contract.methods.updateInterest(repayToken).toTransferParams(),
@@ -510,10 +537,12 @@ class YToken {
         kind: "transaction",
         ...this.contract.methods.repay(repayToken, amount).toTransferParams(),
       },
-    ]);
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
     const operation = await batch.send();
-
+    // calcGas(batchArray);
     await confirmOperation(this.tezos, operation.opHash);
+    // console.log(operation.params.fee);
     return operation;
   }
 
@@ -533,8 +562,8 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-
     await confirmOperation(this.tezos, operation.opHash);
+    // console.log(operation.params.fee);
     return operation;
   }
 
@@ -562,8 +591,8 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-
     await confirmOperation(this.tezos, operation.opHash);
+    // console.log(operation.params.fee);
     return operation;
   }
 
@@ -591,7 +620,6 @@ class YToken {
       },
     ]);
     const operation = await batch.send();
-
     await confirmOperation(this.tezos, operation.opHash);
     return operation;
   }

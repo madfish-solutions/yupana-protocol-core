@@ -14,6 +14,7 @@ const tokenStorage = {
   liqIncentiveFloat: "0",
   maxMarkets: "0",
   markets: MichelsonMap.fromLiteral({}),
+  borrowInfo: MichelsonMap.fromLiteral({}),
   typesInfo: MichelsonMap.fromLiteral({}),
 };
 
