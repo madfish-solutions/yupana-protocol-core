@@ -42,7 +42,7 @@ function middleToken(
     end;
 
     const lambda_bytes : bytes =
-      case s.useLambdas[idx] of
+      case s.tokenLambdas[idx] of
         | Some(l) -> l
         | None -> failwith("yToken/middle-token-function-not-set")
       end;

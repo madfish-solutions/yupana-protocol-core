@@ -149,7 +149,11 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
           skip;
 
         (* Update source balance *)
-        src_account.balances[transfer_dst.token_id] := abs(src_balance - transfer_dst.amount);
+        src_account.balances[transfer_dst.token_id] :=
+        case is_nat(src_balance - transfer_dst.amount) of
+          | None -> (failwith("fa2/amount-is-very-large") : nat)
+          | Some(value) -> value
+        end;
 
         (* Update storage *)
         s.account_info[params.from_] := src_account;

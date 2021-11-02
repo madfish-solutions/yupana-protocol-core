@@ -106,11 +106,19 @@ function transfer(
       then failwith("fa12/not-enough-allowance")
       else skip;
       (* Decrease any allowances *)
-      senderAccount.allowances[Tezos.sender] := abs(spenderAllowance - value);
+      senderAccount.allowances[Tezos.sender] :=
+      case is_nat(spenderAllowance - value) of
+        | None -> (failwith("fa12/amount-is-very-large") : nat)
+        | Some(value) -> value
+      end;
     } else skip;
 
     (* Update sender balance *)
-    senderAccount.balance := abs(senderAccount.balance - value);
+    senderAccount.balance :=
+    case is_nat(senderAccount.balance - value) of
+      | None -> (failwith("fa12/amount-is-very-large") : nat)
+      | Some(value) -> value
+    end;
 
     (* Update storage *)
     s.ledger[from_] := senderAccount;
@@ -205,7 +213,12 @@ function withdraw(
       failwith("fa12/not-enough-balance(mint)")
     else skip;
 
-    senderAccount.balance := abs(senderAccount.balance - value);
+    senderAccount.balance :=
+    case is_nat(senderAccount.balance - value) of
+      | None -> (failwith("fa12/amount-is-very-large") : nat)
+      | Some(value) -> value
+    end;
+
     s.ledger[Tezos.sender] := senderAccount;
   } with (list [Tezos.transaction(
       unit,
