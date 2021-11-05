@@ -13,7 +13,7 @@ function getAccount(
   | Some(v) -> v
   end
 
-function getTokenId(
+function getTokenIds(
   const user            : address;
   const addressMap      : big_map(address, set(tokenId)))
                         : set(tokenId) is
@@ -134,7 +134,7 @@ function iterateTransfer(
         else failwith("FA2_NOT_OPERATOR");
 
         (* Check the entered markets *)
-        if Set.mem(transferDst.token_id, getTokenId(params.from_, s.markets))
+        if Set.mem(transferDst.token_id, getTokenIds(params.from_, s.markets))
         then failwith("yToken/token-taken-as-collateral")
         else skip;
 
