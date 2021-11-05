@@ -28,7 +28,7 @@ function withdrawReserve(
     case p of
       WithdrawReserve(params) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(params.tokenId, s);
+        var token : tokenInfo := getTokenInfo(params.tokenId, s.tokenInfo);
         const amountFloat = params.amount * precision;
 
         if amountFloat > token.totalReservesFloat
@@ -71,7 +71,7 @@ function addMarket(
     case p of
       AddMarket(params) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(s.lastTokenId, s);
+        var token : tokenInfo := getTokenInfo(s.lastTokenId, s.tokenInfo);
         const lastTokenId : nat = s.lastTokenId;
 
         checkTypeInfo(s.typesInfo, params.assetAddress);
@@ -122,7 +122,7 @@ function setTokenFactors(
     case p of
       SetTokenFactors(params) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(params.tokenId, s);
+        var token : tokenInfo := getTokenInfo(params.tokenId, s.tokenInfo);
 
         if token.interestUpdateTime < Tezos.now
         then failwith("yToken/need-update")
@@ -163,7 +163,7 @@ function setBorrowPause(
     case p of
       SetBorrowPause(borrowPauseParams) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(borrowPauseParams.tokenId, s);
+        var token : tokenInfo := getTokenInfo(borrowPauseParams.tokenId, s.tokenInfo);
         token.borrowPause := borrowPauseParams.condition;
         s.tokenInfo[borrowPauseParams.tokenId] := token;
       }

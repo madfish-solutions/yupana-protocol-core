@@ -45,7 +45,8 @@ function verifyTokenUpdated(
 function calcMaxCollateralInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
-  const s               : tokenStorage)
+  const ledger          : big_map((address * tokenId), nat);
+  const tokenInfo       : map(tokenId, tokenInfo))
                         : nat is
   block {
     function oneToken(
@@ -53,8 +54,8 @@ function calcMaxCollateralInCU(
       const tokenId     : tokenId)
                         : nat is
       block {
-        const userBalanceInfo : nat = getBalanceByToken(user, tokenId, s);
-        const token : tokenInfo = getTokenInfo(tokenId, s);
+        const userBalanceInfo : nat = getBalanceByToken(user, tokenId, ledger);
+        const token : tokenInfo = getTokenInfo(tokenId, tokenInfo);
         const numerator : nat =
           case is_nat(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat) of
             | None -> (failwith("underflow/totalLiquidFloat+totalBorrowsFloat") : nat)
@@ -75,7 +76,9 @@ function calcMaxCollateralInCU(
 function calcOutstandingBorrowInCU(
   const userBorrow      : set(tokenId);
   const user            : address;
-  const s               : tokenStorage)
+  const accountInfo     : big_map((address * tokenId), account);
+  const ledger          : big_map((address * tokenId), nat);
+  const tokenInfo       : map(tokenId, tokenInfo))
                         : nat is
   block {
     function oneToken(
@@ -83,9 +86,9 @@ function calcOutstandingBorrowInCU(
       var tokenId       : tokenId)
                         : nat is
       block {
-        const userAccount : account = getAccount(user, tokenId, s);
-        const userBalance : nat = getBalanceByToken(user, tokenId, s);
-        var tokenInfo : tokenInfo := getTokenInfo(tokenId, s);
+        const userAccount : account = getAccount(user, tokenId, accountInfo);
+        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        var tokenInfo : tokenInfo := getTokenInfo(tokenId, tokenInfo);
 
         (* sum += oraclePrice * borrow *)
         if userBalance > 0n or userAccount.borrow > 0n
@@ -104,7 +107,7 @@ function updateInterest(
   var s                 : fullTokenStorage)
                         : fullReturn is
     block {
-      var _token : tokenInfo := getTokenInfo(tokenId, s.storage);
+      var _token : tokenInfo := getTokenInfo(tokenId, s.storage.tokenInfo);
       var operations : list(operation) := list[];
 
       if tokenId < s.storage.lastTokenId
@@ -151,7 +154,7 @@ function mint(
           else failwith("yToken/yToken-undefined");
 
           var mintTokensFloat : nat := yAssetParams.amount * precision;
-          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s);
+          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s.tokenInfo);
 
           if token.totalSupplyFloat =/= 0n
           then {
@@ -166,7 +169,7 @@ function mint(
             mintTokensFloat := mintTokensFloat * token.totalSupplyFloat / numerator;
           } else skip;
 
-          var userBalanceInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s);
+          var userBalanceInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s.ledger);
           userBalanceInfo := userBalanceInfo + mintTokensFloat;
 
           s.ledger[(Tezos.sender, yAssetParams.tokenId)] := userBalanceInfo;
@@ -193,15 +196,15 @@ function redeem(
           then skip
           else failwith("yToken/yToken-undefined");
 
-          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s);
+          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s.tokenInfo);
 
           verifyTokenUpdated(token);
 
-          if Set.mem(yAssetParams.tokenId, getMarkets(Tezos.sender, s))
+          if Set.mem(yAssetParams.tokenId, getTokenId(Tezos.sender, s.markets))
           then failwith("yToken/token-taken-as-collateral")
           else skip;
 
-          var userBalanceInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s);
+          var userBalanceInfo : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s.ledger);
 
           const liquidityFloat : nat =
             case is_nat(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat) of
@@ -264,9 +267,9 @@ function borrow(
           then skip
           else failwith("yToken/yToken-undefined");
 
-          var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s);
-          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s);
-          var borrowTokens : set(tokenId) := getBorrow(Tezos.sender, s);
+          var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accountInfo);
+          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s.tokenInfo);
+          var borrowTokens : set(tokenId) := getTokenId(Tezos.sender, s.borrowInfo);
 
           verifyTokenUpdated(token);
 
@@ -293,15 +296,18 @@ function borrow(
           s.borrowInfo[Tezos.sender] := borrowTokens;
 
           const maxBorrowInCU : nat = calcMaxCollateralInCU(
-            getMarkets(Tezos.sender, s),
+            getTokenId(Tezos.sender, s.markets),
             Tezos.sender,
-            s
+            s.ledger,
+            s.tokenInfo
           );
 
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
-            getBorrow(Tezos.sender, s),
+            getTokenId(Tezos.sender, s.borrowInfo),
             Tezos.sender,
-            s
+            s.accountInfo,
+            s.ledger,
+            s.tokenInfo
           );
 
           if outstandingBorrowInCU > maxBorrowInCU
@@ -331,7 +337,7 @@ function repay(
     var operations : list(operation) := list[];
       case p of
         Repay(yAssetParams) -> {
-          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s);
+          var token : tokenInfo := getTokenInfo(yAssetParams.tokenId, s.tokenInfo);
 
           if yAssetParams.tokenId < s.lastTokenId
           then skip
@@ -341,8 +347,8 @@ function repay(
 
           var repayAmountFloat : nat := yAssetParams.amount * precision;
 
-          var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s);
-          var borrowTokens : set(tokenId) := getBorrow(Tezos.sender, s);
+          var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accountInfo);
+          var borrowTokens : set(tokenId) := getTokenId(Tezos.sender, s.borrowInfo);
 
           if userAccount.lastBorrowIndex =/= 0n
           then userAccount.borrow := userAccount.borrow *
@@ -404,9 +410,9 @@ function liquidate(
           then skip
           else failwith("yToken/yToken-undefined(collateralToken)");
 
-          var borrowerAccount : account := getAccount(params.borrower, params.borrowToken, s);
-          var borrowToken : tokenInfo := getTokenInfo(params.borrowToken, s);
-          var borrowerToken : set(tokenId) := getBorrow(params.borrower, s);
+          var borrowerAccount : account := getAccount(params.borrower, params.borrowToken, s.accountInfo);
+          var borrowToken : tokenInfo := getTokenInfo(params.borrowToken, s.tokenInfo);
+          var borrowerToken : set(tokenId) := getTokenId(params.borrower, s.borrowInfo);
 
           verifyTokenUpdated(borrowToken);
 
@@ -420,15 +426,20 @@ function liquidate(
             borrowerAccount.lastBorrowIndex;
           else skip;
 
+          s.accountInfo[(params.borrower, params.borrowToken)] := borrowerAccount;
+
           const maxBorrowInCU : nat = calcMaxCollateralInCU(
-            getMarkets(params.borrower, s),
+            getTokenId(params.borrower, s.markets),
             params.borrower,
-            s
+            s.ledger,
+            s.tokenInfo
           );
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
-            getBorrow(params.borrower, s),
+            getTokenId(params.borrower, s.borrowInfo),
             params.borrower,
-            s
+            s.accountInfo,
+            s.ledger,
+            s.tokenInfo
           );
 
           if outstandingBorrowInCU > maxBorrowInCU
@@ -470,14 +481,11 @@ function liquidate(
 
           operations := transfer_token(Tezos.sender, Tezos.self_address, params.amount, borrowToken.mainToken);
 
-          if getMarkets(params.borrower, s) contains params.collateralToken
+          if getTokenId(params.borrower, s.markets) contains params.collateralToken
           then skip
           else failwith("yToken/collateralToken-not-contains-in-borrow-market");
 
-          var collateralToken : tokenInfo := getTokenInfo(
-            params.collateralToken,
-            s
-          );
+          var collateralToken : tokenInfo := getTokenInfo(params.collateralToken, s.tokenInfo);
 
           verifyTokenUpdated(collateralToken);
 
@@ -502,16 +510,16 @@ function liquidate(
           var liquidatorAccount : account := getAccount(
             Tezos.sender,
             params.collateralToken,
-            s
+            s.accountInfo
           );
 
-          var borrowerBalanceInfo : nat := getBalanceByToken(params.borrower, params.collateralToken, s);
+          var borrowerBalanceInfo : nat := getBalanceByToken(params.borrower, params.collateralToken, s.ledger);
 
           if borrowerBalanceInfo < seizeTokensFloat
           then failwith("yToken/seize/not-enough-tokens")
           else skip;
 
-          var liquidatorBalanceInfo : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s);
+          var liquidatorBalanceInfo : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
 
           borrowerBalanceInfo :=
             case is_nat(borrowerBalanceInfo - seizeTokensFloat) of
@@ -539,8 +547,8 @@ function enterMarket(
   block {
     case p of
       EnterMarket(tokenId) -> {
-        var userAccount : account := getAccount(Tezos.sender, tokenId, s);
-        var userMarkets : set(tokenId) := getMarkets(Tezos.sender, s);
+        var userAccount : account := getAccount(Tezos.sender, tokenId, s.accountInfo);
+        var userMarkets : set(tokenId) := getTokenId(Tezos.sender, s.markets);
 
         if tokenId < s.lastTokenId
         then skip
@@ -565,7 +573,7 @@ function exitMarket(
   block {
       case p of
         ExitMarket(tokenId) -> {
-          var userMarkets : set(tokenId) := getMarkets(Tezos.sender, s);
+          var userMarkets : set(tokenId) := getTokenId(Tezos.sender, s.markets);
 
           if tokenId < s.lastTokenId
           then skip
@@ -573,7 +581,7 @@ function exitMarket(
 
           const token : tokenInfo = getTokenInfo(
             tokenId,
-            s
+            s.tokenInfo
           );
           verifyTokenUpdated(token);
 
@@ -582,12 +590,15 @@ function exitMarket(
           const maxBorrowInCU : nat = calcMaxCollateralInCU(
             userMarkets,
             Tezos.sender,
-            s
+            s.ledger,
+            s.tokenInfo
           );
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
-            getBorrow(Tezos.sender, s),
+            getTokenId(Tezos.sender, s.borrowInfo),
             Tezos.sender,
-            s
+            s.accountInfo,
+            s.ledger,
+            s.tokenInfo
           );
 
           if outstandingBorrowInCU <= maxBorrowInCU
@@ -609,7 +620,7 @@ function returnPrice(
 
     var token : tokenInfo := getTokenInfo(
       params.tokenId,
-      s.storage
+      s.storage.tokenInfo
     );
     token.lastPrice := params.amount;
     token.priceUpdateTime := Tezos.now;
@@ -621,7 +632,7 @@ function accrueInterest(
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
-    var token : tokenInfo := getTokenInfo(params.tokenId, s.storage);
+    var token : tokenInfo := getTokenInfo(params.tokenId, s.storage.tokenInfo);
     const borrowRate : nat = params.amount;
 
     if token.isInterestUpdating = False
