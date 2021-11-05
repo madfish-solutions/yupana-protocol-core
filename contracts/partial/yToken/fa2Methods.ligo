@@ -2,9 +2,9 @@
 function getAccount(
   const user            : address;
   const tokenId         : tokenId;
-  const s               : tokenStorage)
+  const accountInfo     : big_map((address * tokenId), account))
                         : account is
-  case s.accountInfo[(user, tokenId)] of
+  case accountInfo[(user, tokenId)] of
     None -> record [
       allowances        = (set [] : set(address));
       borrow            = 0n;
@@ -13,20 +13,11 @@ function getAccount(
   | Some(v) -> v
   end
 
-function getMarkets(
+function getTokenId(
   const user            : address;
-  const s               : tokenStorage)
+  const addressMap      : big_map(address, set(tokenId)))
                         : set(tokenId) is
-  case s.markets[user] of
-    None -> (set [] : set(tokenId))
-  | Some(v) -> v
-  end
-
-function getBorrow(
-  const user            : address;
-  const s               : tokenStorage)
-                        : set(tokenId) is
-  case s.borrowInfo[user] of
+  case addressMap[user] of
     None -> (set [] : set(tokenId))
   | Some(v) -> v
   end
@@ -34,9 +25,9 @@ function getBorrow(
 (* Helper function to get token info *)
 function getTokenInfo(
   const token_id        : tokenId;
-  const s               : tokenStorage)
+  const tokenInfo       : map(tokenId, tokenInfo))
                         : tokenInfo is
-  case s.tokenInfo[token_id] of
+  case tokenInfo[token_id] of
     None -> record [
       mainToken               = FA12(zeroAddress);
       interestRateModel       = zeroAddress;
@@ -91,7 +82,7 @@ function getTotalSupply(
     var operations : list(operation) := list[];
       case p of
         IGetTotalSupply(args) -> {
-          const res : tokenInfo = getTokenInfo(args.token_id, s);
+          const res : tokenInfo = getTokenInfo(args.token_id, s.tokenInfo);
           operations := list [
             Tezos.transaction(res.totalSupplyFloat, 0tz, args.receiver)
           ];
@@ -104,9 +95,9 @@ function getTotalSupply(
 function getBalanceByToken(
   const user            : address;
   const token_id        : nat;
-  const s               : tokenStorage)
+  const ledger          : big_map((address * tokenId), nat))
                         : nat is
-  case s.ledger[(user, token_id)] of
+  case ledger[(user, token_id)] of
     None -> 0n
   | Some(v) -> v
   end
@@ -122,7 +113,7 @@ function getBalanceByToken(
   block {
     const operator : address = Tezos.sender;
     const owner : address = transferParam.from_;
-    const user : account = getAccount(owner, token_id, s);
+    const user : account = getAccount(owner, token_id, s.accountInfo);
   } with owner = operator or Set.mem(operator, user.allowances)
 
 (* Perform transfers *)
@@ -143,7 +134,7 @@ function iterateTransfer(
         else failwith("FA2_NOT_OPERATOR");
 
         (* Check the entered markets *)
-        if Set.mem(transferDst.token_id, getMarkets(params.from_, s))
+        if Set.mem(transferDst.token_id, getTokenId(params.from_, s.markets))
         then failwith("yToken/token-taken-as-collateral")
         else skip;
 
@@ -154,7 +145,7 @@ function iterateTransfer(
         else failwith("FA2_TOKEN_UNDEFINED");
 
         (* Get source info *)
-        var srcBalanceInfo : nat := getBalanceByToken(params.from_, transferDst.token_id, s);
+        var srcBalanceInfo : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
 
         (* Balance check *)
         if srcBalanceInfo < transferDst.amount
@@ -171,7 +162,7 @@ function iterateTransfer(
         s.ledger[(params.from_, transferDst.token_id)] := srcBalanceInfo;
 
         (* Get receiver balance *)
-        var dstBalanceInfo : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s);
+        var dstBalanceInfo : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s.ledger);
 
         (* Update destination balance *)
         dstBalanceInfo := dstBalanceInfo + transferDst.amount;
@@ -193,7 +184,7 @@ function iterateUpdateOperators(
       else skip;
 
       (* Create or get source account *)
-      var srcAccount : account := getAccount(param.owner, param.token_id, s);
+      var srcAccount : account := getAccount(param.owner, param.token_id, s.accountInfo);
 
       (* Add operator *)
       srcAccount.allowances := Set.add(param.operator, srcAccount.allowances);
@@ -208,7 +199,7 @@ function iterateUpdateOperators(
       else skip;
 
       (* Create or get source account *)
-      var srcAccount : account := getAccount(param.owner, param.token_id, s);
+      var srcAccount : account := getAccount(param.owner, param.token_id, s.accountInfo);
 
       (* Remove operator *)
       srcAccount.allowances := Set.remove(
@@ -236,7 +227,7 @@ function getBalance(
                               : list(balanceOfResponse) is
             block {
               (* Retrieve the asked account from the storage *)
-              const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s);
+              const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
 
               (* Form the response *)
               const response : balanceOfResponse = record [
