@@ -25,24 +25,11 @@ function mustBeAdmin(
     )
   end;
 
-[@inline] function getReceivePriceEntrypoint(
-  const contractAddress : address)
-                        : contract(oracleParam) is
-  case (
-    Tezos.get_entrypoint_opt("%receivePrice", contractAddress)
-                        : option(contract(oracleParam))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("proxy/cant-get-receivePrice") : contract(oracleParam)
-    )
-  end;
-
-[@inline] function getYTokenReturnPriceMethod(
+[@inline] function getYTokenPriceCallbackMethod(
   const s               : proxyStorage)
                         : contract(yAssetParams) is
   case (
-    Tezos.get_entrypoint_opt("%returnPrice", s.yToken)
+    Tezos.get_entrypoint_opt("%priceCallback", s.yToken)
                         : option(contract(yAssetParams))
   ) of
     Some(contr) -> contr
@@ -114,7 +101,7 @@ function receivePrice(
           amount = price;
         ],
         0mutez,
-        getYTokenReturnPriceMethod(s)
+        getYTokenPriceCallbackMethod(s)
       )
     ];
   } with (operations, s)

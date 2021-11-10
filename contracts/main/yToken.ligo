@@ -9,7 +9,7 @@ function setUseAction(
   block {
     if Tezos.sender = s.storage.admin
     then case s.useLambdas[idx] of
-        Some(_n) -> failwith("yToken/yToken-function-not-set")
+        Some(_n) -> failwith("yToken/yToken-function-already-set")
         | None -> s.useLambdas[idx] := lambda_bytes
       end;
     else failwith("yToken/you-not-admin")
@@ -104,7 +104,7 @@ function main(
     | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
     | UpdateInterest(params)        -> updateInterest(params, s)
     | AccrueInterest(params)        -> accrueInterest(params, s)
-    | ReturnPrice(params)           -> returnPrice(params, s)
+    | PriceCallback(params)         -> priceCallback(params, s)
     | Use(params)                   -> middleUse(params, s)
     | SetUseAction(params)          -> setUseAction(params.index, params.func, s)
     | SetTokenAction(params)        -> setTokenAction(params.index, params.func, s)

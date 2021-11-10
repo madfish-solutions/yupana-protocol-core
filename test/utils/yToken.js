@@ -132,7 +132,7 @@ class YToken {
     }
   }
 
-  async calcGas (batchArray) {
+  async calcGas(batchArray) {
     const est = await this.tezos.estimate.batch(batchArray);
 
     var gasRes = 0;
@@ -156,7 +156,9 @@ class YToken {
   }
 
   async updateOperators(params) {
-    const operation = await this.contract.methods.updateOperators(params).send();
+    const operation = await this.contract.methods
+      .updateOperators(params)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
@@ -185,9 +187,9 @@ class YToken {
     return operation;
   }
 
-  async returnPrice(token_id, amount) {
+  async priceCallback(token_id, amount) {
     const operation = await this.contract.methods
-      .returnPrice(token_id, amount)
+      .priceCallback(token_id, amount)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
@@ -212,8 +214,8 @@ class YToken {
     type,
     assetAddress,
     token_id,
-    collateralFactorFloat,
-    reserveFactorFloat,
+    collateralFactorF,
+    reserveFactorF,
     maxBorrowRate,
     tokenMetadata
   ) {
@@ -224,8 +226,8 @@ class YToken {
           type,
           assetAddress,
           token_id,
-          collateralFactorFloat,
-          reserveFactorFloat,
+          collateralFactorF,
+          reserveFactorF,
           maxBorrowRate,
           tokenMetadata
         )
@@ -236,8 +238,8 @@ class YToken {
           interestRateModel,
           type,
           assetAddress,
-          collateralFactorFloat,
-          reserveFactorFloat,
+          collateralFactorF,
+          reserveFactorF,
           maxBorrowRate,
           tokenMetadata
         )
@@ -250,16 +252,16 @@ class YToken {
 
   async setTokenFactors(
     tokenId,
-    collateralFactorFloat,
-    reserveFactorFloat,
+    collateralFactorF,
+    reserveFactorF,
     interestRateModel,
     maxBorrowRate
   ) {
     const operation = await this.contract.methods
       .setTokenFactors(
         tokenId,
-        collateralFactorFloat,
-        reserveFactorFloat,
+        collateralFactorF,
+        reserveFactorF,
         interestRateModel,
         maxBorrowRate
       )
@@ -269,18 +271,13 @@ class YToken {
   }
 
   async setGlobalFactors(
-    closeFactorFloat,
-    liqIncentiveFloat,
+    closeFactorF,
+    liqIncentiveF,
     priceFeedProxy,
     maxMarkets
   ) {
     const operation = await this.contract.methods
-      .setGlobalFactors(
-        closeFactorFloat,
-        liqIncentiveFloat,
-        priceFeedProxy,
-        maxMarkets
-      )
+      .setGlobalFactors(closeFactorF, liqIncentiveF, priceFeedProxy, maxMarkets)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
@@ -344,13 +341,17 @@ class YToken {
   }
 
   async updateMetadata(tokenId, tokenMetadata) {
-    const operation = await this.contract.methods.updateMetadata(tokenId, tokenMetadata).send();
+    const operation = await this.contract.methods
+      .updateMetadata(tokenId, tokenMetadata)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
   async setBorrowPause(tokenId, condition) {
-    const operation = await this.contract.methods.setBorrowPause(tokenId, condition).send();
+    const operation = await this.contract.methods
+      .setBorrowPause(tokenId, condition)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
@@ -358,8 +359,8 @@ class YToken {
   async updateAndsetTokenFactors(
     proxy,
     tokenId,
-    collateralFactorFloat,
-    reserveFactorFloat,
+    collateralFactorF,
+    reserveFactorF,
     interestRateModel,
     maxBorrowRate
   ) {
@@ -385,8 +386,8 @@ class YToken {
         ...this.contract.methods
           .setTokenFactors(
             tokenId,
-            collateralFactorFloat,
-            reserveFactorFloat,
+            collateralFactorF,
+            reserveFactorF,
             interestRateModel,
             maxBorrowRate
           )

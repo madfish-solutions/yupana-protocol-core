@@ -1,27 +1,27 @@
 type rateStorage        is [@layout:comb] record [
   admin                 : address;
   yToken                : address;
-  kickRateFloat         : nat;
-  baseRateFloat         : nat;
-  multiplierFloat       : nat;
-  jumpMultiplierFloat   : nat;
-  reserveFactorFloat    : nat;
+  kickRateF         : nat;
+  baseRateF         : nat;
+  multiplierF       : nat;
+  jumpMultiplierF   : nat;
+  reserveFactorF    : nat;
   lastUpdTime           : timestamp;
 ]
 
 type setCoeffParams     is [@layout:comb] record [
-  kickRateFloat         : nat;
-  baseRateFloat         : nat;
-  multiplierFloat       : nat;
-  jumpMultiplierFloat   : nat;
+  kickRateF         : nat;
+  baseRateF         : nat;
+  multiplierF       : nat;
+  jumpMultiplierF   : nat;
 ]
 
 type rateParams         is [@layout:comb] record [
   tokenId               : nat;
-  borrowsFloat          : nat;
-  cashFloat             : nat;
-  reservesFloat         : nat;
+  borrowsF          : nat;
+  cashF             : nat;
+  reservesF         : nat;
   precision             : nat;
-  reserveFactorFloat    : nat;
+  reserveFactorF    : nat;
   callback              : contract(yAssetParams);
 ]

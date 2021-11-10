@@ -1,6 +1,6 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 
 module.exports = {
-  totalSupplyFloat: "0",
+  totalSupplyF: "0",
   ledger: MichelsonMap.fromLiteral({}),
 };
