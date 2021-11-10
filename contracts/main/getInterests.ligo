@@ -17,10 +17,10 @@ type yAssetParams         is record [
 ]
 
 type setCoeffParams     is [@layout:comb] record [
-  kickRateFloat         : nat;
-  baseRateFloat         : nat;
-  multiplierFloat       : nat;
-  jumpMultiplierFloat   : nat;
+  kickRateF         : nat;
+  baseRateF         : nat;
+  multiplierF       : nat;
+  jumpMultiplierF   : nat;
 ]
 
 type rateParams         is [@layout:comb] record [

@@ -31,8 +31,8 @@ const tokenStorage = {
   tokenMetadata: MichelsonMap.fromLiteral({}),
   lastTokenId: "0",
   priceFeedProxy: alice.pkh,
-  closeFactorFloat: "0",
-  liqIncentiveFloat: "0",
+  closeFactorF: "0",
+  liqIncentiveF: "0",
   maxMarkets: "0",
 };
 

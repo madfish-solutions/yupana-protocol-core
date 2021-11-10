@@ -18,14 +18,14 @@ type tokenInfo         is [@layout:comb] record [
   interestRateModel     : address;
   interestUpdateTime    : timestamp;
   priceUpdateTime       : timestamp;
-  totalBorrowsFloat     : nat;
-  totalLiquidFloat      : nat;
-  totalSupplyFloat      : nat;
-  totalReservesFloat    : nat;
+  totalBorrowsF         : nat;
+  totalLiquidF          : nat;
+  totalSupplyF          : nat;
+  totalReservesF        : nat;
   borrowIndex           : nat;
   maxBorrowRate         : nat;
-  collateralFactorFloat : nat;
-  reserveFactorFloat    : nat;
+  collateralFactorF     : nat;
+  reserveFactorF        : nat;
   lastPrice             : nat;
   borrowPause           : bool;
   isInterestUpdating    : bool;
@@ -40,10 +40,10 @@ type tokenStorage       is [@layout:comb] record [
   tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
   priceFeedProxy        : address;
-  closeFactorFloat      : nat;
-  liqIncentiveFloat     : nat;
+  closeFactorF          : nat;
+  liqIncentiveF         : nat;
   markets               : big_map(address, set(tokenId));
-  borrowInfo            : big_map(address, set(tokenId));
+  borrows               : big_map(address, set(tokenId));
   maxMarkets            : nat;
   typesInfo             : big_map(assetType, tokenId);
 ]
@@ -75,15 +75,15 @@ type faTransferParams   is [@layout:comb] record [
 
 type setTokenParams     is [@layout:comb] record [
   tokenId               : nat;
-  collateralFactorFloat : nat;
-  reserveFactorFloat    : nat;
+  collateralFactorF     : nat;
+  reserveFactorF        : nat;
   interestRateModel     : address;
   maxBorrowRate         : nat;
 ]
 
 type setGlobalParams    is [@layout:comb] record [
-  closeFactorFloat      : nat;
-  liqIncentiveFloat     : nat;
+  closeFactorF          : nat;
+  liqIncentiveF         : nat;
   priceFeedProxy        : address;
   maxMarkets            : nat;
 ]
@@ -108,8 +108,8 @@ type setModelParams     is [@layout:comb] record [
 type newMarketParams    is [@layout:comb] record [
   interestRateModel     : address;
   assetAddress          : assetType;
-  collateralFactorFloat : nat;
-  reserveFactorFloat    : nat;
+  collateralFactorF     : nat;
+  reserveFactorF        : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
 ]
