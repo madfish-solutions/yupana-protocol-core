@@ -202,7 +202,8 @@ def format_numbers(d):
                     new_list.append(new_val)
             res[key] = new_list
         elif isinstance(val, int):
-            res[key] = f"{val:_}"
+            # res[key] = f"{val:_}"
+            res[key] = val / 1e18
     return res
 
 
@@ -212,6 +213,40 @@ def pprint_aux(d):
     res = format_numbers(d)
     pprint(res)
 
+# accepts internal res.storage["storage"]
+def calc_max_colateral(storage, user):
+    markets = storage["markets"]
+    if user not in markets:
+        return 0
+        
+    acc = 0
+    for market in markets[user]:
+        token_id = market
+        token = storage["tokenInfo"][token_id]
+        balance = storage["ledger"][(user,token_id)]
+        print("goga", abs(token["totalLiquidFloat"]
+            + token["totalBorrowsFloat"] - token["totalReservesFloat"]))
+        acc += ((int(balance) * token["lastPrice"]
+            * token["collateralFactorFloat"]) * (abs(token["totalLiquidFloat"]
+            + token["totalBorrowsFloat"] - token["totalReservesFloat"])
+            / token["totalSupplyFloat"]) / PRECISION);
+    
+    return acc
+
+def calc_outstanding_borrow(storage, user):
+    borrows = storage["borrowInfo"]
+    if user not in borrows:
+        return 0
+        
+    acc = 0
+    for token_id in borrows.items():
+        token_info = storage["tokenInfo"][token_id]
+        balance = storage["ledger"].get((user,token_id), 0)
+        account = storage["accountInfo"][(user,token_id)]
+        if balance > 0 or account["borrow"] > 0:
+            acc += (account["borrow"] * token_info["lastPrice"])
+
+    return acc
 
 # calculates shares balance
 def calc_total_balance(res, address):
@@ -264,7 +299,15 @@ def operator_add(owner, operator, token_id=0):
         "add_operator": {"owner": owner, "operator": operator, "token_id": token_id}
     }
 
-import json
+def get_map_without_none(map):
+    return {key: value for key,value in map.items() if value != None}
+
+def none_sets_to_lists(full_storage):
+    internal = full_storage["storage"]
+    internal["markets"] = get_map_without_none(internal["markets"])
+    internal["borrowInfo"] = get_map_without_none(internal["borrowInfo"])
+
+    return full_storage
 
 class LocalChain:
     def __init__(self, storage=None):
@@ -286,7 +329,7 @@ class LocalChain:
             source=source,
         )
         self.balance = new_balance
-        self.storage = res.storage
+        self.storage = none_sets_to_lists(res.storage)
 
         # calculate total xtz payouts from contract
         ops = parse_ops(res)

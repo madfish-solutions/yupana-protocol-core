@@ -15,11 +15,8 @@ token_a = {"fA12": token_a_address}
 token_b = {"fA12" : token_b_address}
 token_c = {"fA12" : token_c_address}
 
-token_a_interest_model = "KT1LzyPS8rN375tC31WPAVHaQ4HyBvTSLwBu"
-token_b_interest_model = "KT1ND1bkLahTzVUt93zbDtGugpWcL23gyqgQ"
+interest_model = "KT1LzyPS8rN375tC31WPAVHaQ4HyBvTSLwBu"
 price_feed = "KT1Qf46j2x37sAN4t2MKRQRVt9gc4FZ5duMs"
-
-interest_model = token_a_interest_model
 
 class DexTest(TestCase):
 
@@ -34,8 +31,8 @@ class DexTest(TestCase):
         storage["useLambdas"] = use_lambdas
         storage["storage"]["admin"] = admin
         storage["storage"]["priceFeedProxy"] = price_feed
-        storage["storage"]["maxMarkets"] = 100
-        storage["storage"]["closeFactorFloat"] = int(1 * PRECISION)
+        storage["storage"]["maxMarkets"] = 10
+        storage["storage"]["closeFactorFloat"] = int(0.5 * PRECISION)
         storage["storage"]["liqIncentiveFloat"] = int(1.05 * PRECISION)
         cls.storage = storage
 
@@ -52,7 +49,7 @@ class DexTest(TestCase):
                 assetAddress = token,
                 collateralFactorFloat = int(config["collateral_factor"] * PRECISION),
                 reserveFactorFloat = int(config["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 1*PRECISION,
+                maxBorrowRate = 1_000_000*PRECISION,
                 tokenMetadata = {"": ""}
             ), sender=admin)
 
@@ -81,20 +78,20 @@ class DexTest(TestCase):
 
         chain = LocalChain(storage=self.storage)
         res = chain.execute(self.ct.addMarket(
-                interestRateModel = token_a_interest_model,
+                interestRateModel = interest_model,
                 assetAddress = token_a,
                 collateralFactorFloat = int(config_a["collateral_factor"] * PRECISION),
                 reserveFactorFloat = int(config_a["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 1*PRECISION,
+                maxBorrowRate = 1_000_000*PRECISION,
                 tokenMetadata = {"": ""}
             ), sender=admin)
 
         res = chain.execute(self.ct.addMarket(
-                interestRateModel = token_b_interest_model,
+                interestRateModel = interest_model,
                 assetAddress = token_b,
                 collateralFactorFloat = int(config_b["collateral_factor"] * PRECISION),
                 reserveFactorFloat = int(config_b["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 1*PRECISION,
+                maxBorrowRate = 1_000_000*PRECISION,
                 tokenMetadata = {"": ""}
             ), sender=admin)
 
@@ -109,26 +106,18 @@ class DexTest(TestCase):
     def test_simple_borrow_repay(self):
         chain = self.create_chain_with_ab_markets()
 
-        res = chain.execute(self.ct.mint(0, 77))
-        transfers = parse_transfers(res)
-        self.assertEqual(transfers[0]["destination"], contract_self_address)
-        self.assertEqual(transfers[0]["source"], me)
-        self.assertEqual(transfers[0]["amount"], 77)
-        self.assertEqual(transfers[0]["token_address"], token_a_address)
-
-        res = chain.execute(self.ct.mint(1, 128))
+        res = chain.execute(self.ct.mint(0, 128))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], contract_self_address)
         self.assertEqual(transfers[0]["source"], me)
         self.assertEqual(transfers[0]["amount"], 128)
-        self.assertEqual(transfers[0]["token_address"], token_b_address)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+
+        res = chain.execute(self.ct.enterMarket(0))
 
         with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.borrow(0, 78))
+            res = chain.execute(self.ct.borrow(0, 65))
         
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.borrow(0, 129))
-
         res = chain.execute(self.ct.borrow(0, 10))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], me)
@@ -150,32 +139,31 @@ class DexTest(TestCase):
             res = chain.execute(self.ct.repay(0, 1))
 
         with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.redeem(0, 78))
-        
-        with self.assertRaises(MichelsonRuntimeError):
             res = chain.execute(self.ct.redeem(0, 129))
 
-        res = chain.execute(self.ct.redeem(0, 77))
-        transfers = parse_transfers(res)
-        self.assertEqual(transfers[0]["destination"], me)
-        self.assertEqual(transfers[0]["source"], contract_self_address)
-        self.assertEqual(transfers[0]["amount"], 77)
-        self.assertEqual(transfers[0]["token_address"], token_a_address)
+        res = chain.execute(self.ct.exitMarket(0))
 
-        res = chain.execute(self.ct.redeem(1, 128))
+        res = chain.execute(self.ct.redeem(0, 128))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 128)
-        self.assertEqual(transfers[0]["token_address"], token_b_address)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
 
-    def test_can_redeem(self):
+    def test_can_simply_redeem(self):
         chain = self.create_chain_with_ab_markets()
 
-        chain.execute(self.ct.mint(0, 100), sender=alice)
-        chain.execute(self.ct.enterMarket(0), sender=alice)
-        chain.execute(self.ct.exitMarket(0), sender=alice)
-        chain.execute(self.ct.redeem(0, 100), sender=alice)
+        chain.execute(self.ct.mint(0, 100))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.exitMarket(0))
+        
+        res = chain.execute(self.ct.redeem(0, 100))
+
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"], me)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 100)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
 
     def test_cant_redeem_when_on_market(self):
         chain = self.create_chain_with_ab_markets()
@@ -209,16 +197,15 @@ class DexTest(TestCase):
 
         res = chain.execute(self.ct.returnPrice(0, 50), sender=price_feed)
 
-        res = chain.execute(self.ct.liquidate(1, 0, me, 47), sender=bob)
+        res = chain.execute(self.ct.liquidate(1, 0, me, 25), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(len(transfers), 1)
         self.assertEqual(transfers[0]["source"], bob)
         self.assertEqual(transfers[0]["destination"], contract_self_address)
-        self.assertEqual(transfers[0]["amount"], 47)
+        self.assertEqual(transfers[0]["amount"], 25)
         self.assertEqual(transfers[0]["token_address"], token_b_address)
 
-        # TODO why do we have to repay and redeem after position has been liquidated?
-        chain.execute(self.ct.repay(1, 3))
+        chain.execute(self.ct.repay(1, 25))
         chain.execute(self.ct.exitMarket(0))
 
         res = chain.execute(self.ct.redeem(0, 1))
@@ -327,10 +314,13 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.borrow(1, 50_000), sender=alice)
 
         # collateral price goes down
-        res = chain.execute(self.ct.returnPrice(0, 50), sender=price_feed)
+        res = chain.execute(self.ct.returnPrice(0, 30), sender=price_feed)
+
+        # pprint_aux(res.storage["storage"])
+        # return
 
         with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.liquidate(1, 0, alice, 50_001), sender=bob)
+            res = chain.execute(self.ct.liquidate(1, 0, alice, 25_001), sender=bob)
 
         res = chain.execute(self.ct.liquidate(1, 0, alice, 10_000), sender=bob)
         transfers = parse_transfers(res)
@@ -339,17 +329,12 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["amount"], 10_000) 
         self.assertEqual(transfers[0]["token_address"], token_b_address)
 
-        res = chain.execute(self.ct.liquidate(1, 0, alice, 40_000), sender=bob)
+        res = chain.execute(self.ct.liquidate(1, 0, alice, 15_000), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["source"], bob)
         self.assertEqual(transfers[0]["destination"], contract_self_address)
-        self.assertEqual(transfers[0]["amount"], 40_000) 
+        self.assertEqual(transfers[0]["amount"], 15_000) 
         self.assertEqual(transfers[0]["token_address"], token_b_address)
-
-        # alice no longer can repay her funds
-        res = chain.execute(self.ct.redeem(0, 10_000), sender=alice)
-        transfers = parse_transfers(res)
-        pprint(transfers)
         
 
     def test_liquidate_borrow_price_up(self):
@@ -378,11 +363,11 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.liquidate(1, 0, alice, 50_001), sender=bob)
             
-        res = chain.execute(self.ct.liquidate(1, 0, alice, 50_000), sender=bob)
+        res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["source"], bob)
         self.assertEqual(transfers[0]["destination"], contract_self_address)
-        self.assertEqual(transfers[0]["amount"], 50_000) 
+        self.assertEqual(transfers[0]["amount"], 25_000) 
         self.assertEqual(transfers[0]["token_address"], token_b_address)
 
     def test_multicollateral_cant_exit(self):
@@ -439,9 +424,36 @@ class DexTest(TestCase):
         chain.execute(self.ct.enterMarket(0))
         chain.execute(self.ct.enterMarket(1))
                 
-        
+    def test_liquidate_due_to_interest_rate(self):
+        chain = self.create_chain_with_ab_markets()
 
-    def test_interest_rate(self):
+        res = chain.execute(self.ct.mint(0, 10))
+        res = chain.execute(self.ct.enterMarket(0))
+        res = chain.execute(self.ct.borrow(1, 5))
+
+        chain.advance_blocks(1)
+        res = chain.execute(self.ct.updateInterest(0))
+        res = chain.execute(self.ct.accrueInterest(0, 0), sender=interest_model)
+        res = chain.execute(self.ct.returnPrice(0, 100_000), sender=price_feed)
+
+        # at this rate one second accrues 1 token of interest
+        res = chain.execute(self.ct.updateInterest(1))
+        res = chain.execute(self.ct.accrueInterest(1, int(0.1 * 1e18)), sender=interest_model)
+        res = chain.execute(self.ct.returnPrice(1, 100_000), sender=price_feed)
+        
+        # verify only 20 tokens could be repayed
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.interpret(self.ct.repay(1, 21))
+        chain.interpret(self.ct.repay(1, 20))
+
+
+
+        # can liquidate at least 9 tokens which is 0.5 * 20 - 1
+        with self.assertRaises(MichelsonRuntimeError):
+            res = chain.execute(self.ct.liquidate(1, 0, me, 11), sender=bob)
+        res = chain.execute(self.ct.liquidate(1, 0, me, 9), sender=bob)
+        
+    def test_interest_rate_accrual(self):
         chain = self.create_chain_with_ab_markets()
 
         res = chain.execute(self.ct.mint(0, 100_000))
@@ -449,20 +461,84 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.borrow(1, 10_000))
         
         chain.advance_blocks(1)
-        res = chain.execute(self.ct.accrueInterest(0, 0), sender=token_a_interest_model)
-        res = chain.execute(self.ct.returnPrice(0, 100_000), sender=price_feed)
+
+        res = chain.execute(self.ct.updateInterest(0))
+        res = chain.execute(self.ct.accrueInterest(0, 0), sender=interest_model)
+        res = chain.execute(self.ct.returnPrice(0, 100), sender=price_feed)
 
         # at this rate one second accues 1 token of interest
-        res = chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=token_b_interest_model)
-        res = chain.execute(self.ct.returnPrice(1, 100_000), sender=price_feed)
+        res = chain.execute(self.ct.updateInterest(1))
+        res = chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=interest_model)
+        res = chain.execute(self.ct.returnPrice(1, 100), sender=price_feed)
                   
-        # res = chain.execute(self.ct.redeem(0, 101_000))
-        with self.assertRaises(MichelsonRuntimeError):
-            res = chain.execute(self.ct.repay(1, 10_029))
-            res = chain.execute(self.ct.exitMarket(0))
-
         res = chain.execute(self.ct.repay(1, 10_030))
         res = chain.execute(self.ct.exitMarket(0))
 
         # self.assertEqual(old_storage, res.storage["storage"])
 
+    def test_whale_redeems_its_collateral(self):
+        chain = self.create_chain_with_ab_markets()
+        
+        res = chain.execute(self.ct.mint(0, 100_000))
+        res = chain.execute(self.ct.enterMarket(0))
+        res = chain.execute(self.ct.borrow(1, 50_000))
+
+        # since admin is our main whale he can take funds
+        res = chain.execute(self.ct.redeem(1, 50_000), sender=admin)
+        
+        with self.assertRaises(MichelsonRuntimeError):        
+            res = chain.execute(self.ct.redeem(1, 1), sender=admin)
+
+
+    def test_collateral_interest_avoids_liquidation(self):
+        chain = self.create_chain_with_ab_markets()
+        
+        chain.execute(self.ct.mint(0, 10), sender=alice)
+        chain.execute(self.ct.enterMarket(0), sender=alice)
+        chain.execute(self.ct.borrow(1, 5), sender=alice)
+
+        chain.execute(self.ct.mint(1, 10), sender=bob)
+        chain.execute(self.ct.enterMarket(1), sender=bob)
+        chain.execute(self.ct.borrow(0, 5), sender=bob)
+
+        chain.advance_blocks(1)
+        
+        chain.execute(self.ct.updateInterest(0))
+        chain.execute(self.ct.accrueInterest(0, 100_000_000_000_000), sender=interest_model)
+        chain.execute(self.ct.returnPrice(0, 100_000), sender=price_feed)
+
+        chain.execute(self.ct.updateInterest(1))
+        chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=interest_model)
+        chain.execute(self.ct.returnPrice(1, 100_000), sender=price_feed)
+
+
+    def test_token_self_borrow(self):
+        chain = self.create_chain_with_ab_markets()
+        
+        chain.execute(self.ct.mint(0, 100))
+        chain.execute(self.ct.enterMarket(0))
+        res = chain.execute(self.ct.borrow(0, 50))
+        transfers = parse_transfers(res)
+        pprint(transfers)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            res = chain.execute(self.ct.borrow(0, 1))
+
+    def test_should_verify_token_updates(self):
+        chain = self.create_chain_with_ab_markets()
+
+        chain.advance_blocks(1)
+
+        with self.assertRaises(MichelsonRuntimeError) as error:
+            chain.execute(self.ct.mint(0, 100))
+        self.assertIn("update", error.exception.args[-1])
+
+        with self.assertRaises(MichelsonRuntimeError) as error:
+            chain.execute(self.ct.borrow(0, 100))
+        self.assertIn("update", error.exception.args[-1])
+
+        with self.assertRaises(MichelsonRuntimeError) as error:
+            # chain.execute(self.ct.liquidate(0, 100))
+            chain.execute(self.ct.liquidate(1, 0, me, 100), sender=bob)
+        self.assertIn("update", error.exception.args[-1])
+        # TODO verify liquiate updates all necessary tokens

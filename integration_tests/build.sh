@@ -5,7 +5,7 @@ docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-contract $PWD/contr
 
 mkdir -p integration_tests/compiled/lambdas
 
-DIR=integration_tests/compiled/lambdas/ytoken
+DIR=integration_tests/compiled/lambdas/use
 mkdir -p $DIR
 for i in 0,mint \
         1,redeem \
@@ -29,3 +29,19 @@ for i in 0,mint \
 
     docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo "SetUseAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
 done
+
+DIR=integration_tests/compiled/lambdas/token
+mkdir -p $DIR
+for i in 0,transfer \
+        1,updateOperators \
+        2,getBalance \
+        3,getTotalSupply \
+         ; do 
+
+    IDX=${i%,*};
+    FUNC=${i#*,};
+    echo $IDX-$FUNC;
+
+    docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo "SetTokenAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
+done
+
