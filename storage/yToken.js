@@ -16,6 +16,7 @@ const tokenStorage = {
   markets: MichelsonMap.fromLiteral({}),
   borrows: MichelsonMap.fromLiteral({}),
   typesInfo: MichelsonMap.fromLiteral({}),
+  threshold: "0"
 };
 
 module.exports = {

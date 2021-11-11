@@ -46,9 +46,12 @@ type tokenStorage       is [@layout:comb] record [
   borrows               : big_map(address, set(tokenId));
   maxMarkets            : nat;
   typesInfo             : big_map(assetType, tokenId);
+  threshold             : nat;
 ]
 
 type tokenSet is set(tokenId)
+
+type accountsMapType is big_map((address * tokenId), account);
 
 type totalSupplyParams is [@layout:comb] record [
   token_id              : tokenId;
@@ -86,6 +89,7 @@ type setGlobalParams    is [@layout:comb] record [
   liqIncentiveF         : nat;
   priceFeedProxy        : address;
   maxMarkets            : nat;
+  threshold             : nat;
 ]
 
 type borrowPauseParams is [@layout:comb] record [
@@ -130,9 +134,7 @@ type calculateCollParams is [@layout:comb] record [
 type transferType is TransferOutside of faTransferParams
 type iterTransferType is IterateTransferOutside of transferParams
 
-[@inline] const zeroAddress : address = (
-  "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address
-);
+[@inline] const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
 [@inline] const zeroTimestamp : timestamp = (0 : timestamp);
 [@inline] const precision : nat = 1000000000000000000n; //1e+18
 [@inline] const noOperations : list (operation) = nil;

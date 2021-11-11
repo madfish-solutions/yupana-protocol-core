@@ -105,47 +105,12 @@ describe("yToken tests", async () => {
     await proxy.updateStorage();
     strictEqual(proxy.storage.yToken, yTokenContractAddress);
 
-    // await oracle.updParamsOracle(
-    //   "BTC-USDT",
-    //   54466755129,
-    //   "2021-08-20T09:06:50Z"
-    // );
-    // await oracle.updateStorage();
-    // var res = await oracle.storage.tokenInfo.get("BTC-USD");
-    // strictEqual(res.price.toString(), "54466755129");
-
-    // await oracle.updParamsOracle(
-    //   "ETH-USDT",
-    //   54466755129,
-    //   "2021-08-20T09:06:50Z"
-    // );
-    // await oracle.updateStorage();
-    // var res = await oracle.storage.tokenInfo.get("ETH-USD");
-    // strictEqual(res.price.toString(), "54466755129");
-
-    // await oracle.updParamsOracle(
-    //   "XTZ-USDT",
-    //   54466755129,
-    //   "2021-08-20T09:06:50Z"
-    // );
-    // await oracle.updateStorage();
-    // var res = await oracle.storage.tokenInfo.get("XTZ-USD");
-    // strictEqual(res.price.toString(), "54466755129");
-
-    // await oracle.updParamsOracle(
-    //   "COMP-USD",
-    //   54466755129,
-    //   "2021-08-20T09:06:50Z"
-    // );
-    // await oracle.updateStorage();
-    // var res = await oracle.storage.tokenInfo.get("COMP-USD");
-    // strictEqual(res.price.toString(), "54466755129");
-
     await yToken.setGlobalFactors(
       "500000000000000000",
       "1050000000000000000",
       proxyContractAddress,
-      "2"
+      "2",
+      "550000000000000000"
     );
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
@@ -240,21 +205,17 @@ describe("yToken tests", async () => {
   });
 
   it("update metadata [0] by non admin", async () => {
-    try {
-      tezos = await Utils.setProvider(tezos, alice.sk);
-      await yToken.updateMetadata(0, tokenMetadata2);
-      await yToken.updateStorage();
-      console.log("no error found!");
-    } catch (e) {
-      console.log("permition");
-    }
+    tezos = await Utils.setProvider(tezos, alice.sk);
+    await rejects(yToken.updateMetadata(0, tokenMetadata2), (err) => {
+      ok(err.message == "yToken/not-admin", "Error message mismatch");
+      return true;
+    });
   });
 
   it("update metadata [0] by admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await yToken.updateMetadata(0, tokenMetadata2);
     await yToken.updateStorage();
-    console.log(await yToken.storage.storage.tokenMetadata.get(0));
   });
 
   it("add market [1]", async () => {
@@ -671,12 +632,12 @@ describe("yToken tests", async () => {
     await yToken.updateStorage();
 
     res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
-    strictEqual(res.toPrecision(40).split(".")[0], "100");
+    strictEqual(res.toPrecision(40).split(".")[0], "100000000000000000000");
 
     res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
     strictEqual(
       res2.toPrecision(40).split(".")[0],
-      "9999999999999999999999999900"
+      "9999999900000000000000000000"
     );
   });
 
@@ -757,12 +718,12 @@ describe("yToken tests", async () => {
   it("transfer alice to bob by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     let res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
-    strictEqual(res.toPrecision(40).split(".")[0], "100");
+    strictEqual(res.toPrecision(40).split(".")[0], "100000000000000000000");
 
     let res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
     strictEqual(
       res2.toPrecision(40).split(".")[0],
-      "9999999999999999999999999900"
+      "9999999900000000000000000000"
     );
 
     await yToken.transfer([
@@ -774,12 +735,12 @@ describe("yToken tests", async () => {
     await yToken.updateStorage();
 
     res = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
-    strictEqual(res.toPrecision(40).split(".")[0], "200");
+    strictEqual(res.toPrecision(40).split(".")[0], "200000000000000000000");
 
     res2 = await yToken.storage.storage.ledger.get([alice.pkh, 1]);
     strictEqual(
       res2.toPrecision(40).split(".")[0],
-      "9999999999999999999999999800"
+      "9999999800000000000000000000"
     );
   });
 
@@ -803,7 +764,8 @@ describe("yToken tests", async () => {
       "500000000000000000",
       "1050000000000000000",
       proxyContractAddress,
-      "10"
+      "10",
+      "550000000000000000"
     );
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
@@ -896,42 +858,8 @@ describe("yToken tests", async () => {
   it("mint yTokens by carol", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
 
-    // let tokenInfo = await yToken.storage.storage.tokenInfo.get(1);
-    // let mintTokensF = ("10000000000" * "1000000000000000000")
-    //   .toPrecision(40)
-    //   .split(".")[0];
-    // console.log(mintTokensF);
-    // let totalLiquid = tokenInfo.totalLiquidF.toPrecision(40).split(".")[0];
-    // console.log("totalLiquid", +totalLiquid);
-    // let totalBorrows = tokenInfo.totalBorrowsF
-    //   .toPrecision(40)
-    //   .split(".")[0];
-    // console.log("totalBorrows", +totalBorrows);
-    // let totalReserves = tokenInfo.totalReservesF
-    //   .toPrecision(40)
-    //   .split(".")[0];
-    // console.log("totalReserves", +totalReserves);
-
-    // let calculateTotal = +totalLiquid + +totalBorrows - +totalReserves;
-    // console.log(calculateTotal.toPrecision(40).split(".")[0]);
-    // mintTokensF =
-    //   (mintTokensF * tokenInfo.totalSupplyF.toString()) /
-    //   calculateTotal;
-    // console.log(mintTokensF.toPrecision(40).split(".")[0]);
-
-    // let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
-    // // let yTokenBalance = await yTokenRes.balances.get("1");
-    // console.log(yTokenRes.toPrecision(40).split(".")[0]);
-    // let res = yTokenRes + mintTokensF;
-    // console.log(+res);
-    // // 19999999999999864690496826044
-    // //  9999999999999891830980214784
-
     await yToken.updateAndMint(proxy, 1, 10000000000);
     await yToken.updateStorage();
-
-    // mintTokensF := mintTokensF * token.totalSupplyF /
-    // abs(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF);
 
     let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
     console.log(yTokenRes.toPrecision(40).split(".")[0]);
@@ -1138,6 +1066,18 @@ describe("yToken tests", async () => {
     await yToken.updateStorage();
   });
 
+  it("setGlobalFactors (threshold = 0) by admin", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.setGlobalFactors(
+      "500000000000000000",
+      "1050000000000000000",
+      proxyContractAddress,
+      "2",
+      "0"
+    );
+    await yToken.updateStorage();
+  });
+
   it("liquidate by carol (collateral factor 0)", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
 
@@ -1164,6 +1104,19 @@ describe("yToken tests", async () => {
     await yToken.updateStorage();
   });
 
+  it("setGlobalFactors (return threshold) by admin", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.setGlobalFactors(
+      "500000000000000000",
+      "1050000000000000000",
+      proxyContractAddress,
+      "2",
+      "550000000000000000"
+    );
+    await yToken.updateStorage();
+  });
+
+
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 100), (err) => {
@@ -1179,50 +1132,46 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await oracle.updateStorage();
 
+    await oracle.update(
+      MichelsonMap.fromLiteral({
+        ["XTZ-USD"]: [
+          "2021-10-23T07:01:00Z",
+          "2021-10-23T07:02:00Z",
+          321748180,
+          321748180,
+          321748180,
+          321748180,
+          2,
+        ],
+      })
+    );
+    await oracle.updateStorage();
+
     let res = await oracle.storage.assetMap.get("COMP-USD");
     strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "321748180");
 
-    // await oracle.update(
-    //   MichelsonMap.fromLiteral({
-    //     ["COMP-USD"]: [
-    //       "2021-10-23T07:01:00Z",
-    //       "2021-10-23T07:02:00Z",
-    //       2049393,
-    //       2049393,
-    //       2049393,
-    //       2049393,
-    //       2,
-    //     ],
-    //   })
-    // );
 
     await oracle.update(
       MichelsonMap.fromLiteral({
         ["COMP-USD"]: [
           "2021-10-23T07:01:00Z",
           "2021-10-23T07:02:00Z",
-          160874090,
-          160874090,
-          160874090,
-          160874090,
+          100874090,
+          100874090,
+          100874090,
+          100874090,
           2,
         ],
       })
     );
 
-    // 160874090
     await oracle.updateStorage();
+
     res = await oracle.storage.assetMap.get("COMP-USD");
-    strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "160874090");
+    strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "100874090");
   });
 
   it("liquidate by carol 2 (collateral price fell)", async () => {
-    // await oracle.updParamsOracle(
-    //   "BTC-USDT",
-    //   21786702051,
-    //   "2021-08-20T09:06:50Z"
-    // );
-    // await oracle.updateStorage();
     tezos = await Utils.setProvider(tezos, carol.sk);
 
     await yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 100);

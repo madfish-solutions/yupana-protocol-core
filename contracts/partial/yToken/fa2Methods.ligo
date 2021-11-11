@@ -33,14 +33,14 @@ function getTokenInfo(
       interestRateModel       = zeroAddress;
       priceUpdateTime         = zeroTimestamp;
       interestUpdateTime      = zeroTimestamp;
-      totalBorrowsF       = 0n;
-      totalLiquidF        = 0n;
-      totalSupplyF        = 0n;
-      totalReservesF      = 0n;
+      totalBorrowsF           = 0n;
+      totalLiquidF            = 0n;
+      totalSupplyF            = 0n;
+      totalReservesF          = 0n;
       borrowIndex             = precision;
       maxBorrowRate           = 0n;
-      collateralFactorF   = 0n;
-      reserveFactorF      = 0n;
+      collateralFactorF       = 0n;
+      reserveFactorF          = 0n;
       lastPrice               = 0n;
       borrowPause             = False;
       isInterestUpdating      = False;
@@ -84,7 +84,7 @@ function getTotalSupply(
         IGetTotalSupply(args) -> {
           const res : tokenInfo = getTokenInfo(args.token_id, s.tokenInfo);
           operations := list [
-            Tezos.transaction(res.totalSupplyF, 0tz, args.receiver)
+            Tezos.transaction(res.totalSupplyF / precision, 0tz, args.receiver)
           ];
         }
       | _                         -> skip
@@ -139,22 +139,22 @@ function iterateTransfer(
         else skip;
 
         (* Token id check *)
-
         if transferDst.token_id < s.lastTokenId
         then skip
         else failwith("FA2_TOKEN_UNDEFINED");
 
         (* Get source info *)
         var srcBalance : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
+        const transferAmountF : nat = transferDst.amount * precision;
 
         (* Balance check *)
-        if srcBalance < transferDst.amount
+        if srcBalance < transferAmountF
         then failwith("FA2_INSUFFICIENT_BALANCE")
         else skip;
 
         (* Update source balance *)
         srcBalance :=
-          case is_nat(srcBalance - transferDst.amount) of
+          case is_nat(srcBalance - transferAmountF) of
             | None -> (failwith("underflow/srcBalance") : nat)
             | Some(value) -> value
           end;
@@ -165,7 +165,7 @@ function iterateTransfer(
         var dstBalance : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s.ledger);
 
         (* Update destination balance *)
-        dstBalance := dstBalance + transferDst.amount;
+        dstBalance := dstBalance + transferAmountF;
         s.ledger[(transferDst.to_, transferDst.token_id)] := dstBalance;
     } with s
 } with List.fold(makeTransfer, params.txs, s)
@@ -232,7 +232,7 @@ function getBalance(
               (* Form the response *)
               const response : balanceOfResponse = record [
                   request = request;
-                  balance = userBalance;
+                  balance = userBalance / precision;
                 ];
             } with response # l;
 
