@@ -57,7 +57,10 @@ class DexTest(TestCase):
 
         chain.execute(self.ct.returnPrice(token_num, config["price"]), sender=price_feed)
 
-        chain.execute(self.ct.mint(token_num, config["liquidity"]), sender=admin)
+        liquidity = config["liquidity"]
+        if liquidity == 0: return
+
+        chain.execute(self.ct.mint(token_num, liquidity), sender=admin)
 
 
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
@@ -455,39 +458,64 @@ class DexTest(TestCase):
         
     def test_interest_rate_accrual(self):
         chain = self.create_chain_with_ab_markets()
+        
+        token_b_config = {
+            "collateral_factor": 0.5,
+            "reserve_factor": 0.5,
+            "price": 100,
+            "liquidity": 0,
+        }
 
-        res = chain.execute(self.ct.mint(0, 100_000))
-        res = chain.execute(self.ct.enterMarket(0))
-        res = chain.execute(self.ct.borrow(1, 10_000))
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a) # token a provided by admin
+        self.add_token(chain, token_b, token_b_config) # token b will be provided by alice
+
+        chain.execute(self.ct.mint(1, 100_000), sender=alice)
+        # chain.execute(self.ct.redeem(1, 100_010), sender=alice)
+
+        chain.execute(self.ct.mint(0, 20_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 10_000))
         
         chain.advance_blocks(1)
 
-        res = chain.execute(self.ct.updateInterest(0))
-        res = chain.execute(self.ct.accrueInterest(0, 0), sender=interest_model)
-        res = chain.execute(self.ct.returnPrice(0, 100), sender=price_feed)
+        chain.execute(self.ct.updateInterest(0))
+        # chain.execute(self.ct.accrueInterest(0, 0), sender=interest_model)
+        chain.execute(self.ct.returnPrice(0, 100), sender=price_feed)
 
         # at this rate one second accues 1 token of interest
-        res = chain.execute(self.ct.updateInterest(1))
-        res = chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=interest_model)
-        res = chain.execute(self.ct.returnPrice(1, 100), sender=price_feed)
+        chain.execute(self.ct.updateInterest(1))
+        chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=interest_model)
+        chain.execute(self.ct.returnPrice(1, 100), sender=price_feed)
                   
-        res = chain.execute(self.ct.repay(1, 10_030))
-        res = chain.execute(self.ct.exitMarket(0))
+        chain.execute(self.ct.repay(1, 10_030))
+        chain.execute(self.ct.exitMarket(0))
 
-        # self.assertEqual(old_storage, res.storage["storage"])
+        # pprint_aux(res.storage["storage"])
+        # return
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(1, 100_016), sender=alice)
+
+        chain.execute(self.ct.redeem(1, 100_015), sender=alice)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.withdrawReserve(1, 16), sender=admin)
+
+        chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
 
     def test_whale_redeems_its_collateral(self):
         chain = self.create_chain_with_ab_markets()
         
-        res = chain.execute(self.ct.mint(0, 100_000))
-        res = chain.execute(self.ct.enterMarket(0))
-        res = chain.execute(self.ct.borrow(1, 50_000))
+        chain.execute(self.ct.mint(0, 100_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 50_000))
 
         # since admin is our main whale he can take funds
-        res = chain.execute(self.ct.redeem(1, 50_000), sender=admin)
+        chain.execute(self.ct.redeem(1, 50_000), sender=admin)
         
         with self.assertRaises(MichelsonRuntimeError):        
-            res = chain.execute(self.ct.redeem(1, 1), sender=admin)
+            chain.execute(self.ct.redeem(1, 1), sender=admin)
 
 
     def test_collateral_interest_avoids_liquidation(self):
@@ -510,6 +538,8 @@ class DexTest(TestCase):
         chain.execute(self.ct.updateInterest(1))
         chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=interest_model)
         chain.execute(self.ct.returnPrice(1, 100_000), sender=price_feed)
+
+        # TODO
 
 
     def test_token_self_borrow(self):
