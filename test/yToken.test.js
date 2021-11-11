@@ -563,7 +563,7 @@ describe("yToken tests", async () => {
 
   it("return price by not oracle", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
-    await rejects(yToken.returnPrice(0, 2000), (err) => {
+    await rejects(yToken.priceCallback(0, 2000), (err) => {
       ok(err.message == "yToken/permition-error", "Error message mismatch");
       return true;
     });
@@ -897,32 +897,32 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
 
     // let tokenInfo = await yToken.storage.storage.tokenInfo.get(1);
-    // let mintTokensFloat = ("10000000000" * "1000000000000000000")
+    // let mintTokensF = ("10000000000" * "1000000000000000000")
     //   .toPrecision(40)
     //   .split(".")[0];
-    // console.log(mintTokensFloat);
-    // let totalLiquid = tokenInfo.totalLiquidFloat.toPrecision(40).split(".")[0];
+    // console.log(mintTokensF);
+    // let totalLiquid = tokenInfo.totalLiquidF.toPrecision(40).split(".")[0];
     // console.log("totalLiquid", +totalLiquid);
-    // let totalBorrows = tokenInfo.totalBorrowsFloat
+    // let totalBorrows = tokenInfo.totalBorrowsF
     //   .toPrecision(40)
     //   .split(".")[0];
     // console.log("totalBorrows", +totalBorrows);
-    // let totalReserves = tokenInfo.totalReservesFloat
+    // let totalReserves = tokenInfo.totalReservesF
     //   .toPrecision(40)
     //   .split(".")[0];
     // console.log("totalReserves", +totalReserves);
 
     // let calculateTotal = +totalLiquid + +totalBorrows - +totalReserves;
     // console.log(calculateTotal.toPrecision(40).split(".")[0]);
-    // mintTokensFloat =
-    //   (mintTokensFloat * tokenInfo.totalSupplyFloat.toString()) /
+    // mintTokensF =
+    //   (mintTokensF * tokenInfo.totalSupplyF.toString()) /
     //   calculateTotal;
-    // console.log(mintTokensFloat.toPrecision(40).split(".")[0]);
+    // console.log(mintTokensF.toPrecision(40).split(".")[0]);
 
     // let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
     // // let yTokenBalance = await yTokenRes.balances.get("1");
     // console.log(yTokenRes.toPrecision(40).split(".")[0]);
-    // let res = yTokenRes + mintTokensFloat;
+    // let res = yTokenRes + mintTokensF;
     // console.log(+res);
     // // 19999999999999864690496826044
     // //  9999999999999891830980214784
@@ -930,8 +930,8 @@ describe("yToken tests", async () => {
     await yToken.updateAndMint(proxy, 1, 10000000000);
     await yToken.updateStorage();
 
-    // mintTokensFloat := mintTokensFloat * token.totalSupplyFloat /
-    // abs(token.totalLiquidFloat + token.totalBorrowsFloat - token.totalReservesFloat);
+    // mintTokensF := mintTokensF * token.totalSupplyF /
+    // abs(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF);
 
     let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
     console.log(yTokenRes.toPrecision(40).split(".")[0]);
@@ -1182,22 +1182,38 @@ describe("yToken tests", async () => {
     let res = await oracle.storage.assetMap.get("COMP-USD");
     strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "321748180");
 
+    // await oracle.update(
+    //   MichelsonMap.fromLiteral({
+    //     ["COMP-USD"]: [
+    //       "2021-10-23T07:01:00Z",
+    //       "2021-10-23T07:02:00Z",
+    //       2049393,
+    //       2049393,
+    //       2049393,
+    //       2049393,
+    //       2,
+    //     ],
+    //   })
+    // );
+
     await oracle.update(
       MichelsonMap.fromLiteral({
         ["COMP-USD"]: [
           "2021-10-23T07:01:00Z",
           "2021-10-23T07:02:00Z",
-          2049393,
-          2049393,
-          2049393,
-          2049393,
+          160874090,
+          160874090,
+          160874090,
+          160874090,
           2,
         ],
       })
     );
+
+    // 160874090
     await oracle.updateStorage();
     res = await oracle.storage.assetMap.get("COMP-USD");
-    strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "2049393");
+    strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "160874090");
   });
 
   it("liquidate by carol 2 (collateral price fell)", async () => {

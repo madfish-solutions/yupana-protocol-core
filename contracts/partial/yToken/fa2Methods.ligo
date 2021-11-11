@@ -33,14 +33,14 @@ function getTokenInfo(
       interestRateModel       = zeroAddress;
       priceUpdateTime         = zeroTimestamp;
       interestUpdateTime      = zeroTimestamp;
-      totalBorrowsFloat       = 0n;
-      totalLiquidFloat        = 0n;
-      totalSupplyFloat        = 0n;
-      totalReservesFloat      = 0n;
+      totalBorrowsF       = 0n;
+      totalLiquidF        = 0n;
+      totalSupplyF        = 0n;
+      totalReservesF      = 0n;
       borrowIndex             = precision;
       maxBorrowRate           = 0n;
-      collateralFactorFloat   = 0n;
-      reserveFactorFloat      = 0n;
+      collateralFactorF   = 0n;
+      reserveFactorF      = 0n;
       lastPrice               = 0n;
       borrowPause             = False;
       isInterestUpdating      = False;
@@ -84,7 +84,7 @@ function getTotalSupply(
         IGetTotalSupply(args) -> {
           const res : tokenInfo = getTokenInfo(args.token_id, s.tokenInfo);
           operations := list [
-            Tezos.transaction(res.totalSupplyFloat, 0tz, args.receiver)
+            Tezos.transaction(res.totalSupplyF, 0tz, args.receiver)
           ];
         }
       | _                         -> skip
@@ -145,28 +145,28 @@ function iterateTransfer(
         else failwith("FA2_TOKEN_UNDEFINED");
 
         (* Get source info *)
-        var srcBalanceInfo : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
+        var srcBalance : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
 
         (* Balance check *)
-        if srcBalanceInfo < transferDst.amount
+        if srcBalance < transferDst.amount
         then failwith("FA2_INSUFFICIENT_BALANCE")
         else skip;
 
         (* Update source balance *)
-        srcBalanceInfo :=
-          case is_nat(srcBalanceInfo - transferDst.amount) of
-            | None -> (failwith("underflow/srcBalanceInfo") : nat)
+        srcBalance :=
+          case is_nat(srcBalance - transferDst.amount) of
+            | None -> (failwith("underflow/srcBalance") : nat)
             | Some(value) -> value
           end;
 
-        s.ledger[(params.from_, transferDst.token_id)] := srcBalanceInfo;
+        s.ledger[(params.from_, transferDst.token_id)] := srcBalance;
 
         (* Get receiver balance *)
-        var dstBalanceInfo : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s.ledger);
+        var dstBalance : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s.ledger);
 
         (* Update destination balance *)
-        dstBalanceInfo := dstBalanceInfo + transferDst.amount;
-        s.ledger[(transferDst.to_, transferDst.token_id)] := dstBalanceInfo;
+        dstBalance := dstBalance + transferDst.amount;
+        s.ledger[(transferDst.to_, transferDst.token_id)] := dstBalance;
     } with s
 } with List.fold(makeTransfer, params.txs, s)
 

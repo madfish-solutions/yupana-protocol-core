@@ -6,49 +6,49 @@
   else unit
 
 [@inline] function calcUtilRate(
-  const borrowsFloat    : nat;
-  const cashFloat       : nat;
-  const reservesFloat   : nat;
+  const borrowsF    : nat;
+  const cashF       : nat;
+  const reservesF   : nat;
   const precision        : nat)
                         : nat is
   block {
     const numerator : nat =
-      case is_nat(cashFloat + borrowsFloat - reservesFloat) of
-        | None -> (failwith("underflow/cashFloat+borrowsFloat") : nat)
+      case is_nat(cashF + borrowsF - reservesF) of
+        | None -> (failwith("underflow/cashF+borrowsF") : nat)
         | Some(value) -> value
       end;
-  } with precision * borrowsFloat / numerator
+  } with precision * borrowsF / numerator
 
 [@inline] function calcBorrowRate(
-  const borrowsFloat    : nat;
-  const cashFloat       : nat;
-  const reservesFloat   : nat;
+  const borrowsF    : nat;
+  const cashF       : nat;
+  const reservesF   : nat;
   const precision        : nat;
   const s               : rateStorage)
                         : nat is
   block {
-    const utilizationRateFloat : nat = calcUtilRate(
-      borrowsFloat,
-      cashFloat,
-      reservesFloat,
+    const utilizationRateF : nat = calcUtilRate(
+      borrowsF,
+      cashF,
+      reservesF,
       precision
     );
-    var borrowRateFloat : nat := 0n;
+    var borrowRateF : nat := 0n;
 
-    if utilizationRateFloat < s.kickRateFloat
-    then borrowRateFloat := (s.baseRateFloat + (utilizationRateFloat * s.multiplierFloat) / precision);
+    if utilizationRateF < s.kickRateF
+    then borrowRateF := (s.baseRateF + (utilizationRateF * s.multiplierF) / precision);
     else block {
       const utilizationSubKick : nat =
-        case is_nat(utilizationRateFloat - s.kickRateFloat) of
-          | None -> (failwith("underflow/utilizationRateFloat") : nat)
+        case is_nat(utilizationRateF - s.kickRateF) of
+          | None -> (failwith("underflow/utilizationRateF") : nat)
           | Some(value) -> value
         end;
 
-      borrowRateFloat := ((s.kickRateFloat * s.multiplierFloat / precision + s.baseRateFloat) +
-      (utilizationSubKick * s.jumpMultiplierFloat) / precision);
+      borrowRateF := ((s.kickRateF * s.multiplierF / precision + s.baseRateF) +
+      (utilizationSubKick * s.jumpMultiplierF) / precision);
     }
 
-  } with borrowRateFloat
+  } with borrowRateF
 
 function updateAdmin(
   const addr            : address;
@@ -65,10 +65,10 @@ function setCoefficients(
                         : rateReturn is
   block {
     mustBeAdmin(s);
-    s.kickRateFloat := param.kickRateFloat;
-    s.baseRateFloat := param.baseRateFloat;
-    s.multiplierFloat := param.multiplierFloat;
-    s.jumpMultiplierFloat := param.jumpMultiplierFloat;
+    s.kickRateF := param.kickRateF;
+    s.baseRateF := param.baseRateF;
+    s.multiplierF := param.multiplierF;
+    s.jumpMultiplierF := param.jumpMultiplierF;
   } with (noOperations, s)
 
 function getUtilizationRate(
@@ -76,16 +76,16 @@ function getUtilizationRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const utilizationRateFloat : nat = calcUtilRate(
-      param.borrowsFloat,
-      param.cashFloat,
-      param.reservesFloat,
+    const utilizationRateF : nat = calcUtilRate(
+      param.borrowsF,
+      param.cashF,
+      param.reservesF,
       param.precision
     );
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = utilizationRateFloat;
+          amount = utilizationRateF;
         ],
         0mutez,
         param.callback
@@ -98,10 +98,10 @@ function getBorrowRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const borrowRateFloat : nat = calcBorrowRate(
-      param.borrowsFloat,
-      param.cashFloat,
-      param.reservesFloat,
+    const borrowRateF : nat = calcBorrowRate(
+      param.borrowsF,
+      param.cashF,
+      param.reservesF,
       param.precision,
       s
     );
@@ -109,7 +109,7 @@ function getBorrowRate(
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = borrowRateFloat;
+          amount = borrowRateF;
         ],
         0mutez,
         param.callback
@@ -122,22 +122,22 @@ function getSupplyRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const borrowRateFloat : nat = calcBorrowRate(
-      param.borrowsFloat,
-      param.cashFloat,
-      param.reservesFloat,
+    const borrowRateF : nat = calcBorrowRate(
+      param.borrowsF,
+      param.cashF,
+      param.reservesF,
       param.precision,
       s
     );
-    const utilizationRateFloat : nat = calcUtilRate(
-      param.borrowsFloat,
-      param.cashFloat,
-      param.reservesFloat,
+    const utilizationRateF : nat = calcUtilRate(
+      param.borrowsF,
+      param.cashF,
+      param.reservesF,
       param.precision
     );
 
     const precisionSubReserve : nat =
-      case is_nat(param.precision - param.reserveFactorFloat) of
+      case is_nat(param.precision - param.reserveFactorF) of
         | None -> (failwith("underflow/precision") : nat)
         | Some(value) -> value
       end;
@@ -146,7 +146,7 @@ function getSupplyRate(
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
-          amount = borrowRateFloat * utilizationRateFloat *
+          amount = borrowRateF * utilizationRateF *
             precisionSubReserve;
         ],
         0mutez,

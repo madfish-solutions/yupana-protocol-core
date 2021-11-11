@@ -29,15 +29,15 @@ function withdrawReserve(
       WithdrawReserve(params) -> {
         mustBeAdmin(s);
         var token : tokenInfo := getTokenInfo(params.tokenId, s.tokenInfo);
-        const amountFloat = params.amount * precision;
+        const amountF = params.amount * precision;
 
-        if amountFloat > token.totalReservesFloat
+        if amountF > token.totalReservesF
         then failwith("yToken/withdraw-is-too-big");
         else skip;
 
-        token.totalReservesFloat :=
-          case is_nat(token.totalReservesFloat - amountFloat) of
-            | None -> (failwith("underflow/totalReservesFloat") : nat)
+        token.totalReservesF :=
+          case is_nat(token.totalReservesF - amountF) of
+            | None -> (failwith("underflow/totalReservesF") : nat)
             | Some(value) -> value
           end;
 
@@ -79,8 +79,8 @@ function addMarket(
         (* TODO: fail if token exist - not fixed yet *)
         token.interestRateModel := params.interestRateModel;
         token.mainToken := params.assetAddress;
-        token.collateralFactorFloat := params.collateralFactorFloat;
-        token.reserveFactorFloat := params.reserveFactorFloat;
+        token.collateralFactorF := params.collateralFactorF;
+        token.reserveFactorF := params.reserveFactorF;
         token.maxBorrowRate := params.maxBorrowRate;
 
         s.typesInfo[params.assetAddress] := lastTokenId;
@@ -128,8 +128,8 @@ function setTokenFactors(
         then failwith("yToken/need-update")
         else skip;
 
-        token.collateralFactorFloat := params.collateralFactorFloat;
-        token.reserveFactorFloat := params.reserveFactorFloat;
+        token.collateralFactorF := params.collateralFactorF;
+        token.reserveFactorF := params.reserveFactorF;
         token.interestRateModel := params.interestRateModel;
         token.maxBorrowRate := params.maxBorrowRate;
         s.tokenInfo[params.tokenId] := token;
@@ -146,8 +146,8 @@ function setGlobalFactors(
     case p of
       SetGlobalFactors(params) -> {
         mustBeAdmin(s);
-        s.closeFactorFloat := params.closeFactorFloat;
-        s.liqIncentiveFloat := params.liqIncentiveFloat;
+        s.closeFactorF := params.closeFactorF;
+        s.liqIncentiveF := params.liqIncentiveF;
         s.priceFeedProxy := params.priceFeedProxy;
         s.maxMarkets := params.maxMarkets;
       }

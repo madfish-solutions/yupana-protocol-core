@@ -13,7 +13,7 @@ type account is
 (* contract storage *)
 type storage is
   record [
-    totalSupplyFloat : amt;
+    totalSupplyF : amt;
     ledger           : big_map (address, account);
   ]
 
@@ -184,14 +184,14 @@ function getAllowance (
     const spenderAllowance : amt = getAllowance(ownerAccount, spender);
   } with (list [transaction(spenderAllowance, 0tz, contr)], s)
 
-(* View function that forwards the totalSupplyFloat to a contract *)
+(* View function that forwards the totalSupplyF to a contract *)
 function getTotalSupply(
   const contr           : contract(amt);
   var s                 : storage)
                         : return is
   block {
     skip
-  } with (list [transaction(s.totalSupplyFloat, 0tz, contr)], s)
+  } with (list [transaction(s.totalSupplyF, 0tz, contr)], s)
 
 function mint (
   var amt                 : nat;

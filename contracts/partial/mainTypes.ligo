@@ -49,7 +49,7 @@ type entryAction        is
   | GetTotalSupply of totalSupplyParams
   | UpdateInterest of tokenId
   | AccrueInterest of yAssetParams
-  | ReturnPrice of yAssetParams
+  | PriceCallback of yAssetParams
   | Use of useAction
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams

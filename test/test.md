@@ -217,8 +217,8 @@
 **Test cases to cover entrypoint call:**
 
 1. Should executed only by authorized admin (Controller contract)
-2. Should fail if available totalLiquidFloat is lower than borrowed amount
-3. Should`nt fail if available totalLiquidFloat is same or more than borrowed amount
+2. Should fail if available totalLiquidF is lower than borrowed amount
+3. Should`nt fail if available totalLiquidF is same or more than borrowed amount
 4. Amount of collateral should be transfered to the sender
 
 #### Redeem
@@ -252,9 +252,6 @@
 
 1. Should executed only by authorized admin (Controller contract)
 2. Should check calculations
-
-
-
 
 V2
 
@@ -295,8 +292,8 @@ redeem это андерлаинг ассет
 положить на дипозит 1000 токенов
 сделать изменения кто то взял в долг и тд
 и проверить на 0 и что бы забрала всё
-+
-и сделать еще один минт и должно пройти как тотал суплай флоат 0
+
+- и сделать еще один минт и должно пройти как тотал суплай флоат 0
 
 borrow:
 борров без маркета +
@@ -304,8 +301,3 @@ borrow:
 кейс у нас есть алиса и боб. алиса заинвестила под токен 0 - 1000 Yтокенов и 20к токенов 1 заминтил боб. боб делает enterMarket токен 1 и берет в долг токен 0, всё что положила Алиса. +
 
 borrow pause method + tests
-
-
-
-
-
