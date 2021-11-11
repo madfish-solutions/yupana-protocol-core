@@ -41,7 +41,6 @@ function verifyTokenUpdated(
     then failwith("yToken/need-update")
     else unit;
 
-
 function calcMaxCollateralInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
@@ -73,7 +72,37 @@ function calcMaxCollateralInCU(
     );
   } with result
 
-type accountsMapType is big_map((address * tokenId), account);
+function calCollateralValueInCU(
+  const userMarkets     : set(tokenId);
+  const user            : address;
+  const ledger          : big_map((address * tokenId), nat);
+  const tokenInfo       : map(tokenId, tokenInfo);
+  const threshold       : nat)
+                        : nat is
+  block {
+    function oneToken(
+      var acc           : nat;
+      const tokenId     : tokenId)
+                        : nat is
+      block {
+        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        const token : tokenInfo = getTokenInfo(tokenId, tokenInfo);
+        const numerator : nat =
+          case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
+            | None -> (failwith("underflow/totalLiquidF+totalBorrowsF") : nat)
+            | Some(value) -> value
+          end;
+
+        (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
+        acc := acc + ((userBalance * token.lastPrice) * (numerator / token.totalSupplyF));
+      } with acc;
+    const collateralValue : nat = Set.fold(
+      oneToken,
+      userMarkets,
+      0n
+    );
+    const result : nat = collateralValue * threshold / precision;
+  } with result
 
 function applyInterestToBorrows(
   const borrowedTokens      : set(tokenId);
@@ -89,6 +118,8 @@ function applyInterestToBorrows(
       block {
         var userAccount : account := getAccount(user, tokenId, accountsMap);
         const tokenInfo : tokenInfo = getTokenInfo(tokenId, tokensMap);
+
+        verifyTokenUpdated(tokenInfo);
 
         if userAccount.lastBorrowIndex =/= 0n
           then userAccount.borrow := userAccount.borrow *
@@ -453,12 +484,14 @@ function liquidate(
           then failwith("yToken/borrower-cannot-be-liquidator")
           else skip;
 
-          const maxBorrowInCU : nat = calcMaxCollateralInCU(
+          const maxBorrowInCU : nat = calCollateralValueInCU(
             getTokenIds(params.borrower, s.markets),
             params.borrower,
             s.ledger,
-            s.tokenInfo
+            s.tokenInfo,
+            s.threshold
           );
+
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
             getTokenIds(params.borrower, s.borrows),
             params.borrower,

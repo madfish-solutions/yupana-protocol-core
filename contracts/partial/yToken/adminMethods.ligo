@@ -150,6 +150,7 @@ function setGlobalFactors(
         s.liqIncentiveF := params.liqIncentiveF;
         s.priceFeedProxy := params.priceFeedProxy;
         s.maxMarkets := params.maxMarkets;
+        s.threshold := params.threshold;
       }
     | _                 -> skip
     end
