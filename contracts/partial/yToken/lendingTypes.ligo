@@ -132,7 +132,7 @@ type calculateCollParams is [@layout:comb] record [
 ]
 
 type transferType is TransferOutside of faTransferParams
-type iterTransferType is IterateTransferOutside of transferParams
+type iterTransferType is FA2TransferOutside of transferParams
 
 [@inline] const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
 [@inline] const zeroTimestamp : timestamp = (0 : timestamp);

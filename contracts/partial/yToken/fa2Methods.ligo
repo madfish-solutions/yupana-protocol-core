@@ -48,32 +48,6 @@ function getTokenInfo(
   | Some(v) -> v
   end
 
-function getTokenContract(
-  const tokenAddress    : address)
-                        : contract(transferType) is
-  case(
-    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
-                        : option(contract(transferType))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("token/cant-get-contract-token") : contract(transferType)
-    )
-  end;
-
-function getIterTransferContract(
-  const tokenAddress    : address)
-                        : contract(iterTransferType) is
-  case(
-    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
-                        : option(contract(iterTransferType))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("token/cant-get-contract-fa2-token") : contract(iterTransferType)
-    )
-  end;
-
 function getTotalSupply(
   const p               : tokenAction;
   const s               : tokenStorage)
@@ -139,9 +113,9 @@ function iterateTransfer(
         else skip;
 
         (* Token id check *)
-        if transferDst.token_id < s.lastTokenId
-        then skip
-        else failwith("FA2_TOKEN_UNDEFINED");
+        if transferDst.token_id >= s.lastTokenId
+        then failwith("FA2_TOKEN_UNDEFINED");
+        else skip;
 
         (* Get source info *)
         var srcBalance : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
@@ -182,13 +156,14 @@ function iterateUpdateOperators(
       if Tezos.sender =/= param.owner
       then failwith("FA2_NOT_OWNER")
       else skip;
+      if param.token_id >= s.lastTokenId
+      then failwith("FA2_TOKEN_UNDEFINED");
+      else skip;
 
       (* Create or get source account *)
       var srcAccount : account := getAccount(param.owner, param.token_id, s.accountInfo);
-
       (* Add operator *)
       srcAccount.allowances := Set.add(param.operator, srcAccount.allowances);
-
       (* Update storage *)
       s.accountInfo[(param.owner, param.token_id)] := srcAccount;
     }
@@ -197,16 +172,17 @@ function iterateUpdateOperators(
       if Tezos.sender =/= param.owner
       then failwith("FA2_NOT_OWNER")
       else skip;
+      if param.token_id >= s.lastTokenId
+      then failwith("FA2_TOKEN_UNDEFINED");
+      else skip;
 
       (* Create or get source account *)
       var srcAccount : account := getAccount(param.owner, param.token_id, s.accountInfo);
-
       (* Remove operator *)
       srcAccount.allowances := Set.remove(
         param.operator,
         srcAccount.allowances
       );
-
       (* Update storage *)
       s.accountInfo[(param.owner, param.token_id)] := srcAccount;
     }
