@@ -224,17 +224,15 @@ def calc_max_colateral(storage, user):
         token_id = market
         token = storage["tokenInfo"][token_id]
         balance = storage["ledger"][(user,token_id)]
-        print("goga", abs(token["totalLiquidFloat"]
-            + token["totalBorrowsFloat"] - token["totalReservesFloat"]))
         acc += ((int(balance) * token["lastPrice"]
-            * token["collateralFactorFloat"]) * (abs(token["totalLiquidFloat"]
-            + token["totalBorrowsFloat"] - token["totalReservesFloat"])
-            / token["totalSupplyFloat"]) / PRECISION);
+            * token["collateralFactorF"]) * (abs(token["totalLiquidF"]
+            + token["totalBorrowsF"] - token["totalReservesF"])
+            / token["totalSupplyF"]) / PRECISION);
     
     return acc
 
 def calc_outstanding_borrow(storage, user):
-    borrows = storage["borrowInfo"]
+    borrows = storage["borrows"]
     if user not in borrows:
         return 0
         
@@ -305,7 +303,7 @@ def get_map_without_none(map):
 def none_sets_to_lists(full_storage):
     internal = full_storage["storage"]
     internal["markets"] = get_map_without_none(internal["markets"])
-    internal["borrowInfo"] = get_map_without_none(internal["borrowInfo"])
+    internal["borrows"] = get_map_without_none(internal["borrows"])
 
     return full_storage
 
