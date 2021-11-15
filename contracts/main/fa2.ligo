@@ -143,10 +143,9 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
         const src_balance : nat = get_balance_by_token(src_account, transfer_dst.token_id);
 
         (* Balance check *)
-        if src_balance < transfer_dst.amount then
-          failwith("fa2/insufficient-balance")
-        else
-          skip;
+        if src_balance < transfer_dst.amount
+        then failwith("fa2/insufficient-balance")
+        else skip;
 
         (* Update source balance *)
         src_account.balances[transfer_dst.token_id] :=
@@ -178,10 +177,9 @@ function iterate_update_operators(var s : fa2_storage; const params : update_ope
     case params of
     | Add_operator(param) -> block {
       (* Check an owner *)
-      if Tezos.sender =/= param.owner then
-        failwith("fa2/not-owner")
-      else
-        skip;
+      if Tezos.sender =/= param.owner
+      then failwith("fa2/not-owner")
+      else skip;
 
       (* Create or get source account *)
       var src_account : account := get_account(param.owner, s);
@@ -194,10 +192,9 @@ function iterate_update_operators(var s : fa2_storage; const params : update_ope
     }
     | Remove_operator(param) -> block {
       (* Check an owner *)
-      if Tezos.sender =/= param.owner then
-        failwith("fa2/not-owner")
-      else
-        skip;
+      if Tezos.sender =/= param.owner
+      then failwith("fa2/not-owner")
+      else skip;
 
       (* Create or get source account *)
       var src_account : account := get_account(param.owner, s);
@@ -247,18 +244,18 @@ function mint_asset(
   const s               : fa2_storage)
                         : fa2_storage is
   block {
-    if s.admin = Tezos.sender
-    then skip
-    else failwith("fa2/not-admin");
+    if s.admin =/= Tezos.sender
+    then failwith("fa2/not-admin");
+    else skip;
 
     function make_mint(
       var s             : fa2_storage;
       const param       : asset_param)
                         : fa2_storage is
       block {
-        if param.token_id < s.last_token_id
-        then skip
-        else failwith("FA2_TOKEN_UNDEFINED");
+        if param.token_id > s.last_token_id
+        then failwith("FA2_TOKEN_UNDEFINED");
+        else skip;
 
         (* Get receiver account *)
         var dst_account : account := get_account(param.receiver, s);
@@ -287,9 +284,9 @@ function create_token(
   var s                 : fa2_storage)
                         : fa2_storage is
   block {
-    if s.admin = Tezos.sender
-    then skip
-    else failwith("fa2/not-admin");
+    if s.admin =/= Tezos.sender
+    then failwith("fa2/not-admin");
+    else skip;
 
     s.token_metadata[s.last_token_id] := record [
       token_id = s.last_token_id;

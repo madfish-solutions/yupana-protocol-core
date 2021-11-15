@@ -1,3 +1,29 @@
+function getFA12Transfer(
+  const tokenAddress    : address)
+                        : contract(transferType) is
+  case(
+    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
+                        : option(contract(transferType))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("token/cant-get-contract-token") : contract(transferType)
+    )
+  end;
+
+function getFA2Transfer(
+  const tokenAddress    : address)
+                        : contract(iterTransferType) is
+  case(
+    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
+                        : option(contract(iterTransferType))
+  ) of
+    Some(contr) -> contr
+    | None -> (
+      failwith("token/cant-get-contract-fa2-token") : contract(iterTransferType)
+    )
+  end;
+
 function wrap_fa12_transfer_trx(
   const from_           : address;
   const to_             : address;
@@ -15,7 +41,7 @@ function wrap_fa2_transfer_trx(
   const amt             : nat;
   const id              : nat)
                         : iterTransferType is
-  IterateTransferOutside(list[
+  FA2TransferOutside(list[
     record [
       from_ = from_;
       txs = list[
@@ -37,7 +63,7 @@ function transfer_fa12(
   list[Tezos.transaction(
     wrap_fa12_transfer_trx(from_, to_, amt),
     0mutez,
-    getTokenContract(token)
+    getFA12Transfer(token)
   )];
 
 function transfer_fa2(
@@ -50,7 +76,7 @@ function transfer_fa2(
   list[Tezos.transaction(
     wrap_fa2_transfer_trx(from_, to_, amt, id),
     0mutez,
-    getIterTransferContract(token)
+    getFA2Transfer(token)
   )];
 
 function transfer_token(

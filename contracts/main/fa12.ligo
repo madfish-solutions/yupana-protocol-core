@@ -90,8 +90,8 @@ function transfer(
     var senderAccount : account := getAccount(from_, s);
 
     (* Balance check *)
-    if senderAccount.balance < value then
-      failwith("fa12/not-enough-balance(transfer)")
+    if senderAccount.balance < value
+    then failwith("fa12/not-enough-balance(transfer)")
     else skip;
 
     (* Check this address can spend the tokens *)
@@ -209,8 +209,8 @@ function withdraw(
                         : return is
   block {
     var senderAccount : account := getAccount(Tezos.sender, s);
-    if senderAccount.balance < value then
-      failwith("fa12/not-enough-balance(mint)")
+    if senderAccount.balance < value
+    then failwith("fa12/not-enough-balance(mint)")
     else skip;
 
     senderAccount.balance :=
