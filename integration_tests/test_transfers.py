@@ -72,7 +72,6 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.borrow(0, 1), sender=bob)
 
-        #TODO remove 1e18 after fix
         transfer = self.ct.transfer(
             [{ "from_" : alice,
                 "txs" : [{
@@ -84,11 +83,47 @@ class DexTest(TestCase):
         
         res = chain.execute(transfer, sender=alice)
 
-        # pprint_aux(res.storage["storage"])
-        # return
-        # chain.execute(self.ct.enterMarket(0), sender=bob)
         with self.assertRaises(MichelsonRuntimeError):
-            chain.execute(self.ct.borrow(0, 5_001), sender=bob)
-        chain.execute(self.ct.borrow(0, 5_000), sender=bob)
+            chain.execute(self.ct.borrow(1, 5_001), sender=bob)
+        chain.execute(self.ct.borrow(1, 5_000), sender=bob)
+
+    def test_zero_transfer(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+
+        chain.execute(self.ct.mint(0, 10_000), sender=alice)
+
+        chain.execute(self.ct.enterMarket(0), sender=bob)
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.borrow(0, 1), sender=bob)
+
+        transfer = self.ct.transfer(
+            [{ "from_" : alice,
+                "txs" : [
+                    {
+                        "amount": 0,
+                        "to_": bob,
+                        "token_id": 0
+                    },
+                    {
+                        "amount": 6_000,
+                        "to_": alice,
+                        "token_id": 0
+                    }
+                ]
+            }])
+        
+        res = chain.execute(transfer, sender=alice)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(0, 1), sender=bob)
+
+        # alice cannot borrow more than 5000. e.g. her balance is unchanged
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(0, 10_000 + 1), sender=alice)
+        chain.execute(self.ct.redeem(0, 10_000), sender=alice)
+
+
 
 

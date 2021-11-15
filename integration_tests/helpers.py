@@ -316,6 +316,7 @@ class LocalChain:
         self.payouts = {}
         self.contract_balances = {}
 
+    """ execute the entrypoint and save the resulting state and balance updates """
     def execute(self, call, amount=0, sender=None, source=None):
         new_balance = self.balance + amount
         res = call.interpret(
@@ -355,7 +356,7 @@ class LocalChain:
 
         return res
 
-    # just interpret, don't store anything
+    """ just interpret, don't store anything """
     def interpret(self, call, amount=0, sender=None, source=None):
         res = call.interpret(
             amount=amount,

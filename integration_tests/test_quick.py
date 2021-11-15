@@ -633,4 +633,47 @@ class DexTest(TestCase):
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 0)
         
+    def test_supply_drain(self):
+        token_b_config = {
+            "collateral_factor": 0.5,
+            "reserve_factor": 0.5,
+            "price": 100,
+            "liquidity": 0,
+        }
 
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a) # token a provided by admin
+        self.add_token(chain, token_b, token_b_config) # token b will be provided by alice
+
+        res = chain.execute(self.ct.mint(1, 50), sender=bob)
+
+        old_storage = res.storage["storage"]
+
+        chain.execute(self.ct.mint(0, 100))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 50))
+        chain.execute(self.ct.repay(1, 50))
+        chain.execute(self.ct.exitMarket(0))
+        res = chain.execute(self.ct.redeem(0, 100))
+
+        # do the same as above after ten blocks after supply was drained
+        # check that everything stays the same
+        chain.advance_blocks(10)
+        chain.execute(self.ct.updateInterest(0))
+        chain.execute(self.ct.priceCallback(0, 100), sender=price_feed)
+        chain.execute(self.ct.updateInterest(1))
+        chain.execute(self.ct.priceCallback(1, 100), sender=price_feed)
+
+        chain.execute(self.ct.mint(0, 100))
+        chain.execute(self.ct.enterMarket(0))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.borrow(1, 51))
+
+        chain.execute(self.ct.borrow(1, 50))
+        chain.execute(self.ct.repay(1, 50))
+        chain.execute(self.ct.exitMarket(0))
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.borrow(1, 101))
+
+        chain.execute(self.ct.redeem(0, 100))
