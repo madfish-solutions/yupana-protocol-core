@@ -134,7 +134,7 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
 
 
         // (* Token id check *)
-        if transfer_dst.token_id > s.last_token_id
+        if transfer_dst.token_id >= s.last_token_id
         then failwith("fa2/token-undefined");
         else skip;
 
@@ -253,7 +253,7 @@ function mint_asset(
       const param       : asset_param)
                         : fa2_storage is
       block {
-        if param.token_id > s.last_token_id
+        if param.token_id >= s.last_token_id
         then failwith("FA2_TOKEN_UNDEFINED");
         else skip;
 

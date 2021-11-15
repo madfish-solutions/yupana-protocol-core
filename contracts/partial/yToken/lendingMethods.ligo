@@ -495,7 +495,7 @@ function liquidate(
             s.tokenInfo
           );
 
-          if outstandingBorrowInCU < maxBorrowInCU
+          if outstandingBorrowInCU <= maxBorrowInCU
           then failwith("yToken/liquidation-not-achieved");
           else skip;
           if borrowerAccount.borrow = 0n
@@ -509,7 +509,7 @@ function liquidate(
           const maxClose : nat = borrowerAccount.borrow * s.closeFactorF
             / precision;
 
-          if liqAmountF >= maxClose
+          if liqAmountF > maxClose
           then failwith("yToken/too-much-repay");
           else skip;
 
