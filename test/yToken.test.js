@@ -516,8 +516,6 @@ describe("yToken tests", async () => {
   });
 
   it("update Interest Rate yToken undefined", async () => {
-    let res = await yToken.storage.storage.lastTokenId;
-    console.log(res);
     await rejects(yToken.updateInterest(4), (err) => {
       ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
       return true;
