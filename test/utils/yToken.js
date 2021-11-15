@@ -274,10 +274,11 @@ class YToken {
     closeFactorF,
     liqIncentiveF,
     priceFeedProxy,
-    maxMarkets
+    maxMarkets,
+    threshold
   ) {
     const operation = await this.contract.methods
-      .setGlobalFactors(closeFactorF, liqIncentiveF, priceFeedProxy, maxMarkets)
+      .setGlobalFactors(closeFactorF, liqIncentiveF, priceFeedProxy, maxMarkets, threshold)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
