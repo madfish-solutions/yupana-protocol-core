@@ -172,6 +172,9 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
+    console.log(tokenMetadata);
+    console.log(tokenMetadata2);
+
     await proxy.updatePair(0n, "COMP-USD");
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
@@ -463,7 +466,7 @@ describe("yToken tests", async () => {
 
   it("mint yTokens [2] by dev", async () => {
     tezos = await Utils.setProvider(tezos, dev.sk);
-    await fa2.updateOperators([
+    await fa2.update_operators([
       {
         add_operator: {
           owner: dev.pkh,
@@ -490,7 +493,7 @@ describe("yToken tests", async () => {
 
   it("mint yTokens [3] by dev2", async () => {
     tezos = await Utils.setProvider(tezos, dev2.sk);
-    await fa2_2.updateOperators([
+    await fa2_2.update_operators([
       {
         add_operator: {
           owner: dev2.pkh,
@@ -644,9 +647,9 @@ describe("yToken tests", async () => {
   it("add operator alice to bob", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await yToken.updateOperators([
+    await yToken.update_operators([
       {
-        addOperator: {
+        add_operator: {
           owner: alice.pkh,
           operator: bob.pkh,
           token_id: 1,
@@ -663,9 +666,9 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, peter.sk);
 
     await rejects(
-      yToken.updateOperators([
+      yToken.update_operators([
         {
-          addOperator: {
+          add_operator: {
             owner: alice.pkh,
             operator: peter.pkh,
             token_id: 1,
@@ -682,9 +685,9 @@ describe("yToken tests", async () => {
   it("add operator alice to peter", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await yToken.updateOperators([
+    await yToken.update_operators([
       {
-        addOperator: {
+        add_operator: {
           owner: alice.pkh,
           operator: peter.pkh,
           token_id: 1,
@@ -700,9 +703,9 @@ describe("yToken tests", async () => {
   it("remove operator alice to peter", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await yToken.updateOperators([
+    await yToken.update_operators([
       {
-        removeOperator: {
+        remove_operator: {
           owner: alice.pkh,
           operator: peter.pkh,
           token_id: 1,

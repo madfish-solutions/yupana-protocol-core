@@ -2,7 +2,7 @@ type tokenId is nat
 
 type tokenMetadataInfo is [@layout:comb] record [
   token_id             : tokenId;
-  tokens            : map(string, bytes);
+  tokens                : map(string, bytes);
 ]
 
 type transferDestination is [@layout:comb] record [
@@ -40,7 +40,7 @@ type operatorParam is [@layout:comb] record [
 ]
 
 type updateOperatorParam is
-| AddOperator        of operatorParam
-| RemoveOperator     of operatorParam
+| Add_operator        of operatorParam
+| Remove_operator     of operatorParam
 
 type updateOperatorParams is list(updateOperatorParam)

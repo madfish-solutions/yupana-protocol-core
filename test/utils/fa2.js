@@ -50,22 +50,19 @@ class FA2 {
     };
 
     for (const key in maps) {
-      this.storage[key] = await maps[key].reduce(
-        async (prev, current) => {
-          try {
-            return {
-              ...(await prev),
-              [current]: await storage[key].get(current),
-            };
-          } catch (ex) {
-            return {
-              ...(await prev),
-              [current]: 0,
-            };
-          }
-        },
-        Promise.resolve({})
-      );
+      this.storage[key] = await maps[key].reduce(async (prev, current) => {
+        try {
+          return {
+            ...(await prev),
+            [current]: await storage[key].get(current),
+          };
+        } catch (ex) {
+          return {
+            ...(await prev),
+            [current]: 0,
+          };
+        }
+      }, Promise.resolve({}));
     }
   }
 
@@ -77,8 +74,10 @@ class FA2 {
     return operation;
   }
 
-  async updateOperators(params) {
-    const operation = await this.contract.methods.update_operators(params).send();
+  async update_operators(params) {
+    const operation = await this.contract.methods
+      .update_operators(params)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
