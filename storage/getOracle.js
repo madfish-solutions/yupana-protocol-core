@@ -2,7 +2,7 @@ const { alice } = require("../scripts/sandbox/accounts");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 
 // module.exports = {
-//   tokenInfo: MichelsonMap.fromLiteral({}),
+//   tokens: MichelsonMap.fromLiteral({}),
 //   returnAddress: alice.pkh,
 // };
 let storage = {

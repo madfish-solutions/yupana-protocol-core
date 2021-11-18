@@ -212,7 +212,7 @@ class YToken {
   async addMarket(
     interestRateModel,
     type,
-    assetAddress,
+    asset,
     token_id,
     collateralFactorF,
     reserveFactorF,
@@ -224,7 +224,7 @@ class YToken {
         .addMarket(
           interestRateModel,
           type,
-          assetAddress,
+          asset,
           token_id,
           collateralFactorF,
           reserveFactorF,
@@ -237,7 +237,7 @@ class YToken {
         .addMarket(
           interestRateModel,
           type,
-          assetAddress,
+          asset,
           collateralFactorF,
           reserveFactorF,
           maxBorrowRate,
@@ -278,7 +278,13 @@ class YToken {
     threshold
   ) {
     const operation = await this.contract.methods
-      .setGlobalFactors(closeFactorF, liqIncentiveF, priceFeedProxy, maxMarkets, threshold)
+      .setGlobalFactors(
+        closeFactorF,
+        liqIncentiveF,
+        priceFeedProxy,
+        maxMarkets,
+        threshold
+      )
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

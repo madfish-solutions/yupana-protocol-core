@@ -28,7 +28,7 @@ function withdrawReserve(
     case p of
       WithdrawReserve(params) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(params.tokenId, s.tokenInfo);
+        var token : tokens := gettokens(params.tokenId, s.tokens);
         const amountF = params.amount * precision;
 
         if amountF > token.totalReservesF
@@ -41,7 +41,7 @@ function withdrawReserve(
             | Some(value) -> value
           end;
 
-        s.tokenInfo[params.tokenId] := token;
+        s.tokens[params.tokenId] := token;
 
         operations := transfer_token(
           Tezos.self_address,
@@ -71,24 +71,24 @@ function addMarket(
     case p of
       AddMarket(params) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(s.lastTokenId, s.tokenInfo);
+        var token : tokens := gettokens(s.lastTokenId, s.tokens);
         const lastTokenId : nat = s.lastTokenId;
 
-        checkTypeInfo(s.typesInfo, params.assetAddress);
+        checkTypeInfo(s.typesInfo, params.asset);
 
         (* TODO: fail if token exist - not fixed yet *)
         token.interestRateModel := params.interestRateModel;
-        token.mainToken := params.assetAddress;
+        token.mainToken := params.asset;
         token.collateralFactorF := params.collateralFactorF;
         token.reserveFactorF := params.reserveFactorF;
         token.maxBorrowRate := params.maxBorrowRate;
 
-        s.typesInfo[params.assetAddress] := lastTokenId;
+        s.typesInfo[params.asset] := lastTokenId;
         s.tokenMetadata[lastTokenId] := record [
           token_id = lastTokenId;
-          tokenInfo = params.tokenMetadata;
+          tokens = params.tokenMetadata;
         ];
-        s.tokenInfo[lastTokenId] := token;
+        s.tokens[lastTokenId] := token;
         s.lastTokenId := lastTokenId + 1n;
       }
     | _                 -> skip
@@ -107,7 +107,7 @@ function updateMetadata(
         mustBeAdmin(s);
         s.tokenMetadata[tokenId] := record [
           token_id = tokenId;
-          tokenInfo = params.tokenMetadata;
+          tokens = params.tokenMetadata;
         ];
       }
     | _                 -> skip
@@ -122,7 +122,7 @@ function setTokenFactors(
     case p of
       SetTokenFactors(params) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(params.tokenId, s.tokenInfo);
+        var token : tokens := gettokens(params.tokenId, s.tokens);
 
         if token.interestUpdateTime < Tezos.now
         then failwith("yToken/need-update")
@@ -132,7 +132,7 @@ function setTokenFactors(
         token.reserveFactorF := params.reserveFactorF;
         token.interestRateModel := params.interestRateModel;
         token.maxBorrowRate := params.maxBorrowRate;
-        s.tokenInfo[params.tokenId] := token;
+        s.tokens[params.tokenId] := token;
       }
     | _                 -> skip
     end
@@ -164,9 +164,9 @@ function setBorrowPause(
     case p of
       SetBorrowPause(borrowPauseParams) -> {
         mustBeAdmin(s);
-        var token : tokenInfo := getTokenInfo(borrowPauseParams.tokenId, s.tokenInfo);
+        var token : tokens := gettokens(borrowPauseParams.tokenId, s.tokens);
         token.borrowPause := borrowPauseParams.condition;
-        s.tokenInfo[borrowPauseParams.tokenId] := token;
+        s.tokens[borrowPauseParams.tokenId] := token;
       }
     | _                 -> skip
     end

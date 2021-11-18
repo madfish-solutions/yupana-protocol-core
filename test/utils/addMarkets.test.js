@@ -1099,8 +1099,8 @@ describe("AddMarkets tests", async () => {
     strictEqual(await res.balance.toString(), "9999999990000000000");
 
     let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
-    let yTokenInfo = await yToken.storage.storage.tokenInfo.get("1");
-    console.log(yTokenInfo.lastPrice.toString());
+    let ytokens = await yToken.storage.storage.tokens.get("1");
+    console.log(ytokens.lastPrice.toString());
 
     strictEqual(
       await yTokenRes.toPrecision(40).split(".")[0],
@@ -1167,7 +1167,7 @@ describe("AddMarkets tests", async () => {
     await yToken.updateAndBorrow(proxy, 1, 50000);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(
       res.borrow.toPrecision(40).split(".")[0],
       "50000000000000000000000"
@@ -1181,7 +1181,7 @@ describe("AddMarkets tests", async () => {
     await yToken.updateAndBorrow(proxy, 1, 1000);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    let res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -1209,7 +1209,7 @@ describe("AddMarkets tests", async () => {
     await yToken.updateAndBorrow(proxy, 1, 500);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
 
     strictEqual(
       res.borrow.toPrecision(40).split(".")[0],
@@ -1226,7 +1226,7 @@ describe("AddMarkets tests", async () => {
     await yToken.updateAndRepay(proxy, 1, 40000);
     await yToken.updateStorage();
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    let yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -1239,13 +1239,13 @@ describe("AddMarkets tests", async () => {
     let res = await fa12_2.storage.ledger.get(bob.pkh);
     console.log(await res.balance.toString()); // not static result
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    let yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
 
     await yToken.updateAndRepay(proxy, 1, 0);
     await yToken.updateStorage();
 
-    yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(yTokenRes.borrow.toString(), "0");
   });
 
