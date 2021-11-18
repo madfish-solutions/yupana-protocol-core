@@ -2,7 +2,7 @@ type tokenId is nat
 
 type tokenMetadataInfo is [@layout:comb] record [
   token_id             : tokenId;
-  tokenInfo            : map(string, bytes);
+  tokens            : map(string, bytes);
 ]
 
 type transferDestination is [@layout:comb] record [

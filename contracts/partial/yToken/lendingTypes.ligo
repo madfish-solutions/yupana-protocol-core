@@ -13,7 +13,7 @@ type account            is [@layout:comb] record [
   lastBorrowIndex       : nat;
 ]
 
-type tokenInfo         is [@layout:comb] record [
+type tokens         is [@layout:comb] record [
   mainToken             : assetType;
   interestRateModel     : address;
   interestUpdateTime    : timestamp;
@@ -34,8 +34,8 @@ type tokenInfo         is [@layout:comb] record [
 type tokenStorage       is [@layout:comb] record [
   admin                 : address;
   ledger                : big_map((address * tokenId), nat);
-  accountInfo           : big_map((address * tokenId), account);
-  tokenInfo             : map(tokenId, tokenInfo);
+  accounts              : big_map((address * tokenId), account);
+  tokens                : map(tokenId, tokens);
   metadata              : big_map(string, bytes);
   tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
@@ -111,7 +111,7 @@ type setModelParams     is [@layout:comb] record [
 
 type newMarketParams    is [@layout:comb] record [
   interestRateModel     : address;
-  assetAddress          : assetType;
+  asset          : assetType;
   collateralFactorF     : nat;
   reserveFactorF        : nat;
   maxBorrowRate         : nat;
