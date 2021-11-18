@@ -155,9 +155,9 @@ class YToken {
     return operation;
   }
 
-  async updateOperators(params) {
+  async update_operators(params) {
     const operation = await this.contract.methods
-      .updateOperators(params)
+      .update_operators(params)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

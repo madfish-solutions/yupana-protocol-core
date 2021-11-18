@@ -145,13 +145,13 @@ function iterateTransfer(
 } with List.fold(makeTransfer, params.txs, s)
 
 (* Perform single operator update *)
-function iterateUpdateOperators(
+function iterate_update_operators(
   var s                 : tokenStorage;
   const params          : updateOperatorParam)
                         : tokenStorage is
   block {
     case params of
-      AddOperator(param) -> block {
+      Add_operator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
       then failwith("FA2_NOT_OWNER")
@@ -167,7 +167,7 @@ function iterateUpdateOperators(
       (* Update storage *)
       s.accounts[(param.owner, param.token_id)] := srcAccount;
     }
-    | RemoveOperator(param) -> block {
+    | Remove_operator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
       then failwith("FA2_NOT_OWNER")
@@ -229,16 +229,16 @@ function getBalance(
       end
   } with (operations, s)
 
-function updateOperators(
+function update_operators(
   const p               : tokenAction;
   var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
       case p of
-        IUpdateOperators(updateOperatorParams) -> {
+        IUpdate_operators(updateOperatorParams) -> {
           s := List.fold(
-            iterateUpdateOperators,
+            iterate_update_operators,
             updateOperatorParams,
             s
           )
