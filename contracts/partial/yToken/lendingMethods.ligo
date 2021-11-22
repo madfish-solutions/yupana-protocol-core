@@ -57,7 +57,7 @@ function calcMaxCollateralInCU(
         const token : tokens = gettokens(tokenId, tokens);
         const numerator : nat =
           case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-            | None -> (failwith("underflow/totalLiquidF+totalBorrowsF") : nat)
+            | None -> (failwith("underflow/liquidity - reserves") : nat)
             | Some(value) -> value
           end;
 
@@ -72,7 +72,7 @@ function calcMaxCollateralInCU(
     );
   } with result
 
-function calCollateralValueInCU(
+function calcCollateralValueInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
@@ -89,11 +89,11 @@ function calCollateralValueInCU(
         const token : tokens = gettokens(tokenId, tokens);
         const numerator : nat =
           case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-            | None -> (failwith("underflow/totalLiquidF+totalBorrowsF") : nat)
+            | None -> (failwith("underflow/liquidity - reserves") : nat)
             | Some(value) -> value
           end;
 
-        (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
+        (* sum +=  balance * oraclePrice * exchangeRate *)
         acc := acc + ((userBalance * token.lastPrice) * (numerator / token.totalSupplyF));
       } with acc;
     const collateralValue : nat = Set.fold(
@@ -224,7 +224,7 @@ function mint(
 
             const numerator : nat =
               case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-                | None -> (failwith("underflow/totalLiquidF+totalBorrowsF") : nat)
+                | None -> (failwith("underflow/liquidity - reserves") : nat)
                 | Some(value) -> value
               end;
 
@@ -270,7 +270,7 @@ function redeem(
 
           const liquidityF : nat =
             case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-              | None -> (failwith("underflow/totalLiquidF+totalBorrowsF") : nat)
+              | None -> (failwith("underflow/liquidity - reserves") : nat)
               | Some(value) -> value
             end;
 
@@ -479,7 +479,7 @@ function liquidate(
           then failwith("yToken/borrower-cannot-be-liquidator")
           else skip;
 
-          const maxBorrowInCU : nat = calCollateralValueInCU(
+          const maxBorrowInCU : nat = calcCollateralValueInCU(
             getTokenIds(params.borrower, s.markets),
             params.borrower,
             s.ledger,
@@ -552,7 +552,7 @@ function liquidate(
           const numerator : nat =
             case is_nat(collateralToken.totalLiquidF + collateralToken.totalBorrowsF
             - collateralToken.totalReservesF) of
-              | None -> (failwith("underflow/totalLiquidF+totalBorrowsF") : nat)
+              | None -> (failwith("underflow/liquidity - reserves") : nat)
               | Some(value) -> value
             end;
 
@@ -600,7 +600,6 @@ function enterMarket(
   block {
     case p of
       EnterMarket(tokenId) -> {
-        var userAccount : account := getAccount(Tezos.sender, tokenId, s.accounts);
         var userMarkets : set(tokenId) := getTokenIds(Tezos.sender, s.markets);
 
         if tokenId >= s.lastTokenId
@@ -613,7 +612,6 @@ function enterMarket(
 
         userMarkets := Set.add(tokenId, userMarkets);
         s.markets[Tezos.sender] := userMarkets;
-        s.accounts[(Tezos.sender, tokenId)] := userAccount;
       }
     | _                         -> skip
     end

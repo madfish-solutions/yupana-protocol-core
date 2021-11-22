@@ -111,7 +111,7 @@ type setModelParams     is [@layout:comb] record [
 
 type newMarketParams    is [@layout:comb] record [
   interestRateModel     : address;
-  asset          : assetType;
+  asset                 : assetType;
   collateralFactorF     : nat;
   reserveFactorF        : nat;
   maxBorrowRate         : nat;
