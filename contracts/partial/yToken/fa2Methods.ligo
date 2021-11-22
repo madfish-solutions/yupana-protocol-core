@@ -199,7 +199,7 @@ function getBalance(
         IBalance_of(balanceParams) -> {
           function lookUpBalance(
             const l           : list(balance_of_response);
-            const request     : balance_ofRequest)
+            const request     : balance_of_request)
                               : list(balance_of_response) is
             block {
               (* Retrieve the asked account from the storage *)
