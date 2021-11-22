@@ -18,19 +18,19 @@ type transferParam is [@layout:comb] record [
 
 type transferParams is list(transferParam)
 
-type balanceOfRequest is [@layout:comb] record [
+type balance_ofRequest is [@layout:comb] record [
   owner                 : address;
   token_id              : tokenId;
 ]
 
-type balanceOfResponse is [@layout:comb] record [
-  request               : balanceOfRequest;
+type balance_ofResponse is [@layout:comb] record [
+  request               : balance_ofRequest;
   balance               : nat;
 ]
 
 type balanceParams is [@layout:comb] record [
-  requests              : list(balanceOfRequest);
-  callback              : contract(list(balanceOfResponse));
+  requests              : list(balance_ofRequest);
+  callback              : contract(list(balance_ofResponse));
 ]
 
 type operatorParam is [@layout:comb] record [

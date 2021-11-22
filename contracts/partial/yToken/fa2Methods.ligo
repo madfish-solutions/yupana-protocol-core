@@ -48,14 +48,14 @@ function gettokens(
   | Some(v) -> v
   end
 
-function getTotalSupply(
+function get_total_supply(
   const p               : tokenAction;
   const s               : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
       case p of
-        IGetTotalSupply(args) -> {
+        IGet_total_supply(args) -> {
           const res : tokens = gettokens(args.token_id, s.tokens);
           operations := list [
             Tezos.transaction(res.totalSupplyF / precision, 0tz, args.receiver)
@@ -196,28 +196,28 @@ function getBalance(
   block {
     var operations : list(operation) := list[];
       case p of
-        IBalanceOf(balanceParams) -> {
+        IBalance_of(balanceParams) -> {
           function lookUpBalance(
-            const l           : list(balanceOfResponse);
-            const request     : balanceOfRequest)
-                              : list(balanceOfResponse) is
+            const l           : list(balance_ofResponse);
+            const request     : balance_ofRequest)
+                              : list(balance_ofResponse) is
             block {
               (* Retrieve the asked account from the storage *)
               const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
 
               (* Form the response *)
-              const response : balanceOfResponse = record [
+              const response : balance_ofResponse = record [
                   request = request;
                   balance = userBalance / precision;
                 ];
             } with response # l;
 
           (* Collect balances info *)
-          const accumulatedResponse : list(balanceOfResponse) =
+          const accumulatedResponse : list(balance_ofResponse) =
             List.fold(
               lookUpBalance,
               balanceParams.requests,
-              (nil: list(balanceOfResponse))
+              (nil: list(balance_ofResponse))
             );
           operations := list [Tezos.transaction(
             accumulatedResponse,

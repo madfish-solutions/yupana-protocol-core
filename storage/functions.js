@@ -13,7 +13,7 @@ let tokenFunctions = [
   },
   {
     index: 3,
-    name: "getTotalSupply",
+    name: "get_total_supply",
   },
 ];
 

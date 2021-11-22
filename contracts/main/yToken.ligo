@@ -37,8 +37,8 @@ function middleToken(
     const idx : nat = case p of
       | ITransfer(_transferParams) -> 0n
       | IUpdate_operators(_updateOperatorParams) -> 1n
-      | IBalanceOf(_balanceParams) -> 2n
-      | IGetTotalSupply(_totalSupplyParams) -> 3n
+      | IBalance_of(_balanceParams) -> 2n
+      | IGet_total_supply(_totalSupplyParams) -> 3n
     end;
 
     const lambda_bytes : bytes =
@@ -100,8 +100,8 @@ function main(
   case p of
     | Transfer(params)              -> middleToken(ITransfer(params), s)
     | Update_operators(params)      -> middleToken(IUpdate_operators(params), s)
-    | BalanceOf(params)             -> middleToken(IBalanceOf(params), s)
-    | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
+    | Balance_of(params)            -> middleToken(IBalance_of(params), s)
+    | Get_total_supply(params)      -> middleToken(IGet_total_supply(params), s)
     | UpdateInterest(params)        -> updateInterest(params, s)
     | AccrueInterest(params)        -> accrueInterest(params, s)
     | PriceCallback(params)         -> priceCallback(params, s)
