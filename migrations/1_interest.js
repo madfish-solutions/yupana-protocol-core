@@ -8,7 +8,7 @@ const { InMemorySigner } = require("@taquito/signer");
 module.exports = async (tezos) => {
   const contractAddress = await migrate(tezos, "interestRate", {
     admin: dev.pkh,
-    kickRateF: "0",
+    kinkRateF: "0",
     baseRateF: "0",
     multiplierF: "0",
     jumpMultiplierF: "0",
@@ -23,7 +23,7 @@ module.exports = async (tezos) => {
   // const ligo = getLigo(true);
 
   // const stdout = execSync(
-  //   `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/interestRate.ligo 'SetCoefficients(record [kickRateF = 800000000000000000n; baseRateF = 634195839n; multiplierF = 7134703196n; jumpMultiplierF = 31709791983n] )'`,
+  //   `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/interestRate.ligo 'SetCoefficients(record [kinkRateF = 800000000000000000n; baseRateF = 634195839n; multiplierF = 7134703196n; jumpMultiplierF = 31709791983n] )'`,
   //   { maxBuffer: 1024 * 1000 }
   // );
 

@@ -12,12 +12,12 @@
   const precision        : nat)
                         : nat is
   block {
-    const numerator : nat =
+    const denominator : nat =
       case is_nat(cashF + borrowsF - reservesF) of
         | None -> (failwith("underflow/cashF+borrowsF") : nat)
         | Some(value) -> value
       end;
-  } with precision * borrowsF / numerator
+  } with precision * borrowsF / denominator
 
 [@inline] function calcBorrowRate(
   const borrowsF    : nat;
@@ -35,17 +35,17 @@
     );
     var borrowRateF : nat := 0n;
 
-    if utilizationRateF < s.kickRateF
+    if utilizationRateF <= s.kinkRateF
     then borrowRateF := (s.baseRateF + (utilizationRateF * s.multiplierF) / precision);
     else block {
-      const utilizationSubKick : nat =
-        case is_nat(utilizationRateF - s.kickRateF) of
+      const utilizationSubkink : nat =
+        case is_nat(utilizationRateF - s.kinkRateF) of
           | None -> (failwith("underflow/utilizationRateF") : nat)
           | Some(value) -> value
         end;
 
-      borrowRateF := ((s.kickRateF * s.multiplierF / precision + s.baseRateF) +
-      (utilizationSubKick * s.jumpMultiplierF) / precision);
+      borrowRateF := ((s.kinkRateF * s.multiplierF / precision + s.baseRateF) +
+      (utilizationSubkink * s.jumpMultiplierF) / precision);
     }
 
   } with borrowRateF
@@ -65,7 +65,7 @@ function setCoefficients(
                         : rateReturn is
   block {
     mustBeAdmin(s);
-    s.kickRateF := param.kickRateF;
+    s.kinkRateF := param.kinkRateF;
     s.baseRateF := param.baseRateF;
     s.multiplierF := param.multiplierF;
     s.jumpMultiplierF := param.jumpMultiplierF;

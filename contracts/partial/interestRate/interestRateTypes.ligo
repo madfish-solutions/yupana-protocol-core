@@ -1,6 +1,6 @@
 type rateStorage        is [@layout:comb] record [
   admin                 : address;
-  kickRateF             : nat;
+  kinkRateF             : nat;
   baseRateF             : nat;
   multiplierF           : nat;
   jumpMultiplierF       : nat;
@@ -9,7 +9,7 @@ type rateStorage        is [@layout:comb] record [
 ]
 
 type setCoeffParams     is [@layout:comb] record [
-  kickRateF             : nat;
+  kinkRateF             : nat;
   baseRateF             : nat;
   multiplierF           : nat;
   jumpMultiplierF       : nat;
