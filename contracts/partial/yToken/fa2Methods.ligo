@@ -2,9 +2,9 @@
 function getAccount(
   const user            : address;
   const tokenId         : tokenId;
-  const accountInfo     : big_map((address * tokenId), account))
+  const accounts     : big_map((address * tokenId), account))
                         : account is
-  case accountInfo[(user, tokenId)] of
+  case accounts[(user, tokenId)] of
     None -> record [
       allowances        = (set [] : set(address));
       borrow            = 0n;
@@ -23,11 +23,11 @@ function getTokenIds(
   end
 
 (* Helper function to get token info *)
-function getTokenInfo(
+function gettokens(
   const token_id        : tokenId;
-  const tokenInfo       : map(tokenId, tokenInfo))
-                        : tokenInfo is
-  case tokenInfo[token_id] of
+  const tokens       : map(tokenId, tokens))
+                        : tokens is
+  case tokens[token_id] of
     None -> record [
       mainToken               = FA12(zeroAddress);
       interestRateModel       = zeroAddress;
@@ -56,7 +56,7 @@ function getTotalSupply(
     var operations : list(operation) := list[];
       case p of
         IGetTotalSupply(args) -> {
-          const res : tokenInfo = getTokenInfo(args.token_id, s.tokenInfo);
+          const res : tokens = gettokens(args.token_id, s.tokens);
           operations := list [
             Tezos.transaction(res.totalSupplyF / precision, 0tz, args.receiver)
           ];
@@ -87,7 +87,7 @@ function getBalanceByToken(
   block {
     const operator : address = Tezos.sender;
     const owner : address = transferParam.from_;
-    const user : account = getAccount(owner, token_id, s.accountInfo);
+    const user : account = getAccount(owner, token_id, s.accounts);
   } with owner = operator or Set.mem(operator, user.allowances)
 
 (* Perform transfers *)
@@ -145,13 +145,13 @@ function iterateTransfer(
 } with List.fold(makeTransfer, params.txs, s)
 
 (* Perform single operator update *)
-function iterateUpdateOperators(
+function iterate_update_operators(
   var s                 : tokenStorage;
   const params          : updateOperatorParam)
                         : tokenStorage is
   block {
     case params of
-      AddOperator(param) -> block {
+      Add_operator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
       then failwith("FA2_NOT_OWNER")
@@ -161,13 +161,13 @@ function iterateUpdateOperators(
       else skip;
 
       (* Create or get source account *)
-      var srcAccount : account := getAccount(param.owner, param.token_id, s.accountInfo);
+      var srcAccount : account := getAccount(param.owner, param.token_id, s.accounts);
       (* Add operator *)
       srcAccount.allowances := Set.add(param.operator, srcAccount.allowances);
       (* Update storage *)
-      s.accountInfo[(param.owner, param.token_id)] := srcAccount;
+      s.accounts[(param.owner, param.token_id)] := srcAccount;
     }
-    | RemoveOperator(param) -> block {
+    | Remove_operator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
       then failwith("FA2_NOT_OWNER")
@@ -177,14 +177,14 @@ function iterateUpdateOperators(
       else skip;
 
       (* Create or get source account *)
-      var srcAccount : account := getAccount(param.owner, param.token_id, s.accountInfo);
+      var srcAccount : account := getAccount(param.owner, param.token_id, s.accounts);
       (* Remove operator *)
       srcAccount.allowances := Set.remove(
         param.operator,
         srcAccount.allowances
       );
       (* Update storage *)
-      s.accountInfo[(param.owner, param.token_id)] := srcAccount;
+      s.accounts[(param.owner, param.token_id)] := srcAccount;
     }
     end
   } with s
@@ -229,16 +229,16 @@ function getBalance(
       end
   } with (operations, s)
 
-function updateOperators(
+function update_operators(
   const p               : tokenAction;
   var s                 : tokenStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
       case p of
-        IUpdateOperators(updateOperatorParams) -> {
+        IUpdate_operators(updateOperatorParams) -> {
           s := List.fold(
-            iterateUpdateOperators,
+            iterate_update_operators,
             updateOperatorParams,
             s
           )

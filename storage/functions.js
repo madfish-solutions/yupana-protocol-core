@@ -5,7 +5,7 @@ let tokenFunctions = [
   },
   {
     index: 1,
-    name: "updateOperators",
+    name: "update_operators",
   },
   {
     index: 2,

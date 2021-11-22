@@ -172,6 +172,9 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
+    console.log(tokenMetadata);
+    console.log(tokenMetadata2);
+
     await proxy.updatePair(0n, "COMP-USD");
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
@@ -301,13 +304,13 @@ describe("yToken tests", async () => {
 
   it("set borrow pause by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
-    let res = await yToken.storage.storage.tokenInfo.get("1");
+    let res = await yToken.storage.storage.tokens.get("1");
     strictEqual(res.borrowPause, false);
 
     await yToken.setBorrowPause(1, true);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.tokenInfo.get("1");
+    res = await yToken.storage.storage.tokens.get("1");
     strictEqual(res.borrowPause, true);
   });
 
@@ -416,8 +419,8 @@ describe("yToken tests", async () => {
     strictEqual(await res.balance.toString(), "9999999990000000000");
 
     let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
-    let yTokenInfo = await yToken.storage.storage.tokenInfo.get("1");
-    console.log(yTokenInfo.lastPrice.toString());
+    let ytokens = await yToken.storage.storage.tokens.get("1");
+    console.log(ytokens.lastPrice.toString());
 
     strictEqual(
       await yTokenRes.toPrecision(40).split(".")[0],
@@ -463,7 +466,7 @@ describe("yToken tests", async () => {
 
   it("mint yTokens [2] by dev", async () => {
     tezos = await Utils.setProvider(tezos, dev.sk);
-    await fa2.updateOperators([
+    await fa2.update_operators([
       {
         add_operator: {
           owner: dev.pkh,
@@ -490,7 +493,7 @@ describe("yToken tests", async () => {
 
   it("mint yTokens [3] by dev2", async () => {
     tezos = await Utils.setProvider(tezos, dev2.sk);
-    await fa2_2.updateOperators([
+    await fa2_2.update_operators([
       {
         add_operator: {
           owner: dev2.pkh,
@@ -546,7 +549,7 @@ describe("yToken tests", async () => {
     await yToken.setBorrowPause(1, false);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.tokenInfo.get("1");
+    let res = await yToken.storage.storage.tokens.get("1");
     strictEqual(res.borrowPause, false);
   });
 
@@ -644,9 +647,9 @@ describe("yToken tests", async () => {
   it("add operator alice to bob", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await yToken.updateOperators([
+    await yToken.update_operators([
       {
-        addOperator: {
+        add_operator: {
           owner: alice.pkh,
           operator: bob.pkh,
           token_id: 1,
@@ -655,7 +658,7 @@ describe("yToken tests", async () => {
     ]);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.accountInfo.get([alice.pkh, 1]);
+    let res = await yToken.storage.storage.accounts.get([alice.pkh, 1]);
     strictEqual(res.allowances.toString(), `${bob.pkh}`);
   });
 
@@ -663,9 +666,9 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, peter.sk);
 
     await rejects(
-      yToken.updateOperators([
+      yToken.update_operators([
         {
-          addOperator: {
+          add_operator: {
             owner: alice.pkh,
             operator: peter.pkh,
             token_id: 1,
@@ -682,9 +685,9 @@ describe("yToken tests", async () => {
   it("add operator alice to peter", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await yToken.updateOperators([
+    await yToken.update_operators([
       {
-        addOperator: {
+        add_operator: {
           owner: alice.pkh,
           operator: peter.pkh,
           token_id: 1,
@@ -693,16 +696,16 @@ describe("yToken tests", async () => {
     ]);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.accountInfo.get([alice.pkh, 1]);
+    let res = await yToken.storage.storage.accounts.get([alice.pkh, 1]);
     strictEqual(res.allowances.toString(), `${peter.pkh},${bob.pkh}`);
   });
 
   it("remove operator alice to peter", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
-    await yToken.updateOperators([
+    await yToken.update_operators([
       {
-        removeOperator: {
+        remove_operator: {
           owner: alice.pkh,
           operator: peter.pkh,
           token_id: 1,
@@ -711,7 +714,7 @@ describe("yToken tests", async () => {
     ]);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.accountInfo.get([alice.pkh, 1]);
+    let res = await yToken.storage.storage.accounts.get([alice.pkh, 1]);
     strictEqual(res.allowances.toString(), `${bob.pkh}`);
   });
 
@@ -812,7 +815,7 @@ describe("yToken tests", async () => {
     await yToken.updateAndBorrow(proxy, 1, 50000);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(
       res.borrow.toPrecision(40).split(".")[0],
       "50000000000000000000000"
@@ -826,7 +829,7 @@ describe("yToken tests", async () => {
     await yToken.updateAndBorrow(proxy, 1, 1000);
     await yToken.updateStorage();
 
-    let res = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    let res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -881,7 +884,7 @@ describe("yToken tests", async () => {
     await yToken.updateAndBorrow(proxy, 1, 500);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
 
     strictEqual(
       res.borrow.toPrecision(40).split(".")[0],
@@ -894,7 +897,7 @@ describe("yToken tests", async () => {
     await yToken.updateAndBorrow(proxy, 3, 1000);
     await yToken.updateStorage();
 
-    res = await yToken.storage.storage.accountInfo.get([dev2.pkh, 3]);
+    res = await yToken.storage.storage.accounts.get([dev2.pkh, 3]);
 
     strictEqual(
       res.borrow.toPrecision(40).split(".")[0],
@@ -918,7 +921,10 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
     await rejects(yToken.updateAndBorrow2(proxy, 0, 20000000000), (err) => {
-      ok(err.message == "yToken/amount-too-big", "Error message mismatch");
+      ok(
+        err.message == "yToken/not-enough-liquidity",
+        "Error message mismatch"
+      );
       return true;
     });
   });
@@ -931,7 +937,7 @@ describe("yToken tests", async () => {
 
     await rejects(yToken.updateAndRepay(proxy, 1, 20000000000), (err) => {
       ok(
-        err.message == "yToken/amount-should-be-less-or-equal",
+        err.message == "yToken/cant-repay-more-than-borrowed",
         "Error message mismatch"
       );
       return true;
@@ -944,7 +950,7 @@ describe("yToken tests", async () => {
     await yToken.updateAndRepay(proxy, 1, 40000);
     await yToken.updateStorage();
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    let yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -954,7 +960,7 @@ describe("yToken tests", async () => {
     await yToken.updateAndRepay(proxy, 3, 0);
     await yToken.updateStorage();
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get([dev2.pkh, 3]);
+    let yTokenRes = await yToken.storage.storage.accounts.get([dev2.pkh, 3]);
     strictEqual(yTokenRes.borrow.toPrecision(40).split(".")[0], "0");
   });
 
@@ -1008,13 +1014,13 @@ describe("yToken tests", async () => {
     let res = await fa12_2.storage.ledger.get(bob.pkh);
     console.log(await res.balance.toString()); // not static result
 
-    let yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    let yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
 
     await yToken.updateAndRepay(proxy, 1, 0);
     await yToken.updateStorage();
 
-    yTokenRes = await yToken.storage.storage.accountInfo.get([bob.pkh, 1]);
+    yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(yTokenRes.borrow.toString(), "0");
   });
 
@@ -1087,7 +1093,7 @@ describe("yToken tests", async () => {
     yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
-    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -1115,7 +1121,6 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
   });
-
 
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
@@ -1150,7 +1155,6 @@ describe("yToken tests", async () => {
     let res = await oracle.storage.assetMap.get("COMP-USD");
     strictEqual(res.computedPrice.toPrecision(40).split(".")[0], "321748180");
 
-
     await oracle.update(
       MichelsonMap.fromLiteral({
         ["COMP-USD"]: [
@@ -1180,7 +1184,7 @@ describe("yToken tests", async () => {
     yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
-    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -1193,7 +1197,7 @@ describe("yToken tests", async () => {
     yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
-    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
@@ -1206,7 +1210,7 @@ describe("yToken tests", async () => {
     yTokenRes = await yToken.storage.storage.ledger.get([peter.pkh, 0]);
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
-    res = await yToken.storage.storage.accountInfo.get([peter.pkh, 1]);
+    res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 

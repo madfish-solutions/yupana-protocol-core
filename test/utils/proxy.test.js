@@ -110,19 +110,19 @@ describe("Proxy tests", async () => {
       0
     );
     await yToken.updateStorage();
-    var r = await yToken.storage.tokenInfo.get(0);
+    var r = await yToken.storage.tokens.get(0);
     strictEqual(r.mainToken, alice.pkh);
   });
 
   it("getting a price for an permitted address", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
-    var r = await yToken.storage.tokenInfo.get(0);
+    var r = await yToken.storage.tokens.get(0);
     strictEqual(r.lastPrice.toString(), "0");
 
     await yToken.updatePrice([0n]);
     await yToken.updateStorage();
 
-    r = await yToken.storage.tokenInfo.get(0);
+    r = await yToken.storage.tokens.get(0);
     strictEqual(r.lastPrice.toString(), "100");
   });
 });

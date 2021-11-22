@@ -4,8 +4,8 @@ const { alice } = require("../scripts/sandbox/accounts");
 const tokenStorage = {
   admin: alice.pkh,
   ledger: MichelsonMap.fromLiteral({}),
-  accountInfo: MichelsonMap.fromLiteral({}),
-  tokenInfo: MichelsonMap.fromLiteral({}),
+  accounts: MichelsonMap.fromLiteral({}),
+  tokens: MichelsonMap.fromLiteral({}),
   metadata: MichelsonMap.fromLiteral({}),
   tokenMetadata: MichelsonMap.fromLiteral({}),
   lastTokenId: "0",
@@ -16,7 +16,7 @@ const tokenStorage = {
   markets: MichelsonMap.fromLiteral({}),
   borrows: MichelsonMap.fromLiteral({}),
   typesInfo: MichelsonMap.fromLiteral({}),
-  threshold: "0"
+  threshold: "0",
 };
 
 module.exports = {

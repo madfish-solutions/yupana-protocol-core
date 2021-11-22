@@ -21,7 +21,7 @@ type useAction          is
 
 type tokenAction        is
   | ITransfer of transferParams
-  | IUpdateOperators of updateOperatorParams
+  | IUpdate_operators of updateOperatorParams
   | IBalanceOf of balanceParams
   | IGetTotalSupply of totalSupplyParams
 
@@ -44,7 +44,7 @@ type setUseTokenParams  is record [
 
 type entryAction        is
   | Transfer of transferParams
-  | UpdateOperators of updateOperatorParams
+  | Update_operators of updateOperatorParams
   | BalanceOf of balanceParams
   | GetTotalSupply of totalSupplyParams
   | UpdateInterest of tokenId

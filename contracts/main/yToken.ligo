@@ -36,7 +36,7 @@ function middleToken(
   block {
     const idx : nat = case p of
       | ITransfer(_transferParams) -> 0n
-      | IUpdateOperators(_updateOperatorParams) -> 1n
+      | IUpdate_operators(_updateOperatorParams) -> 1n
       | IBalanceOf(_balanceParams) -> 2n
       | IGetTotalSupply(_totalSupplyParams) -> 3n
     end;
@@ -99,7 +99,7 @@ function main(
                         : fullReturn is
   case p of
     | Transfer(params)              -> middleToken(ITransfer(params), s)
-    | UpdateOperators(params)       -> middleToken(IUpdateOperators(params), s)
+    | Update_operators(params)      -> middleToken(IUpdate_operators(params), s)
     | BalanceOf(params)             -> middleToken(IBalanceOf(params), s)
     | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
     | UpdateInterest(params)        -> updateInterest(params, s)
