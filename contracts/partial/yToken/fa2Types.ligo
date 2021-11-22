@@ -23,14 +23,14 @@ type balance_ofRequest is [@layout:comb] record [
   token_id              : tokenId;
 ]
 
-type balance_ofResponse is [@layout:comb] record [
+type balance_of_response is [@layout:comb] record [
   request               : balance_ofRequest;
   balance               : nat;
 ]
 
 type balanceParams is [@layout:comb] record [
   requests              : list(balance_ofRequest);
-  callback              : contract(list(balance_ofResponse));
+  callback              : contract(list(balance_of_response));
 ]
 
 type operatorParam is [@layout:comb] record [

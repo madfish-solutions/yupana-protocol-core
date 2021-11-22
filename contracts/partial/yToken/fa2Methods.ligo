@@ -198,26 +198,26 @@ function getBalance(
       case p of
         IBalance_of(balanceParams) -> {
           function lookUpBalance(
-            const l           : list(balance_ofResponse);
+            const l           : list(balance_of_response);
             const request     : balance_ofRequest)
-                              : list(balance_ofResponse) is
+                              : list(balance_of_response) is
             block {
               (* Retrieve the asked account from the storage *)
               const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
 
               (* Form the response *)
-              const response : balance_ofResponse = record [
+              const response : balance_of_response = record [
                   request = request;
                   balance = userBalance / precision;
                 ];
             } with response # l;
 
           (* Collect balances info *)
-          const accumulatedResponse : list(balance_ofResponse) =
+          const accumulatedResponse : list(balance_of_response) =
             List.fold(
               lookUpBalance,
               balanceParams.requests,
-              (nil: list(balance_ofResponse))
+              (nil: list(balance_of_response))
             );
           operations := list [Tezos.transaction(
             accumulatedResponse,
