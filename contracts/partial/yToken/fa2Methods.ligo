@@ -23,7 +23,7 @@ function getTokenIds(
   end
 
 (* Helper function to get token info *)
-function gettokens(
+function getToken(
   const token_id        : tokenId;
   const tokens       : map(tokenId, tokens))
                         : tokens is
@@ -56,7 +56,7 @@ function get_total_supply(
     var operations : list(operation) := list[];
       case p of
         IGet_total_supply(args) -> {
-          const res : tokens = gettokens(args.token_id, s.tokens);
+          const res : tokens = getToken(args.token_id, s.tokens);
           operations := list [
             Tezos.transaction(res.totalSupplyF / precision, 0tz, args.receiver)
           ];

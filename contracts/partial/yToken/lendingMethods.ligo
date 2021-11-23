@@ -54,7 +54,7 @@ function calcMaxCollateralInCU(
                         : nat is
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
-        const token : tokens = gettokens(tokenId, tokens);
+        const token : tokens = getToken(tokenId, tokens);
         const numerator : nat =
           case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
             | None -> (failwith("underflow/liquidity - reserves") : nat)
@@ -86,7 +86,7 @@ function calcCollateralValueInCU(
                         : nat is
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
-        const token : tokens = gettokens(tokenId, tokens);
+        const token : tokens = getToken(tokenId, tokens);
         const numerator : nat =
           case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
             | None -> (failwith("underflow/liquidity - reserves") : nat)
@@ -117,7 +117,7 @@ function applyInterestToBorrows(
                           : accountsMapType is
       block {
         var userAccount : account := getAccount(user, tokenId, accountsMap);
-        const tokens : tokens = gettokens(tokenId, tokensMap);
+        const tokens : tokens = getToken(tokenId, tokensMap);
 
         verifyTokenUpdated(tokens);
 
@@ -150,7 +150,7 @@ function calcOutstandingBorrowInCU(
       block {
         const userAccount : account = getAccount(user, tokenId, accounts);
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
-        var tokens : tokens := gettokens(tokenId, tokens);
+        var tokens : tokens := getToken(tokenId, tokens);
 
         (* sum += oraclePrice * borrow *)
         if userBalance > 0n or userAccount.borrow > 0n
@@ -169,7 +169,7 @@ function updateInterest(
   var s                 : fullTokenStorage)
                         : fullReturn is
     block {
-      var _token : tokens := gettokens(tokenId, s.storage.tokens);
+      var _token : tokens := getToken(tokenId, s.storage.tokens);
       var operations : list(operation) := list[];
 
       if tokenId >= s.storage.lastTokenId
@@ -216,7 +216,7 @@ function mint(
           else skip;
 
           var mintTokensF : nat := yAssetParams.amount * precision;
-          var token : tokens := gettokens(yAssetParams.tokenId, s.tokens);
+          var token : tokens := getToken(yAssetParams.tokenId, s.tokens);
 
           if token.totalSupplyF =/= 0n
           then {
@@ -258,7 +258,7 @@ function redeem(
           then failwith("yToken/yToken-undefined");
           else skip;
 
-          var token : tokens := gettokens(yAssetParams.tokenId, s.tokens);
+          var token : tokens := getToken(yAssetParams.tokenId, s.tokens);
 
           verifyTokenUpdated(token);
 
@@ -330,7 +330,7 @@ function borrow(
           else skip;
 
           var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accounts);
-          var token : tokens := gettokens(yAssetParams.tokenId, s.tokens);
+          var token : tokens := getToken(yAssetParams.tokenId, s.tokens);
           var borrowTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
 
           verifyTokenUpdated(token);
@@ -395,7 +395,7 @@ function repay(
     var operations : list(operation) := list[];
       case p of
         Repay(yAssetParams) -> {
-          var token : tokens := gettokens(yAssetParams.tokenId, s.tokens);
+          var token : tokens := getToken(yAssetParams.tokenId, s.tokens);
 
           if yAssetParams.tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
@@ -471,7 +471,7 @@ function liquidate(
           var userBorrowedTokens : set(tokenId) := getTokenIds(params.borrower, s.borrows);
           s.accounts := applyInterestToBorrows(userBorrowedTokens, params.borrower, s.accounts, s.tokens);
           var borrowerAccount : account := getAccount(params.borrower, params.borrowToken, s.accounts);
-          var borrowToken : tokens := gettokens(params.borrowToken, s.tokens);
+          var borrowToken : tokens := getToken(params.borrowToken, s.tokens);
 
           verifyTokenUpdated(borrowToken);
 
@@ -538,7 +538,7 @@ function liquidate(
           then skip
           else failwith("yToken/collateralToken-not-contains-in-borrow-market");
 
-          var collateralToken : tokens := gettokens(params.collateralToken, s.tokens);
+          var collateralToken : tokens := getToken(params.collateralToken, s.tokens);
 
           verifyTokenUpdated(collateralToken);
 
@@ -631,7 +631,7 @@ function exitMarket(
           then failwith("yToken/yToken-undefined");
           else skip;
 
-          const token : tokens = gettokens(
+          const token : tokens = getToken(
             tokenId,
             s.tokens
           );
@@ -672,7 +672,7 @@ function priceCallback(
     then failwith("yToken/permition-error");
     else skip;
 
-    var token : tokens := gettokens(
+    var token : tokens := getToken(
       params.tokenId,
       s.storage.tokens
     );
@@ -686,7 +686,7 @@ function accrueInterest(
   var s                 : fullTokenStorage)
                         : fullReturn is
   block {
-    var token : tokens := gettokens(params.tokenId, s.storage.tokens);
+    var token : tokens := getToken(params.tokenId, s.storage.tokens);
     const borrowRate : nat = params.amount;
 
     if token.isInterestUpdating = False

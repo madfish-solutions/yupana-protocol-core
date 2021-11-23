@@ -28,7 +28,7 @@ function withdrawReserve(
     case p of
       WithdrawReserve(params) -> {
         mustBeAdmin(s);
-        var token : tokens := gettokens(params.tokenId, s.tokens);
+        var token : tokens := getToken(params.tokenId, s.tokens);
         const amountF = params.amount * precision;
 
         if amountF > token.totalReservesF
@@ -71,10 +71,10 @@ function addMarket(
     case p of
       AddMarket(params) -> {
         mustBeAdmin(s);
-        var token : tokens := gettokens(s.lastTokenId, s.tokens);
+        var token : tokens := getToken(s.lastTokenId, s.tokens);
         const lastTokenId : nat = s.lastTokenId;
 
-        checkTypeInfo(s.typesInfo, params.asset);
+        checkTypeInfo(s.assets, params.asset);
 
         (* TODO: fail if token exist - not fixed yet *)
         token.interestRateModel := params.interestRateModel;
@@ -83,7 +83,7 @@ function addMarket(
         token.reserveFactorF := params.reserveFactorF;
         token.maxBorrowRate := params.maxBorrowRate;
 
-        s.typesInfo[params.asset] := lastTokenId;
+        s.assets[params.asset] := lastTokenId;
         s.tokenMetadata[lastTokenId] := record [
           token_id = lastTokenId;
           tokens = params.tokenMetadata;
@@ -122,7 +122,7 @@ function setTokenFactors(
     case p of
       SetTokenFactors(params) -> {
         mustBeAdmin(s);
-        var token : tokens := gettokens(params.tokenId, s.tokens);
+        var token : tokens := getToken(params.tokenId, s.tokens);
 
         if token.interestUpdateTime < Tezos.now
         then failwith("yToken/need-update")
@@ -164,7 +164,7 @@ function setBorrowPause(
     case p of
       SetBorrowPause(borrowPauseParams) -> {
         mustBeAdmin(s);
-        var token : tokens := gettokens(borrowPauseParams.tokenId, s.tokens);
+        var token : tokens := getToken(borrowPauseParams.tokenId, s.tokens);
         token.borrowPause := borrowPauseParams.condition;
         s.tokens[borrowPauseParams.tokenId] := token;
       }
