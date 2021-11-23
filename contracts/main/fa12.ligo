@@ -47,7 +47,7 @@ type entryAction is
   | Approve of approveParams
   | GetBalance of balanceParams
   | GetAllowance of allowanceParams
-  | GetTotalSupply of totalSupplyParams
+  | Get_total_supply of totalSupplyParams
   | Mint of nat
   | Withdraw of withdrawParams
 
@@ -185,7 +185,7 @@ function getAllowance (
   } with (list [transaction(spenderAllowance, 0tz, contr)], s)
 
 (* View function that forwards the totalSupplyF to a contract *)
-function getTotalSupply(
+function get_total_supply(
   const contr           : contract(amt);
   var s                 : storage)
                         : return is
@@ -238,7 +238,7 @@ function main (
     | Approve(params) -> approve(params.0, params.1, s)
     | GetBalance(params) -> getBalance(params.0, params.1, s)
     | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
-    | GetTotalSupply(params) -> getTotalSupply(params.1, s)
+    | Get_total_supply(params) -> get_total_supply(params.1, s)
     | Mint(params) -> mint(params, s)
     | Withdraw(params) -> withdraw(params.0, s)
   end;
