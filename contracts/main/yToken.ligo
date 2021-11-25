@@ -9,7 +9,7 @@ function setUseAction(
   block {
     if Tezos.sender = s.storage.admin
     then case s.useLambdas[idx] of
-        Some(_n) -> failwith("yToken/yToken-function-already-set")
+        Some(_n) -> failwith("yToken/use-lambda-already-set")
         | None -> s.useLambdas[idx] := lambda_bytes
       end;
     else failwith("yToken/you-not-admin")
@@ -23,13 +23,13 @@ function setTokenAction(
   block {
     if Tezos.sender = s.storage.admin
     then case s.tokenLambdas[idx] of
-        Some(_n) -> failwith("yToken/token-function-not-set")
+        Some(_n) -> failwith("yToken/token-lambda-already-set")
         | None -> s.tokenLambdas[idx] := lambda_bytes
       end;
     else failwith("yToken/you-not-admin")
   } with (noOperations, s)
 
-function middleToken(
+function callToken(
   const p               : tokenAction;
   var s                 : fullTokenStorage)
                         : fullReturn is
@@ -37,14 +37,14 @@ function middleToken(
     const idx : nat = case p of
       | ITransfer(_transferParams) -> 0n
       | IUpdate_operators(_updateOperatorParams) -> 1n
-      | IBalanceOf(_balanceParams) -> 2n
-      | IGetTotalSupply(_totalSupplyParams) -> 3n
+      | IBalance_of(_balanceParams) -> 2n
+      | IGet_total_supply(_totalSupplyParams) -> 3n
     end;
 
     const lambda_bytes : bytes =
       case s.tokenLambdas[idx] of
         | Some(l) -> l
-        | None -> failwith("yToken/middle-token-function-not-set")
+        | None -> failwith("yToken/token-lambda-not-set")
       end;
 
     const res : return =
@@ -56,7 +56,7 @@ function middleToken(
     s.storage := res.1;
   } with (res.0, s)
 
-[@inline] function middleUse(
+[@inline] function callUse(
   const p               : useAction;
   var s                 : fullTokenStorage)
                         : fullReturn is
@@ -81,7 +81,7 @@ function middleToken(
     const lambda_bytes : bytes =
       case s.useLambdas[idx] of
         | Some(l) -> l
-        | None -> failwith("yToken/middle-yToken-function-not-set")
+        | None -> failwith("yToken/use-lambda-not-set")
       end;
 
     const res : return =
@@ -98,14 +98,14 @@ function main(
   const s               : fullTokenStorage)
                         : fullReturn is
   case p of
-    | Transfer(params)              -> middleToken(ITransfer(params), s)
-    | Update_operators(params)      -> middleToken(IUpdate_operators(params), s)
-    | BalanceOf(params)             -> middleToken(IBalanceOf(params), s)
-    | GetTotalSupply(params)        -> middleToken(IGetTotalSupply(params), s)
+    | Transfer(params)              -> callToken(ITransfer(params), s)
+    | Update_operators(params)      -> callToken(IUpdate_operators(params), s)
+    | Balance_of(params)            -> callToken(IBalance_of(params), s)
+    | Get_total_supply(params)      -> callToken(IGet_total_supply(params), s)
     | UpdateInterest(params)        -> updateInterest(params, s)
     | AccrueInterest(params)        -> accrueInterest(params, s)
     | PriceCallback(params)         -> priceCallback(params, s)
-    | Use(params)                   -> middleUse(params, s)
+    | Use(params)                   -> callUse(params, s)
     | SetUseAction(params)          -> setUseAction(params.index, params.func, s)
     | SetTokenAction(params)        -> setTokenAction(params.index, params.func, s)
   end

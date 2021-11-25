@@ -22,8 +22,8 @@ type useAction          is
 type tokenAction        is
   | ITransfer of transferParams
   | IUpdate_operators of updateOperatorParams
-  | IBalanceOf of balanceParams
-  | IGetTotalSupply of totalSupplyParams
+  | IBalance_of of balanceParams
+  | IGet_total_supply of totalSupplyParams
 
 
 // yToken
@@ -45,8 +45,8 @@ type setUseTokenParams  is record [
 type entryAction        is
   | Transfer of transferParams
   | Update_operators of updateOperatorParams
-  | BalanceOf of balanceParams
-  | GetTotalSupply of totalSupplyParams
+  | Balance_of of balanceParams
+  | Get_total_supply of totalSupplyParams
   | UpdateInterest of tokenId
   | AccrueInterest of yAssetParams
   | PriceCallback of yAssetParams

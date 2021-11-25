@@ -42,7 +42,7 @@ const tokenStorage = {
   markets: MichelsonMap.fromLiteral({}),
   borrows: MichelsonMap.fromLiteral({}),
   maxMarkets: "0",
-  typesInfo: MichelsonMap.fromLiteral({}),
+  assets: MichelsonMap.fromLiteral({}),
   threshold: "0",
 };
 let contractAddress = 0;

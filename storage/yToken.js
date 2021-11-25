@@ -15,7 +15,7 @@ const tokenStorage = {
   maxMarkets: "0",
   markets: MichelsonMap.fromLiteral({}),
   borrows: MichelsonMap.fromLiteral({}),
-  typesInfo: MichelsonMap.fromLiteral({}),
+  assets: MichelsonMap.fromLiteral({}),
   threshold: "0",
 };
 

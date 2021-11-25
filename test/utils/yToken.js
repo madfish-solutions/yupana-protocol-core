@@ -163,17 +163,17 @@ class YToken {
     return operation;
   }
 
-  async balanceOf(requests, callback) {
+  async balance_of(requests, callback) {
     const operation = await this.contract.methods
-      .balanceOf(requests, callback)
+      .balance_of(requests, callback)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async getTotalSupply(token_id, receiver) {
+  async get_total_supply(token_id, receiver) {
     const operation = await this.contract.methods
-      .getTotalSupply(token_id, receiver)
+      .get_total_supply(token_id, receiver)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

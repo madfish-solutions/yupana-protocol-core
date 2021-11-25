@@ -45,7 +45,7 @@ type tokenStorage       is [@layout:comb] record [
   markets               : big_map(address, set(tokenId));
   borrows               : big_map(address, set(tokenId));
   maxMarkets            : nat;
-  typesInfo             : big_map(assetType, tokenId);
+  assets             : big_map(assetType, tokenId);
   threshold             : nat;
 ]
 
