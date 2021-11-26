@@ -35,16 +35,16 @@
     );
     var borrowRateF : nat := 0n;
 
-    if utilizationRateF <= s.kinkRateF
+    if utilizationRateF <= s.kinkF
     then borrowRateF := (s.baseRateF + (utilizationRateF * s.multiplierF) / precision);
     else block {
       const utilizationSubkink : nat =
-        case is_nat(utilizationRateF - s.kinkRateF) of
+        case is_nat(utilizationRateF - s.kinkF) of
           | None -> (failwith("underflow/utilizationRateF") : nat)
           | Some(value) -> value
         end;
 
-      borrowRateF := ((s.kinkRateF * s.multiplierF / precision + s.baseRateF) +
+      borrowRateF := ((s.kinkF * s.multiplierF / precision + s.baseRateF) +
       (utilizationSubkink * s.jumpMultiplierF) / precision);
     }
 
@@ -65,7 +65,7 @@ function setCoefficients(
                         : rateReturn is
   block {
     mustBeAdmin(s);
-    s.kinkRateF := param.kinkRateF;
+    s.kinkF := param.kinkF;
     s.baseRateF := param.baseRateF;
     s.multiplierF := param.multiplierF;
     s.jumpMultiplierF := param.jumpMultiplierF;
