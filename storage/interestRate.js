@@ -2,7 +2,7 @@ const { alice } = require("../scripts/sandbox/accounts");
 
 module.exports = {
   admin: alice.pkh,
-  kinkRateF: "0",
+  kinkF: "0",
   baseRateF: "0",
   multiplierF: "0",
   jumpMultiplierF: "0",
