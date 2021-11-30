@@ -13,7 +13,7 @@ type account            is [@layout:comb] record [
   lastBorrowIndex       : nat;
 ]
 
-type tokens         is [@layout:comb] record [
+type tokenType          is [@layout:comb] record [
   mainToken             : assetType;
   interestRateModel     : address;
   interestUpdateTime    : timestamp;
@@ -35,7 +35,7 @@ type tokenStorage       is [@layout:comb] record [
   admin                 : address;
   ledger                : big_map((address * tokenId), nat);
   accounts              : big_map((address * tokenId), account);
-  tokens                : map(tokenId, tokens);
+  tokens                : map(tokenId, tokenType);
   metadata              : big_map(string, bytes);
   tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
@@ -45,7 +45,7 @@ type tokenStorage       is [@layout:comb] record [
   markets               : big_map(address, set(tokenId));
   borrows               : big_map(address, set(tokenId));
   maxMarkets            : nat;
-  assets             : big_map(assetType, tokenId);
+  assets                : big_map(assetType, tokenId);
   threshold             : nat;
 ]
 
@@ -53,7 +53,7 @@ type tokenSet is set(tokenId)
 
 type accountsMapType is big_map((address * tokenId), account);
 
-type totalSupplyParams is [@layout:comb] record [
+type totalSupplyParams  is [@layout:comb] record [
   token_id              : tokenId;
   [@annot:]receiver     : contract(nat);
 ]
@@ -92,12 +92,12 @@ type setGlobalParams    is [@layout:comb] record [
   threshold             : nat;
 ]
 
-type borrowPauseParams is [@layout:comb] record [
+type borrowPauseParams  is [@layout:comb] record [
   tokenId               : nat;
   condition             : bool;
 ]
 
-type newMetadataParams  is map(string, bytes)
+type newMetadataParams is map(string, bytes)
 
 type updateMetadataParams is [@layout:comb] record [
   tokenId               : nat;
@@ -118,7 +118,7 @@ type newMarketParams    is [@layout:comb] record [
   tokenMetadata         : newMetadataParams;
 ]
 
-type oracleParam is (string * (timestamp * nat))
+type oracleParam        is (string * (timestamp * nat))
 
 type pairParam          is [@layout:comb] record [
   tokenId               : tokenId;
