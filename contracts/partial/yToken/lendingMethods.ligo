@@ -262,10 +262,6 @@ function redeem(
 
           verifyTokenUpdated(token);
 
-          if Set.mem(yAssetParams.tokenId, getTokenIds(Tezos.sender, s.markets))
-          then failwith("yToken/token-taken-as-collateral")
-          else skip;
-
           var userBalance : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s.ledger);
 
           const liquidityF : nat =
@@ -308,6 +304,25 @@ function redeem(
             end;
 
           s.tokens[yAssetParams.tokenId] := token;
+
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
+            getTokenIds(Tezos.sender, s.markets),
+            Tezos.sender,
+            s.ledger,
+            s.tokens
+          );
+
+          const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
+            getTokenIds(Tezos.sender, s.borrows),
+            Tezos.sender,
+            s.accounts,
+            s.ledger,
+            s.tokens
+          );
+
+          if outstandingBorrowInCU > maxBorrowInCU
+          then failwith("yToken/exceeds-allowable-redeem");
+          else skip;
 
           operations := transfer_token(Tezos.self_address, Tezos.sender, redeemAmount, token.mainToken);
         }
