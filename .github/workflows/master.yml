@@ -1,0 +1,27 @@
+name: Contract Testing Pipeline
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  compile-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "15"
+      - name: Install Git
+        run: sudo apt install git -y
+      - name: Install node modules
+        run: yarn
+      - name: Run ganache-cli in background
+        run: ./ci/flextesa.sh
+      - name: Compile and test contracts
+        run: yarn compile && yarn test

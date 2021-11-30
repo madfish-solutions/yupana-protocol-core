@@ -172,9 +172,6 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    console.log(tokenMetadata);
-    console.log(tokenMetadata2);
-
     await proxy.updatePair(0n, "COMP-USD");
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
@@ -986,11 +983,20 @@ describe("yToken tests", async () => {
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
   });
 
-  it("redeem yTokens by bob (token-taken-as-collateral)", async () => {
+  it("redeem by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
-    await rejects(yToken.updateAndRedeem(proxy, 0, 1), (err) => {
+    await yToken.updateAndRedeem(proxy, 0, 100);
+    await yToken.updateStorage();
+
+    let yTokenRes = await yToken.storage.storage.ledger.get([bob.pkh, 1]);
+    console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
+  });
+
+  it("redeem yTokens by bob (exceeds-allowable-redeem)", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await rejects(yToken.updateAndRedeem(proxy, 0, 0), (err) => {
       ok(
-        err.message == "yToken/token-taken-as-collateral",
+        err.message == "yToken/exceeds-allowable-redeem",
         "Error message mismatch"
       );
       return true;

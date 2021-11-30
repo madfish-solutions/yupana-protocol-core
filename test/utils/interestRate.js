@@ -47,7 +47,7 @@ class InterestRate {
     this.storage = {
       admin: storage.admin,
       yToken: storage.yToken,
-      kinkRateF: storage.kinkRateF,
+      kinkF: storage.kinkF,
       baseRateF: storage.baseRateF,
       multiplierF: storage.multiplierF,
       jumpMultiplierF: storage.jumpMultiplierF,
@@ -78,9 +78,9 @@ class InterestRate {
     return operation;
   }
 
-  async setCoefficients(kinkRateF, baseRateF, multiplierF, jumpMultiplierF) {
+  async setCoefficients(kinkF, baseRateF, multiplierF, jumpMultiplierF) {
     const operation = await this.contract.methods
-      .setCoefficients(kinkRateF, baseRateF, multiplierF, jumpMultiplierF)
+      .setCoefficients(kinkF, baseRateF, multiplierF, jumpMultiplierF)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
