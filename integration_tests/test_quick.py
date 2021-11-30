@@ -180,6 +180,9 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(0, 51), sender=alice)
 
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.liquidate(1, 0, me, 1), sender=bob)
+
         chain.execute(self.ct.redeem(0, 50), sender=alice)
 
         with self.assertRaises(MichelsonRuntimeError):
