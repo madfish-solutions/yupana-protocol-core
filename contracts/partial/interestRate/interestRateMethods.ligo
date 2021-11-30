@@ -6,10 +6,10 @@
   else unit
 
 [@inline] function calcUtilRate(
-  const borrowsF    : nat;
-  const cashF       : nat;
-  const reservesF   : nat;
-  const precision        : nat)
+  const borrowsF        : nat;
+  const cashF           : nat;
+  const reservesF       : nat;
+  const precision       : nat)
                         : nat is
   block {
     const denominator : nat =
@@ -20,10 +20,10 @@
   } with precision * borrowsF / denominator
 
 [@inline] function calcBorrowRate(
-  const borrowsF    : nat;
-  const cashF       : nat;
-  const reservesF   : nat;
-  const precision        : nat;
+  const borrowsF        : nat;
+  const cashF           : nat;
+  const reservesF       : nat;
+  const precision       : nat;
   const s               : rateStorage)
                         : nat is
   block {

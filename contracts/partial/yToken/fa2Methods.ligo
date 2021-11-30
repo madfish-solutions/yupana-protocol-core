@@ -25,8 +25,8 @@ function getTokenIds(
 (* Helper function to get token info *)
 function getToken(
   const token_id        : tokenId;
-  const tokens       : map(tokenId, tokens))
-                        : tokens is
+  const tokens          : map(tokenId, tokenType))
+                        : tokenType is
   case tokens[token_id] of
     None -> record [
       mainToken               = FA12(zeroAddress);
@@ -56,7 +56,7 @@ function get_total_supply(
     var operations : list(operation) := list[];
       case p of
         IGet_total_supply(args) -> {
-          const res : tokens = getToken(args.token_id, s.tokens);
+          const res : tokenType = getToken(args.token_id, s.tokens);
           operations := list [
             Tezos.transaction(res.totalSupplyF / precision, 0tz, args.receiver)
           ];
