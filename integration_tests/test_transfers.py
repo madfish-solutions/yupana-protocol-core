@@ -48,7 +48,7 @@ class DexTest(TestCase):
             }
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
-                assetAddress = token,
+                asset = token,
                 collateralFactorF = int(config["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,

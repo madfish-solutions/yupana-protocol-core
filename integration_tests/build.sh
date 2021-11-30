@@ -33,9 +33,9 @@ done
 DIR=integration_tests/compiled/lambdas/token
 mkdir -p $DIR
 for i in 0,transfer \
-        1,updateOperators \
+        1,update_operators \
         2,getBalance \
-        3,getTotalSupply \
+        3,get_total_supply \
          ; do 
 
     IDX=${i%,*};

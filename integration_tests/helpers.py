@@ -36,7 +36,6 @@ def get_balance(res, address):
 def get_frozen_balance(res, address):
     return res.storage["ledger"][address]["frozenBalance"] 
 
-
 def parse_mints(res):
     mints = []
     for op in res.operations:
@@ -245,6 +244,22 @@ def calc_outstanding_borrow(storage, user):
             acc += (account["borrow"] * token_info["lastPrice"])
 
     return acc
+
+def calc_utilization_rate(storage, token_id):
+    token = storage["tokens"][token_id]
+    denominator = token["totalLiquidF"] + token["totalBorrowsF"]  - token["totalReservesF"]
+    return PRECISION * token["totalBorrowsF"] // denominator
+
+# def calc_borrow_rate(storage, token_id):
+#     util = calc_utilization_rate(storage, token_id);
+#     kink = storage["kinkRateF"]
+#     if util <= kink:
+#         return util * mutliplierF / PRECISION + baseRateF
+#     else:
+#         normalRate = kink * mutliplierF / PRECISION  + baseRateF;
+#         excessUtil = util - kink;
+#         return excessUtil * jumpMultiplierPerBlock / 1e18 + normalRate
+
 
 # calculates shares balance
 def calc_total_balance(res, address):

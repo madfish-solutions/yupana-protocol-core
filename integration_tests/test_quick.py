@@ -47,7 +47,7 @@ class DexTest(TestCase):
             }
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
-                assetAddress = token,
+                asset = token,
                 collateralFactorF = int(config["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
@@ -83,7 +83,7 @@ class DexTest(TestCase):
         chain = LocalChain(storage=self.storage)
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
-                assetAddress = token_a,
+                asset = token_a,
                 collateralFactorF = int(config_a["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config_a["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
@@ -92,7 +92,7 @@ class DexTest(TestCase):
 
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
-                assetAddress = token_b,
+                asset = token_b,
                 collateralFactorF = int(config_b["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config_b["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
@@ -169,14 +169,22 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["amount"], 100)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
 
-    def test_cant_redeem_when_on_market(self):
+    def test_cant_redeem_too_much_when_on_market(self):
         chain = self.create_chain_with_ab_markets()
 
         chain.execute(self.ct.mint(0, 100), sender=alice)
         chain.execute(self.ct.enterMarket(0), sender=alice)
         
+        chain.execute(self.ct.borrow(1, 25), sender=alice)
+        
         with self.assertRaises(MichelsonRuntimeError):
-            chain.execute(self.ct.redeem(0, 10), sender=alice)
+            chain.execute(self.ct.redeem(0, 51), sender=alice)
+
+        chain.execute(self.ct.redeem(0, 50), sender=alice)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(0, 1), sender=alice)
+        
 
     def test_cant_redeem_when_borrowed(self):
         chain = self.create_chain_with_ab_markets()
@@ -184,13 +192,16 @@ class DexTest(TestCase):
         chain.execute(self.ct.mint(0, 100))
         chain.execute(self.ct.enterMarket(0))
         
-        chain.execute(self.ct.borrow(1, 50))
+        res = chain.execute(self.ct.borrow(1, 50))
         
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.exitMarket(0))
 
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(0, 10))
+
+        print(calc_utilization_rate(res.storage["storage"], 0))
+        print(calc_utilization_rate(res.storage["storage"], 1))
 
     def test_can_redeem_when_liquidated(self):
         chain = self.create_chain_with_ab_markets()
