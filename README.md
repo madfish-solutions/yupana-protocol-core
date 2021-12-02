@@ -2,7 +2,9 @@
 
 # Description
 
-Yupana Protocol contracts are under development. In this repository, you can follow the development and changes.
+**Yupana Protocol** is a decentralized lending protocol for individuals and protocols to access financial services. The protocol is permissionless, transparent, and non-custodial.
+
+*Yupana Protocol contracts are under development. In this repository, you can follow the development and changes.*
 
 # Architecture
 
@@ -81,8 +83,8 @@ Yupana Protocol contracts are under development. In this repository, you can fol
 
 ### Entrypoints
 
-- getPrice
-- receivePrice
+- getPrice - asks for a price from Oracle.
+- receivePrice - sends the price from Oracle to the `yToken` contract.
 
 ## InterestRate
 
@@ -90,28 +92,21 @@ Yupana Protocol contracts are under development. In this repository, you can fol
 
 ### Entrypoints
 
-- getBorrowRate
-- getSupplyRate
-- getUtilizationRate
+- getBorrowRate - sends a callback with the counted BorrowRate.
+- getSupplyRate - sends a callback with the counted SupplyRate.
+- getUtilizationRate - sends a callback with the counted UtilizationRate.
 
 ## YToken
 
 ### Entrypoints
 
-- mint
-- redeem
-- borrow
-- repay
-- liquidate
-- enterMarket
-- exitMarket
-- updateAdmin
-- withdrawReserves
-- addMarket
-- updateMarket
-- setGolobalFactors
-- updateInterest
-- *some price feed and interest rate callbacks
+- mint - is a function to add a token as a collateral. It allows you to add a token to our system.
+- redeem - the function is designed to withdraw tokens from the platform.
+- borrow - a function for borrowing a token. Implemented the logic of freezing collateral tokens when borrowing a token.
+- repay - a function designed to repay debt.
+- liquidate - the function allows another user to liquidate someone's debt.
+- enterMarket - allows you to designate that this token will be used as collateral.
+- exitMarket - allows you to indicate that this token is no longer used as collateral.
 
 # Quick Start
 
@@ -120,6 +115,7 @@ To compile and deploy contracts to network:
 1. compile contract `yarn compile`
 2. deploy contract to chain
     - mainnet: `yarn migrate`
+    - hangzhounet: `yarn migrate-hang`
     - granadanet: `yarn migrate-gra`
 
 # Testing
