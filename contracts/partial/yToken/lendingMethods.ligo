@@ -63,7 +63,7 @@ function calcMaxCollateralInCU(
 
         (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
         acc := acc + ((userBalance * token.lastPrice
-          * token.collateralFactorF) * (numerator / token.totalSupplyF) / precision);
+          * token.collateralFactorF) * numerator / token.totalSupplyF / precision);
       } with acc;
     const result : nat = Set.fold(
       oneToken,
@@ -94,7 +94,7 @@ function calcCollateralValueInCU(
           end;
 
         (* sum +=  balance * oraclePrice * exchangeRate *)
-        acc := acc + ((userBalance * token.lastPrice) * (numerator / token.totalSupplyF));
+        acc := acc + ((userBalance * token.lastPrice) * numerator / token.totalSupplyF);
       } with acc;
     const collateralValue : nat = Set.fold(
       oneToken,
