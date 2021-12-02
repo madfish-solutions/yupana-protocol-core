@@ -1,18 +1,16 @@
-# Lending protocol
+# Yupana protocol
 
 # Description
 
-Lending Protocol contracts are under development. In this repository, you can follow the development and changes.
+Yupana Protocol contracts are under development. In this repository, you can follow the development and changes.
 
 # Architecture
 
-![Architecture](Architecture.png)
+![Architecture](Yupana_architecture.png)
 
-1. `Factory` - singleton used to deploy new qToken (FA1.2) contract;
-2. `Controller` - the contract is responsible for the verification all the actions that can be done over the **qToken**;
-3. `qToken` - extended FA1.2 that wraps any FA1.2;
-4. `XTZ` - extended FA1.2;
-5. `getOracle` - test contact created for setting token prices.
+1. `YToken` - Core contract than manages all markets and implements FA2 interface for yToken for each collateral provided;
+2. `PriceFeedProxy` - Proxy that allows to request the price from real oracle;
+3. `InterestRate` - Providers methods to calculate supply, borrow, utilization rate.
 
 # Project structure
 
@@ -21,19 +19,25 @@ Lending Protocol contracts are under development. In this repository, you can fo
 .
 ├──  contracts/ # contracts
 ├──────────  main/ # the contracts to be compiled
-├───────────────────  Controller
-├───────────────────  Factory
-├───────────────────  getOracle
-├───────────────────  Migrations
-├───────────────────  qToken
-├───────────────────  qToken.tz
-├───────────────────  XTZ
+├───────────────────  yToken
+├───────────────────  interestRate
+├───────────────────  priceFeed
 ├──────────  partial/ # the code parts imported by main contracts
-├───────────────────  IController
-├───────────────────  IFactory
-├───────────────────  IXTZ
-├───────────────────  MainTypes
-├───────────────────  qTokenMethods
+├───────────────────  interestRate/
+├───────────────────────── interestRateMethods
+├───────────────────────── interestRateTypes
+├───────────────────  proxy/
+├───────────────────────── priceFeedMethods
+├───────────────────────── priceFeedTypes
+├───────────────────  yToken/
+├───────────────────────── adminMethods
+├───────────────────────── fa2Methods
+├───────────────────────── fa2Types
+├───────────────────────── lendingMethods
+├─────────────────────────lendingTypes
+├───────────────────────── wrapTransfer
+├───────────────────   mainTypes
+├──  migrations/
 ├──  scripts/ # cli for account actions
 ├──  storage/ # initial storage for contract originations
 ├──  test/ # test cases
@@ -41,32 +45,83 @@ Lending Protocol contracts are under development. In this repository, you can fo
 └──  .gitignore
 ```
 
+# Glossary
+
+**Underlying asset** is the real asset that is provided to the lending protocol.
+
+**yToken token is** the single token with the specific token id inside of the core Yupana FA2; represents specific underlying asset locked in the protocol.
+
+**Collateral** is the yToken token that can be used as the collateral to take the loan.
+
+**Borrow** is the amount of the underlying asset  borrowed by the user(loan).
+
+**Cash** is the amount of the underlying asset present on the contract(not borrowed).
+
+**Reserves** is the amount of the underlying asset stored in the protocol.
+
+**Collateral Factor** is the rate represents by which the borrow limit increases if the yToken is minted.
+
+**Close Factor** is the max portion of the loan that can be liquidated per single transaction.
+
+**Reserve Factor** is the rate that represents what part of the interest goes to the protocol reserves.
+
+**Liquidation discount** is the rate that the liquidator will earn if liquidate the asset.
+
 # Contracts
 
-The Ligo interfaces of the contracts can be found in `contracts/partial/I__CONTRACT_NAME__.ligo`
+## PriceFeedProxy
 
-## Wrapped XTZ
+- The `getPrice(asset_name)` :
+    - can only be called by the **yToken** and otherwise, the transaction fails
+    - requests the price from the **Price Feed** and expects the response on the `receivePrice` entrypoint.
+- The `receivePrice`:
+    - can only be called by the **Price Feed**.
+    - the response is processed and the price is sent to the **yToken** contract.
+- The `receivePrice` can only be called if the `getPrice` has been called just before in the same operation(prevent unexpected entrance and reentrancy); the `entered` flag can be used.
 
-Extended FA1.2 token with mint/withdraw functions, analog to WETH.
+### Entrypoints
 
-## qToken
+- getPrice
+- receivePrice
 
-The main token with the following main features that have already been implemented:
+## InterestRate
 
-- mint is a function to add a token as a collateral. It allows you to add a token to our system.
-- borrow - a function for borrowing a token. Implemented the logic of freezing collateral tokens when borrowing a token.
-- repay - a function designed to repay debt.
-- redeem - the function is designed to withdraw tokens from the platform.
-- liquidate - the function allows another user to liquidate someone's debt.
+- The contract has the followed 3 entrypoints that can be called by anyone with the result send to arbitrary contract: `getBorrowRate(borrows, cash, reserves)`, `getSupplyRate(borrows, cash, reserves)`, `getUtilizationRate(borrows, cash, reserves)`.
 
-## Controller
+### Entrypoints
 
-The contract is responsible for the verification of all the actions that can be done over the **qToken**.
+- getBorrowRate
+- getSupplyRate
+- getUtilizationRate
 
-## Factory
+## YToken
 
-A contract that allows you to wrap a token (for example, wrapped XTZ) into our qXTZ token.
+### Entrypoints
 
-## getOracle
+- mint
+- redeem
+- borrow
+- repay
+- liquidate
+- enterMarket
+- exitMarket
+- updateAdmin
+- withdrawReserves
+- addMarket
+- updateMarket
+- setGolobalFactors
+- updateInterest
+- *some price feed and interest rate callbacks
 
-Implemented to send data on the price of a token (similar to harbinger contracts). This will allow us to test the entire project locally and use the token prices we want to deliver.
+# Quick Start
+
+To compile and deploy contracts to network:
+0. run `yarn`
+1. compile contract `yarn compile`
+2. deploy contract to chain
+    - mainnet: `yarn migrate`
+    - granadanet: `yarn migrate-gra`
+
+# Testing
+
+Run: `yarn test`
