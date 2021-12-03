@@ -36,7 +36,7 @@
     var borrowRateF : nat := 0n;
 
     if utilizationRateF <= s.kinkF
-    then borrowRateF := (s.baseRateF + (utilizationRateF * s.multiplierF) / precision);
+    then borrowRateF := s.baseRateF + utilizationRateF * s.multiplierF / precision;
     else block {
       const utilizationSubkink : nat =
         case is_nat(utilizationRateF - s.kinkF) of
