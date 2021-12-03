@@ -711,16 +711,24 @@ class DexTest(TestCase):
             "liquidity": 100_000,
         }
 
-        
+        storage = self.storage.copy()
+        storage["storage"]["threshold"] = int(0.55 * PRECISION)
         chain = LocalChain(storage=self.storage)
         self.add_token(chain, token_a, config_a)
         self.add_token(chain, token_b, config_b)
 
-        chain.execute(self.ct.mint(0, 200_000_000))
+        chain.execute(self.ct.mint(0, 200_000))
         chain.execute(self.ct.enterMarket(0))
-        chain.execute(self.ct.borrow(1, 12_107))
+        chain.execute(self.ct.borrow(1, 12))
 
-        # chain.execute(self.ct.priceCallback(0, 5027088), sender=price_feed)
-        # chain.execute(self.ct.priceCallback(1, 55063823678), sender=price_feed)
+        chain.advance_blocks((2 * 60 * 60) // 30) # 2 hours
 
-        # chain.execute(self.ct.liquidate(1, 0, me, 1), sender=bob)
+        chain.execute(self.ct.priceCallback(0, 5016646), sender=price_feed)
+        chain.execute(self.ct.updateInterest(0))
+        # chain.execute(self.ct.accrueInterest(0, 0), sender=interest_model) # no borrows
+
+        chain.execute(self.ct.priceCallback(1, 54986875588), sender=price_feed)
+        chain.execute(self.ct.updateInterest(1))
+        chain.execute(self.ct.accrueInterest(1, 635296632), sender=interest_model)
+
+        res = chain.execute(self.ct.liquidate(1, 0, me, 1), sender=bob)
