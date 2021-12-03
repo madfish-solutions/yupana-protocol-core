@@ -691,3 +691,36 @@ class DexTest(TestCase):
             chain.execute(self.ct.borrow(1, 101))
 
         chain.execute(self.ct.redeem(0, 100))
+
+
+    def test_real_world_liquidation(self):
+        price_a = 5244313
+        price_b = 56307584485
+
+        config_a = {
+            "collateral_factor": 0.65,
+            "reserve_factor": 0.20,
+            "price": price_a,
+            "liquidity": 100_000,
+        }
+
+        config_b = {
+            "collateral_factor": 0.75,
+            "reserve_factor": 0.15,
+            "price": price_b,
+            "liquidity": 100_000,
+        }
+
+        
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a, config_a)
+        self.add_token(chain, token_b, config_b)
+
+        chain.execute(self.ct.mint(0, 200_000_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 12_107))
+
+        # chain.execute(self.ct.priceCallback(0, 5027088), sender=price_feed)
+        # chain.execute(self.ct.priceCallback(1, 55063823678), sender=price_feed)
+
+        # chain.execute(self.ct.liquidate(1, 0, me, 1), sender=bob)
