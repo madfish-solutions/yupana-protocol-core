@@ -692,6 +692,41 @@ class DexTest(TestCase):
 
         chain.execute(self.ct.redeem(0, 100))
 
+    def test_two_borrows_interest_rate(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+        self.add_token(chain, token_c)
+
+        chain.execute(self.ct.mint(0, 40_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 10_000))
+        chain.execute(self.ct.borrow(2, 10_000))
+        
+        chain.advance_blocks(1)
+
+        chain.execute(self.ct.updateInterest(0))
+        # chain.execute(self.ct.accrueInterest(0, 0), sender=interest_model)
+        chain.execute(self.ct.priceCallback(0, 100), sender=price_feed)
+
+        # at this rate one second accues 1 token of interest
+        chain.execute(self.ct.updateInterest(1))
+        chain.execute(self.ct.accrueInterest(1, 100_000_000_000_000), sender=interest_model)
+        chain.execute(self.ct.priceCallback(1, 100), sender=price_feed)
+
+        # same interest rate for the second borrow
+        chain.execute(self.ct.updateInterest(2))
+        chain.execute(self.ct.accrueInterest(2, 100_000_000_000_000), sender=interest_model)
+        chain.execute(self.ct.priceCallback(2, 100), sender=price_feed)
+                  
+        chain.execute(self.ct.repay(1, 10_030))
+
+        # borrow and immediately repay to invoke applyInterestToBorrows
+        res = chain.execute(self.ct.borrow(1, 1))
+        chain.execute(self.ct.repay(1, 1))
+
+        res = chain.execute(self.ct.repay(2, 10_030))
+        chain.execute(self.ct.exitMarket(0))
 
     def test_real_world_liquidation(self):
         price_a = 5244313
