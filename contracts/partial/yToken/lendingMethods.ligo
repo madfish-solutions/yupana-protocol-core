@@ -125,7 +125,9 @@ function applyInterestToBorrows(
           then userAccount.borrow := userAccount.borrow *
             token.borrowIndex /
             userAccount.lastBorrowIndex;
-          else skip;
+        else skip;
+
+        userAccount.lastBorrowIndex := token.borrowIndex;
       } with Map.update((user, tokenId), Some(userAccount), userAccMap);
 
     const result  = Set.fold(
@@ -306,7 +308,7 @@ function redeem(
           s.tokens[yAssetParams.tokenId] := token;
 
           s.accounts := applyInterestToBorrows(
-            getTokenIds(Tezos.sender, s.markets),
+            getTokenIds(Tezos.sender, s.borrows),
             Tezos.sender,
             s.accounts,
             s.tokens
