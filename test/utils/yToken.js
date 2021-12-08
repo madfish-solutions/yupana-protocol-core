@@ -558,6 +558,14 @@ class YToken {
     const batch = await this.tezos.wallet.batch([
       {
         kind: "transaction",
+        ...this.contract.methods.updateInterest(1).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([1]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
         ...this.contract.methods.updateInterest(redeemToken).toTransferParams(),
       },
       {
