@@ -122,12 +122,13 @@ function applyInterestToBorrows(
         verifyTokenUpdated(token);
 
         if userAccount.lastBorrowIndex =/= 0n
-          then userAccount.borrow := userAccount.borrow *
+          then block {
+            userAccount.borrow := userAccount.borrow *
             token.borrowIndex /
             userAccount.lastBorrowIndex;
+            userAccount.lastBorrowIndex := token.borrowIndex;
+          }
         else skip;
-
-        userAccount.lastBorrowIndex := token.borrowIndex;
       } with Map.update((user, tokenId), Some(userAccount), userAccMap);
 
     const result  = Set.fold(
@@ -610,6 +611,7 @@ function liquidate(
           s.accounts[(params.borrower, params.borrowToken)] := borrowerAccount;
           s.accounts[(Tezos.sender, params.collateralToken)] := liquidatorAccount;
           s.tokens[params.collateralToken] := collateralToken;
+          s.tokens[params.borrowToken] := borrowToken;
           s.borrows[params.borrower] := userBorrowedTokens;
         }
       | _                         -> skip
