@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from helpers import *
+import copy
 
 from pprint import pprint
 
@@ -746,9 +747,9 @@ class DexTest(TestCase):
             "liquidity": 100_000,
         }
 
-        storage = self.storage.copy()
+        storage = copy.deepcopy(self.storage)
         storage["storage"]["threshold"] = int(0.55 * PRECISION)
-        chain = LocalChain(storage=self.storage)
+        chain = LocalChain(storage=storage)
         self.add_token(chain, token_a, config_a)
         self.add_token(chain, token_b, config_b)
 
