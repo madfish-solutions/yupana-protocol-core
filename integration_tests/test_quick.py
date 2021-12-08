@@ -397,6 +397,47 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["amount"], 25_000) 
         self.assertEqual(transfers[0]["token_address"], token_b_address)
 
+
+    def test_basic_ops_after_liquidation(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+        
+        chain.execute(self.ct.mint(0, 100_000), sender=alice)
+        chain.execute(self.ct.enterMarket(0), sender=alice)
+        chain.execute(self.ct.borrow(1, 50_000), sender=alice)
+
+        # collateral price goes down
+        chain.execute(self.ct.priceCallback(1, 300), sender=price_feed)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.liquidate(1, 0, alice, 50_001), sender=bob)
+            
+        res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000), sender=bob)
+        chain.execute(self.ct.repay(1,0), sender=alice)
+
+        # check that admin is able to withdraw all of his initially povided funds
+        # do not perform an actual withdrawal.
+        res = chain.interpret(self.ct.redeem(1, 0), sender=admin)
+        txs = parse_transfers(res)
+        self.assertEqual(len(txs), 1)
+        self.assertEqual(txs[0]["amount"], 100_000)
+
+        # another person just does usual stuff after another one is liquidated
+        chain.execute(self.ct.mint(0, 60_000), sender=carol)
+        chain.execute(self.ct.enterMarket(0), sender=carol)
+        chain.execute(self.ct.borrow(1, 10_000), sender=carol)
+
+        chain.advance_blocks(1)
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        res = chain.execute(self.ct.repay(1, 0), sender=carol)
+        txs = parse_transfers(res)
+        self.assertEqual(len(txs), 1)
+        self.assertEqual(txs[0]["amount"], 13_000)
+
+
     def test_multicollateral_cant_exit(self):
         chain = LocalChain(storage=self.storage)
         self.add_token(chain, token_a)
@@ -781,10 +822,9 @@ class DexTest(TestCase):
 
         # chain.execute(self.ct.repay(1, 10_030))
         res = chain.execute(self.ct.repay(1, 0))
-        tx = parse_transfers(res)
-        pprint_aux(res.storage["storage"])
-        self.assertEqual(len(tx), 1)
-        self.assertEqual(tx[0]["amount"], 13_000)      
+        txs = parse_transfers(res)
+        self.assertEqual(len(txs), 1)
+        self.assertEqual(txs[0]["amount"], 13_000)      
         
 
     def test_real_world_liquidation(self):
