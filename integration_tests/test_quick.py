@@ -19,6 +19,8 @@ token_c = {"fA12" : token_c_address}
 interest_model = "KT1LzyPS8rN375tC31WPAVHaQ4HyBvTSLwBu"
 price_feed = "KT1Qf46j2x37sAN4t2MKRQRVt9gc4FZ5duMs"
 
+one_percent_per_second = int(0.01 * PRECISION) #  interest rate
+
 class DexTest(TestCase):
 
     @classmethod
@@ -64,7 +66,6 @@ class DexTest(TestCase):
 
         chain.execute(self.ct.mint(token_num, liquidity), sender=admin)
 
-
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
         if not config_a:
             config_a = {
@@ -107,6 +108,13 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.mint(1, config_b["liquidity"]), sender=admin)
 
         return chain
+
+    def update_price_and_interest(self, chain, token_id, price, interest_rate):
+        res = chain.execute(self.ct.updateInterest(token_id))
+        is_awaiting_for_interest_callback = res.storage["storage"]["tokens"][token_id]["isInterestUpdating"]
+        if is_awaiting_for_interest_callback:
+            chain.execute(self.ct.accrueInterest(token_id, interest_rate), sender=interest_model)
+        chain.execute(self.ct.priceCallback(token_id, price), sender=price_feed)
 
     def test_simple_borrow_repay(self):
         chain = self.create_chain_with_ab_markets()
@@ -728,6 +736,56 @@ class DexTest(TestCase):
 
         res = chain.execute(self.ct.repay(2, 10_030))
         chain.execute(self.ct.exitMarket(0))
+
+
+    def test_repay_and_delay_interest(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+
+        chain.execute(self.ct.mint(0, 40_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 10_000))
+        
+        chain.advance_blocks(1)
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        chain.execute(self.ct.repay(1, 13_000))
+        
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
+
+        # bob borrows in the meantime
+        chain.execute(self.ct.mint(0, 40_000), sender=bob)
+        chain.execute(self.ct.enterMarket(0), sender=bob)
+        chain.execute(self.ct.borrow(1, 10_000), sender=bob)
+        
+        chain.advance_blocks(1)
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        chain.execute(self.ct.repay(1, 13_000), sender=bob)
+        
+        # alice repeats everything as the first time
+        chain.execute(self.ct.borrow(1, 10_000))
+        
+        chain.advance_blocks(1)
+
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        # not meaningful, just to add some mess
+        chain.execute(self.ct.redeem(0, 10_000))
+
+        # chain.execute(self.ct.repay(1, 10_030))
+        res = chain.execute(self.ct.repay(1, 0))
+        tx = parse_transfers(res)
+        pprint_aux(res.storage["storage"])
+        self.assertEqual(len(tx), 1)
+        self.assertEqual(tx[0]["amount"], 13_000)      
+        
 
     def test_real_world_liquidation(self):
         price_a = 5244313
