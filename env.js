@@ -30,6 +30,12 @@ module.exports = {
       network_id: "*",
       secretKey: dev.sk,
     },
+    hangzhounet: {
+      rpc: "https://hangzhounet.api.tez.ie/",
+      port: 443,
+      network_id: "*",
+      secretKey: dev.sk,
+    },
     mainnet: {
       host: "https://mainnet.smartpy.io",
       port: 443,
