@@ -49,7 +49,7 @@ function verifyTokenUpdated(
     then failwith("yToken/need-update")
     else unit;
 
-function calcLiquidateCollateral(
+function calcMaxCollateralInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
@@ -63,11 +63,11 @@ function calcLiquidateCollateral(
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
-        const numerator : nat = getLiquidity(token);
+        const liquidityF : nat = getLiquidity(token);
 
         (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
         acc := acc + userBalance * token.lastPrice
-          * token.collateralFactorF * numerator / token.totalSupplyF / precision;
+          * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
       } with acc;
     const result : nat = Set.fold(
       oneToken,
@@ -76,7 +76,7 @@ function calcLiquidateCollateral(
     );
   } with result
 
-function calcCollateralValueInCU(
+function calcLiquidateCollateral(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
@@ -91,10 +91,10 @@ function calcCollateralValueInCU(
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
-        const numerator : nat = getLiquidity(token);
+        const liquidityF : nat = getLiquidity(token);
 
         (* sum +=  balance * oraclePrice * exchangeRate *)
-        acc := acc + userBalance * token.lastPrice * numerator / token.totalSupplyF;
+        acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
       } with acc;
     const collateralValue : nat = Set.fold(
       oneToken,
@@ -225,9 +225,9 @@ function mint(
           then {
             verifyTokenUpdated(token);
 
-            const numerator : nat = getLiquidity(token);
+            const liquidityF : nat = getLiquidity(token);
 
-            mintTokensF := mintTokensF * token.totalSupplyF / numerator;
+            mintTokensF := mintTokensF * token.totalSupplyF / liquidityF;
           } else skip;
 
           var userBalance : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s.ledger);
@@ -300,7 +300,7 @@ function redeem(
             s.tokens
           );
 
-          const liquidateCollateral : nat = calcLiquidateCollateral(
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
             getTokenIds(Tezos.sender, s.markets),
             Tezos.sender,
             s.ledger,
@@ -315,7 +315,7 @@ function redeem(
             s.tokens
           );
 
-          if outstandingBorrowInCU > liquidateCollateral
+          if outstandingBorrowInCU > maxBorrowInCU
           then failwith("yToken/exceeds-allowable-redeem");
           else skip;
 
@@ -359,7 +359,7 @@ function borrow(
           s.accounts[(Tezos.sender, yAssetParams.tokenId)] := userAccount;
           s.borrows[Tezos.sender] := borrowTokens;
 
-          const liquidateCollateral : nat = calcLiquidateCollateral(
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
             getTokenIds(Tezos.sender, s.markets),
             Tezos.sender,
             s.ledger,
@@ -374,7 +374,7 @@ function borrow(
             s.tokens
           );
 
-          if outstandingBorrowInCU > liquidateCollateral
+          if outstandingBorrowInCU > maxBorrowInCU
           then failwith("yToken/exceeds-the-permissible-debt");
           else skip;
 
@@ -481,7 +481,7 @@ function liquidate(
           then failwith("yToken/borrower-cannot-be-liquidator")
           else skip;
 
-          const liquidateCollateral : nat = calcCollateralValueInCU(
+          const liquidateCollateral : nat = calcLiquidateCollateral(
             getTokenIds(params.borrower, s.markets),
             params.borrower,
             s.ledger,
@@ -550,9 +550,9 @@ function liquidate(
           const seizeAmount : nat = liqAmountF * s.liqIncentiveF
             * borrowToken.lastPrice * collateralToken.totalSupplyF;
 
-          const numerator : nat = getLiquidity(collateralToken);
+          const liquidityF : nat = getLiquidity(collateralToken);
 
-          const exchangeRateF : nat = numerator * precision * collateralToken.lastPrice;
+          const exchangeRateF : nat = liquidityF * precision * collateralToken.lastPrice;
 
           const seizeTokensF : nat = seizeAmount / exchangeRateF;
 
@@ -633,7 +633,7 @@ function exitMarket(
 
           s.accounts := applyInterestToBorrows(userTokens, Tezos.sender, s.accounts, s.tokens);
 
-          const liquidateCollateral : nat = calcLiquidateCollateral(
+          const maxBorrowInCU : nat = calcMaxCollateralInCU(
             userMarkets,
             Tezos.sender,
             s.ledger,
@@ -647,7 +647,7 @@ function exitMarket(
             s.tokens
           );
 
-          if outstandingBorrowInCU <= liquidateCollateral
+          if outstandingBorrowInCU <= maxBorrowInCU
           then s.markets[Tezos.sender] := userMarkets;
           else failwith("yToken/debt-not-repaid");
         }
