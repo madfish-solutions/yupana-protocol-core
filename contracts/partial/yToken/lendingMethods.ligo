@@ -64,10 +64,6 @@ function calcLiquidateCollateral(
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
         const numerator : nat = getLiquidity(token);
-          // case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-          //   | None -> (failwith("underflow/liquidity - reserves") : nat)
-          //   | Some(value) -> value
-          // end;
 
         (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
         acc := acc + userBalance * token.lastPrice
@@ -96,10 +92,6 @@ function calcCollateralValueInCU(
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
         const numerator : nat = getLiquidity(token);
-          // case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-          //   | None -> (failwith("underflow/liquidity - reserves") : nat)
-          //   | Some(value) -> value
-          // end;
 
         (* sum +=  balance * oraclePrice * exchangeRate *)
         acc := acc + userBalance * token.lastPrice * numerator / token.totalSupplyF;
@@ -234,10 +226,6 @@ function mint(
             verifyTokenUpdated(token);
 
             const numerator : nat = getLiquidity(token);
-              // case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-              //   | None -> (failwith("underflow/liquidity - reserves") : nat)
-              //   | Some(value) -> value
-              // end;
 
             mintTokensF := mintTokensF * token.totalSupplyF / numerator;
           } else skip;
@@ -276,10 +264,6 @@ function redeem(
           var userBalance : nat := getBalanceByToken(Tezos.sender, yAssetParams.tokenId, s.ledger);
 
           const liquidityF : nat = getLiquidity(token);
-            // case is_nat(token.totalLiquidF + token.totalBorrowsF - token.totalReservesF) of
-            //   | None -> (failwith("underflow/liquidity - reserves") : nat)
-            //   | Some(value) -> value
-            // end;
 
           const redeemAmount : nat = if yAssetParams.amount = 0n
           then userBalance * liquidityF / token.totalSupplyF / precision
@@ -366,10 +350,6 @@ function borrow(
           else skip;
 
           const borrowsF : nat = yAssetParams.amount * precision;
-
-          // if borrowsF > token.totalLiquidF
-          // then failwith("yToken/not-enough-liquidity")
-          // else skip;
 
           s.accounts := applyInterestToBorrows(borrowTokens, Tezos.sender, s.accounts, s.tokens);
           borrowTokens := Set.add(yAssetParams.tokenId, borrowTokens);
@@ -571,11 +551,6 @@ function liquidate(
             * borrowToken.lastPrice * collateralToken.totalSupplyF;
 
           const numerator : nat = getLiquidity(collateralToken);
-            // case is_nat(collateralToken.totalLiquidF + collateralToken.totalBorrowsF
-            // - collateralToken.totalReservesF) of
-            //   | None -> (failwith("underflow/liquidity - reserves") : nat)
-            //   | Some(value) -> value
-            // end;
 
           const exchangeRateF : nat = numerator * precision * collateralToken.lastPrice;
 
