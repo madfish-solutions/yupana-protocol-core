@@ -525,7 +525,7 @@ describe("yToken tests", async () => {
   it("return price by not oracle", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.priceCallback(0, 2000), (err) => {
-      ok(err.message == "yToken/permition-error", "Error message mismatch");
+      ok(err.message == "yToken/sender-is-not-price-feed", "Error message mismatch");
       return true;
     });
   });
@@ -842,7 +842,7 @@ describe("yToken tests", async () => {
   it("redeem borrowed yTokens by alice", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.updateAndRedeem(proxy, 1, 0), (err) => {
-      ok(err.message == "yToken/not-enough-liquid", "Error message mismatch");
+      ok(err.message == "underflow/totalLiquidF", "Error message mismatch");
       return true;
     });
   });
@@ -914,12 +914,12 @@ describe("yToken tests", async () => {
     });
   });
 
-  it("borrow more than exists yTokens by alice", async () => {
+  it("borrow more than allowed yTokens by alice", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
     await rejects(yToken.updateAndBorrow2(proxy, 0, 20000000000), (err) => {
       ok(
-        err.message == "yToken/not-enough-liquidity",
+        err.message == "yToken/exceeds-the-permissible-debt",
         "Error message mismatch"
       );
       return true;
