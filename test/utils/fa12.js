@@ -38,6 +38,8 @@ class FA12 {
     this.storage = {
       totalSupplyF: storage.totalSupplyF,
       ledger: storage.ledger,
+      metadata: storage.metadata,
+      token_metadata: storage.token_metadata
     };
 
     for (const key in maps) {

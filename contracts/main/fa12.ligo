@@ -10,11 +10,18 @@ type account is
     allowances      : map (trusted, amt);
   ]
 
+type token_metadata_info is [@layout:comb] record [
+  token_id      : nat;
+  token_info    : map(string, bytes);
+]
+
 (* contract storage *)
 type storage is
   record [
     totalSupplyF     : amt;
     ledger           : big_map (address, account);
+    metadata         : big_map(string, bytes);
+    token_metadata   : big_map(nat, token_metadata_info);
   ]
 
 (* define return for readability *)
@@ -47,7 +54,7 @@ type entryAction is
   | Approve of approveParams
   | GetBalance of balanceParams
   | GetAllowance of allowanceParams
-  | Get_total_supply of totalSupplyParams
+  | GetTotalSupply of totalSupplyParams
   | Mint of nat
   | Withdraw of withdrawParams
 
@@ -238,7 +245,7 @@ function main (
     | Approve(params) -> approve(params.0, params.1, s)
     | GetBalance(params) -> getBalance(params.0, params.1, s)
     | GetAllowance(params) -> getAllowance(params.0.0, params.0.1, params.1, s)
-    | Get_total_supply(params) -> get_total_supply(params.1, s)
+    | GetTotalSupply(params) -> get_total_supply(params.1, s)
     | Mint(params) -> mint(params, s)
     | Withdraw(params) -> withdraw(params.0, s)
   end;
