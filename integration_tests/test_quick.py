@@ -866,3 +866,22 @@ class DexTest(TestCase):
         chain.execute(self.ct.accrueInterest(1, 635296632), sender=interest_model)
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 1), sender=bob)
+
+    def test_exit_market_with_present_borrow(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+        self.add_token(chain, token_c)
+
+        chain.execute(self.ct.mint(0, 15_000))
+        chain.execute(self.ct.mint(1, 5_000))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.enterMarket(1))
+        chain.execute(self.ct.borrow(2, 10_000))
+        chain.execute(self.ct.repay(2, 2_500))
+        
+        # can't exit fi
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.exitMarket(0))
+    
+        chain.execute(self.ct.exitMarket(1))
