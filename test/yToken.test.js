@@ -10,7 +10,6 @@ const {
 } = require("../scripts/sandbox/accounts");
 
 const { strictEqual, rejects, ok } = require("assert");
-// var bigInt = require("big-integer");
 
 const { Proxy } = require("../test/utils/proxy");
 const { InterestRate } = require("../test/utils/interestRate");
@@ -110,7 +109,6 @@ describe("yToken tests", async () => {
       "1050000000000000000",
       proxyContractAddress,
       "2",
-      "550000000000000000"
     );
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
@@ -149,7 +147,8 @@ describe("yToken tests", async () => {
         500000000000000000,
         500000000000000000,
         5000000000000,
-        tokenMetadata
+        tokenMetadata,
+        550000000000000000
       ),
       (err) => {
         ok(err.message == "yToken/not-admin", "Error message mismatch");
@@ -168,7 +167,8 @@ describe("yToken tests", async () => {
       650000000000000000,
       200000000000000000,
       5000000000000,
-      tokenMetadata
+      tokenMetadata,
+      550000000000000000
     );
     await yToken.updateStorage();
 
@@ -192,7 +192,8 @@ describe("yToken tests", async () => {
         750000000000000000,
         400000000000000000,
         9000000000000,
-        tokenMetadata
+        tokenMetadata,
+        550000000000000000
       ),
       (err) => {
         ok(
@@ -228,7 +229,8 @@ describe("yToken tests", async () => {
       750000000000000000,
       150000000000000000,
       5000000000000,
-      tokenMetadata
+      tokenMetadata,
+      550000000000000000
     );
     await yToken.updateStorage();
 
@@ -250,7 +252,8 @@ describe("yToken tests", async () => {
       750000000000000000,
       150000000000000000,
       5000000000000,
-      tokenMetadata
+      tokenMetadata,
+      550000000000000000
     );
     await yToken.updateStorage();
 
@@ -275,7 +278,8 @@ describe("yToken tests", async () => {
       750000000000000000,
       150000000000000000,
       5000000000000,
-      tokenMetadata2
+      tokenMetadata2,
+      550000000000000000
     );
     await yToken.updateStorage();
 
@@ -1057,7 +1061,7 @@ describe("yToken tests", async () => {
   it("setTokenFactors by non admin", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(
-      yToken.setTokenFactors(0, 0, 0, interestContractAddress, 0),
+      yToken.setTokenFactors(0, 0, 0, interestContractAddress, 0, 0),
       (err) => {
         ok(err.message == "yToken/not-admin", "Error message mismatch");
         return true;
@@ -1065,7 +1069,7 @@ describe("yToken tests", async () => {
     );
   });
 
-  it("setTokenFactors (collateralFactor = 0) by admin", async () => {
+  it("setTokenFactors [0] (collateralFactor and threshhold = 0) by admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await yToken.updateAndsetTokenFactors(
       proxy,
@@ -1073,19 +1077,22 @@ describe("yToken tests", async () => {
       0,
       200000000000000000,
       interest2ContractAddress,
-      5000000000000
+      5000000000000,
+      0
     );
     await yToken.updateStorage();
   });
 
-  it("setGlobalFactors (threshold = 0) by admin", async () => {
+  it("setTokenFactors [1] (threshhold = 0) by admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
-    await yToken.setGlobalFactors(
-      "500000000000000000",
-      "1050000000000000000",
-      proxyContractAddress,
-      "2",
-      "0"
+    await yToken.updateAndsetTokenFactors2(
+      proxy,
+      1,
+      750000000000000000,
+      150000000000000000,
+      interestContractAddress,
+      5000000000000,
+      0
     );
     await yToken.updateStorage();
   });
@@ -1103,7 +1110,7 @@ describe("yToken tests", async () => {
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
   });
 
-  it("setTokenFactors (return collateralFactor) by admin", async () => {
+  it("setTokenFactors [0] (return collateralFactor and threshhold) by admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await yToken.updateAndsetTokenFactors(
       proxy,
@@ -1111,19 +1118,22 @@ describe("yToken tests", async () => {
       650000000000000000,
       200000000000000000,
       interest2ContractAddress,
-      5000000000000
+      5000000000000,
+      550000000000000000
     );
     await yToken.updateStorage();
   });
 
-  it("setGlobalFactors (return threshold) by admin", async () => {
+  it("setTokenFactors [1] (return threshhold) by admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
-    await yToken.setGlobalFactors(
-      "500000000000000000",
-      "1050000000000000000",
-      proxyContractAddress,
-      "2",
-      "550000000000000000"
+    await yToken.updateAndsetTokenFactors2(
+      proxy,
+      1,
+      750000000000000000,
+      150000000000000000,
+      interestContractAddress,
+      5000000000000,
+      550000000000000000
     );
     await yToken.updateStorage();
   });
