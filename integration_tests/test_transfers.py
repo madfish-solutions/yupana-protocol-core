@@ -35,7 +35,6 @@ class DexTest(TestCase):
         storage["storage"]["maxMarkets"] = 10
         storage["storage"]["closeFactorF"] = int(0.5 * PRECISION)
         storage["storage"]["liqIncentiveF"] = int(1.05 * PRECISION)
-        storage["storage"]["threshold"] = int(0.8)
         cls.storage = storage
 
     def add_token(self, chain, token, config=None):
@@ -45,6 +44,7 @@ class DexTest(TestCase):
                 "reserve_factor": 0.5,
                 "price": 100,
                 "liquidity": 100_000,
+                "threshold": 0.8
             }
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
@@ -52,14 +52,18 @@ class DexTest(TestCase):
                 collateralFactorF = int(config["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
-                tokenMetadata = {"": ""}
+                tokenMetadata = {"": ""},
+                threshold = int(config["threshold"] * PRECISION)
             ), sender=admin)
 
         token_num = res.storage["storage"]["lastTokenId"] - 1
 
         chain.execute(self.ct.priceCallback(token_num, config["price"]), sender=price_feed)
 
-        chain.execute(self.ct.mint(token_num, config["liquidity"]), sender=admin)
+        liquidity = config["liquidity"]
+        if liquidity == 0: return
+
+        chain.execute(self.ct.mint(token_num, liquidity), sender=admin)
 
     def test_simple_transfer(self):
         chain = LocalChain(storage=self.storage)

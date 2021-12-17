@@ -37,7 +37,6 @@ class DexTest(TestCase):
         storage["storage"]["maxMarkets"] = 10
         storage["storage"]["closeFactorF"] = int(0.5 * PRECISION)
         storage["storage"]["liqIncentiveF"] = int(1.05 * PRECISION)
-        storage["storage"]["threshold"] = int(0.8 * PRECISION)
         cls.storage = storage
 
     def add_token(self, chain, token, config=None):
@@ -47,6 +46,7 @@ class DexTest(TestCase):
                 "reserve_factor": 0.5,
                 "price": 100,
                 "liquidity": 100_000,
+                "threshold": 0.8
             }
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
@@ -54,7 +54,8 @@ class DexTest(TestCase):
                 collateralFactorF = int(config["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
-                tokenMetadata = {"": ""}
+                tokenMetadata = {"": ""},
+                threshold = int(config["threshold"] * PRECISION)
             ), sender=admin)
 
         token_num = res.storage["storage"]["lastTokenId"] - 1
@@ -67,45 +68,10 @@ class DexTest(TestCase):
         chain.execute(self.ct.mint(token_num, liquidity), sender=admin)
 
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
-        if not config_a:
-            config_a = {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 100,
-                "liquidity": 100_000
-            }
-        if not config_b:
-            config_b = {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 100,
-                "liquidity": 100_000
-            }
-
         chain = LocalChain(storage=self.storage)
-        res = chain.execute(self.ct.addMarket(
-                interestRateModel = interest_model,
-                asset = token_a,
-                collateralFactorF = int(config_a["collateral_factor"] * PRECISION),
-                reserveFactorF = int(config_a["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 1_000_000*PRECISION,
-                tokenMetadata = {"": ""}
-            ), sender=admin)
-
-        res = chain.execute(self.ct.addMarket(
-                interestRateModel = interest_model,
-                asset = token_b,
-                collateralFactorF = int(config_b["collateral_factor"] * PRECISION),
-                reserveFactorF = int(config_b["reserve_factor"]  * PRECISION),
-                maxBorrowRate = 1_000_000*PRECISION,
-                tokenMetadata = {"": ""}
-            ), sender=admin)
-
-        chain.execute(self.ct.priceCallback(0, config_a["price"]), sender=price_feed)
-        chain.execute(self.ct.priceCallback(1, config_b["price"]), sender=price_feed)
-
-        res = chain.execute(self.ct.mint(0, config_a["liquidity"]), sender=admin)
-        res = chain.execute(self.ct.mint(1, config_b["liquidity"]), sender=admin)
+        
+        self.add_token(chain, token_a, config_a)
+        self.add_token(chain, token_b, config_b)
 
         return chain
 
@@ -288,20 +254,9 @@ class DexTest(TestCase):
 
 
     def test_borrow_too_much(self):
-        chain = self.create_chain_with_ab_markets(
-            {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 1,
-                "liquidity": 100_000
-            },
-            {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 1,
-                "liquidity": 100_000
-            }
-        )
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
 
         res = chain.execute(self.ct.mint(0, 100), sender=alice)
         res = chain.execute(self.ct.enterMarket(0), sender=alice)
@@ -321,20 +276,9 @@ class DexTest(TestCase):
             res = chain.execute(self.ct.borrow(1, 1), sender=alice)
 
     def test_liquidate_collateral_price_down(self):
-        chain = self.create_chain_with_ab_markets(
-            {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 100,
-                "liquidity": 100_000
-            },
-            {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 100,
-                "liquidity": 100_000
-            }
-        )
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
 
         res = chain.execute(self.ct.mint(0, 100_000), sender=alice)
         res = chain.execute(self.ct.enterMarket(0), sender=alice)
@@ -365,20 +309,9 @@ class DexTest(TestCase):
         
 
     def test_liquidate_borrow_price_up(self):
-        chain = self.create_chain_with_ab_markets(
-            {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 100,
-                "liquidity": 100_000
-            },
-            {
-                "collateral_factor": 0.5,
-                "reserve_factor": 0.5,
-                "price": 100,
-                "liquidity": 100_000
-            }
-        )
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
 
         chain.execute(self.ct.mint(0, 100_000), sender=alice)
         chain.execute(self.ct.enterMarket(0), sender=alice)
@@ -529,6 +462,7 @@ class DexTest(TestCase):
             "reserve_factor": 0.5,
             "price": 100,
             "liquidity": 0,
+            "threshold": 0.8
         }
 
         chain = LocalChain(storage=self.storage)
@@ -703,6 +637,7 @@ class DexTest(TestCase):
             "reserve_factor": 0.5,
             "price": 100,
             "liquidity": 0,
+            "threshold": 0.8,
         }
 
         chain = LocalChain(storage=self.storage)
@@ -836,6 +771,7 @@ class DexTest(TestCase):
             "reserve_factor": 0.20,
             "price": price_a,
             "liquidity": 100_000,
+            "threshold": 0.55,
         }
 
         config_b = {
@@ -843,11 +779,10 @@ class DexTest(TestCase):
             "reserve_factor": 0.15,
             "price": price_b,
             "liquidity": 100_000,
+            "threshold": 0.55,
         }
 
-        storage = copy.deepcopy(self.storage)
-        storage["storage"]["threshold"] = int(0.55 * PRECISION)
-        chain = LocalChain(storage=storage)
+        chain = LocalChain(storage=self.storage)
         self.add_token(chain, token_a, config_a)
         self.add_token(chain, token_b, config_b)
 
