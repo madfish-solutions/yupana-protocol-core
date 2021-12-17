@@ -217,7 +217,8 @@ class YToken {
     collateralFactorF,
     reserveFactorF,
     maxBorrowRate,
-    tokenMetadata
+    tokenMetadata,
+    threshold
   ) {
     if (type == "fA2") {
       const operation = await this.contract.methods
@@ -229,7 +230,8 @@ class YToken {
           collateralFactorF,
           reserveFactorF,
           maxBorrowRate,
-          tokenMetadata
+          tokenMetadata,
+          threshold
         )
         .send();
     } else {
@@ -241,7 +243,8 @@ class YToken {
           collateralFactorF,
           reserveFactorF,
           maxBorrowRate,
-          tokenMetadata
+          tokenMetadata,
+          threshold
         )
         .send();
     }
@@ -255,7 +258,8 @@ class YToken {
     collateralFactorF,
     reserveFactorF,
     interestRateModel,
-    maxBorrowRate
+    maxBorrowRate,
+    threshold
   ) {
     const operation = await this.contract.methods
       .setTokenFactors(
@@ -263,7 +267,8 @@ class YToken {
         collateralFactorF,
         reserveFactorF,
         interestRateModel,
-        maxBorrowRate
+        maxBorrowRate,
+        threshold
       )
       .send();
     await confirmOperation(this.tezos, operation.hash);
@@ -275,7 +280,6 @@ class YToken {
     liqIncentiveF,
     priceFeedProxy,
     maxMarkets,
-    threshold
   ) {
     const operation = await this.contract.methods
       .setGlobalFactors(
@@ -283,7 +287,6 @@ class YToken {
         liqIncentiveF,
         priceFeedProxy,
         maxMarkets,
-        threshold
       )
       .send();
     await confirmOperation(this.tezos, operation.hash);
@@ -369,7 +372,8 @@ class YToken {
     collateralFactorF,
     reserveFactorF,
     interestRateModel,
-    maxBorrowRate
+    maxBorrowRate,
+    threshold
   ) {
     const batchArray = [
       {
@@ -396,7 +400,55 @@ class YToken {
             collateralFactorF,
             reserveFactorF,
             interestRateModel,
-            maxBorrowRate
+            maxBorrowRate,
+            threshold
+          )
+          .toTransferParams(),
+      },
+    ];
+    const batch = await this.tezos.wallet.batch(batchArray);
+    const operation = await batch.send();
+    // calcGas(batchArray);
+    await confirmOperation(this.tezos, operation.opHash);
+    return operation;
+  }
+
+  async updateAndsetTokenFactors2(
+    proxy,
+    tokenId,
+    collateralFactorF,
+    reserveFactorF,
+    interestRateModel,
+    maxBorrowRate,
+    threshold
+  ) {
+    const batchArray = [
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(0).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([0]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods.updateInterest(tokenId).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...proxy.contract.methods.getPrice([tokenId]).toTransferParams(),
+      },
+      {
+        kind: "transaction",
+        ...this.contract.methods
+          .setTokenFactors(
+            tokenId,
+            collateralFactorF,
+            reserveFactorF,
+            interestRateModel,
+            maxBorrowRate,
+            threshold
           )
           .toTransferParams(),
       },

@@ -1,5 +1,5 @@
 function mustBeAdmin(
-  const s               : tokenStorage)
+  const s               : yStorage)
                         : unit is
   if Tezos.sender =/= s.admin
   then failwith("yToken/not-admin")
@@ -7,7 +7,7 @@ function mustBeAdmin(
 
 function setAdmin(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of
@@ -21,7 +21,7 @@ function setAdmin(
 
 function withdrawReserve(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -65,7 +65,7 @@ function withdrawReserve(
 
 function addMarket(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of
@@ -82,6 +82,7 @@ function addMarket(
         token.collateralFactorF := params.collateralFactorF;
         token.reserveFactorF := params.reserveFactorF;
         token.maxBorrowRate := params.maxBorrowRate;
+        token.threshold := params.threshold;
 
         s.assets[params.asset] := lastTokenId;
         s.tokenMetadata[lastTokenId] := record [
@@ -97,7 +98,7 @@ function addMarket(
 
 function updateMetadata(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of
@@ -116,7 +117,7 @@ function updateMetadata(
 
 function setTokenFactors(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of
@@ -132,6 +133,7 @@ function setTokenFactors(
         token.reserveFactorF := params.reserveFactorF;
         token.interestRateModel := params.interestRateModel;
         token.maxBorrowRate := params.maxBorrowRate;
+        token.threshold := params.threshold;
         s.tokens[params.tokenId] := token;
       }
     | _                 -> skip
@@ -140,7 +142,7 @@ function setTokenFactors(
 
 function setGlobalFactors(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of
@@ -150,7 +152,6 @@ function setGlobalFactors(
         s.liqIncentiveF := params.liqIncentiveF;
         s.priceFeedProxy := params.priceFeedProxy;
         s.maxMarkets := params.maxMarkets;
-        s.threshold := params.threshold;
       }
     | _                 -> skip
     end
@@ -158,7 +159,7 @@ function setGlobalFactors(
 
 function setBorrowPause(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of

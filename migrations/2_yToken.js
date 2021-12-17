@@ -28,7 +28,7 @@ const metadata = MichelsonMap.fromLiteral({
   ).toString("hex"),
 });
 
-const tokenStorage = {
+const yStorage = {
   admin: dev.pkh,
   ledger: MichelsonMap.fromLiteral({}),
   accounts: MichelsonMap.fromLiteral({}),
@@ -43,12 +43,11 @@ const tokenStorage = {
   borrows: MichelsonMap.fromLiteral({}),
   maxMarkets: "0",
   assets: MichelsonMap.fromLiteral({}),
-  threshold: "0",
 };
 let contractAddress = 0;
 module.exports = async (tezos) => {
   contractAddress = await migrate(tezos, "yToken", {
-    storage: tokenStorage,
+    storage: yStorage,
     tokenLambdas: MichelsonMap.fromLiteral({}),
     useLambdas: MichelsonMap.fromLiteral({}),
   });
