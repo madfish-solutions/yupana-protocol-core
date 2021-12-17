@@ -4,7 +4,7 @@
 function setUseAction(
   const idx             : nat;
   const lambda_bytes    : bytes;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
   block {
     if Tezos.sender = s.storage.admin
@@ -18,7 +18,7 @@ function setUseAction(
 function setTokenAction(
   const idx             : nat;
   const lambda_bytes    : bytes;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
   block {
     if Tezos.sender = s.storage.admin
@@ -31,7 +31,7 @@ function setTokenAction(
 
 function callToken(
   const p               : tokenAction;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
   block {
     const idx : nat = case p of
@@ -58,7 +58,7 @@ function callToken(
 
 [@inline] function callUse(
   const p               : useAction;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
   block {
       const idx : nat = case p of
@@ -95,7 +95,7 @@ function callToken(
 
 function main(
   const p               : entryAction;
-  const s               : fullTokenStorage)
+  const s               : fullyStorage)
                         : fullReturn is
   case p of
     | Transfer(params)              -> callToken(ITransfer(params), s)

@@ -44,13 +44,14 @@ function getToken(
       lastPrice               = 0n;
       borrowPause             = False;
       isInterestUpdating      = False;
+      threshold               = 0n;
     ]
   | Some(v) -> v
   end
 
 function get_total_supply(
   const p               : tokenAction;
-  const s               : tokenStorage)
+  const s               : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -82,7 +83,7 @@ function getBalanceByToken(
 [@inline] function isApprovedOperator(
   const transferParam   : transferParam;
   const token_id        : nat;
-  const s               : tokenStorage)
+  const s               : yStorage)
                         : bool is
   block {
     const operator : address = Tezos.sender;
@@ -92,15 +93,15 @@ function getBalanceByToken(
 
 (* Perform transfers *)
 function iterateTransfer(
-  const s               : tokenStorage;
+  const s               : yStorage;
   const params          : transferParam)
-                        : tokenStorage is
+                        : yStorage is
   block {
     (* Perform single transfer *)
     function makeTransfer(
-      var s             : tokenStorage;
+      var s             : yStorage;
       const transferDst : transferDestination)
-                        : tokenStorage is
+                        : yStorage is
       block {
         (* Check permissions *)
         if isApprovedOperator(params, transferDst.token_id, s)
@@ -146,9 +147,9 @@ function iterateTransfer(
 
 (* Perform single operator update *)
 function iterate_update_operators(
-  var s                 : tokenStorage;
+  var s                 : yStorage;
   const params          : updateOperatorParam)
-                        : tokenStorage is
+                        : yStorage is
   block {
     case params of
       Add_operator(param) -> block {
@@ -191,7 +192,7 @@ function iterate_update_operators(
 
 function getBalance(
   const p               : tokenAction;
-  const s               : tokenStorage)
+  const s               : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -231,7 +232,7 @@ function getBalance(
 
 function update_operators(
   const p               : tokenAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -249,7 +250,7 @@ function update_operators(
 
 function transfer(
   const p               : tokenAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];

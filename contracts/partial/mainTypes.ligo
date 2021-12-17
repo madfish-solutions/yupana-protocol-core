@@ -27,9 +27,9 @@ type tokenAction        is
 
 
 // yToken
-type return is list (operation) * tokenStorage
-type tokenFunc is (tokenAction * tokenStorage) -> return
-type useFunc is (useAction * tokenStorage) -> return
+type return is list (operation) * yStorage
+type tokenFunc is (tokenAction * yStorage) -> return
+type useFunc is (useAction * yStorage) -> return
 type useParam is useAction
 
 type setUseParams       is record [
@@ -54,13 +54,13 @@ type entryAction        is
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams
 
-type fullTokenStorage   is record [
-  storage               : tokenStorage;
+type fullyStorage   is record [
+  storage               : yStorage;
   tokenLambdas          : big_map(nat, bytes);
   useLambdas            : big_map(nat, bytes);
 ]
 
-type fullReturn is list (operation) * fullTokenStorage
+type fullReturn is list (operation) * fullyStorage
 
 //Proxy
 type getType is Get of string * contract(oracleParam)

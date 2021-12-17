@@ -1,7 +1,7 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { alice } = require("../scripts/sandbox/accounts");
 
-const tokenStorage = {
+const yStorage = {
   admin: alice.pkh,
   ledger: MichelsonMap.fromLiteral({}),
   accounts: MichelsonMap.fromLiteral({}),
@@ -16,11 +16,10 @@ const tokenStorage = {
   markets: MichelsonMap.fromLiteral({}),
   borrows: MichelsonMap.fromLiteral({}),
   assets: MichelsonMap.fromLiteral({}),
-  threshold: "0",
 };
 
 module.exports = {
-  storage: tokenStorage,
+  storage: yStorage,
   tokenLambdas: MichelsonMap.fromLiteral({}),
   useLambdas: MichelsonMap.fromLiteral({}),
 };

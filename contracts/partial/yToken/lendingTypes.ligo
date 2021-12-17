@@ -29,9 +29,10 @@ type tokenType          is [@layout:comb] record [
   lastPrice             : nat;
   borrowPause           : bool;
   isInterestUpdating    : bool;
+  threshold             : nat;
 ]
 
-type tokenStorage       is [@layout:comb] record [
+type yStorage           is [@layout:comb] record [
   admin                 : address;
   ledger                : big_map((address * tokenId), nat);
   accounts              : big_map((address * tokenId), account);
@@ -46,7 +47,6 @@ type tokenStorage       is [@layout:comb] record [
   borrows               : big_map(address, set(tokenId));
   maxMarkets            : nat;
   assets                : big_map(assetType, tokenId);
-  threshold             : nat;
 ]
 
 type tokenSet is set(tokenId)
@@ -82,6 +82,7 @@ type setTokenParams     is [@layout:comb] record [
   reserveFactorF        : nat;
   interestRateModel     : address;
   maxBorrowRate         : nat;
+  threshold             : nat;
 ]
 
 type setGlobalParams    is [@layout:comb] record [
@@ -89,7 +90,6 @@ type setGlobalParams    is [@layout:comb] record [
   liqIncentiveF         : nat;
   priceFeedProxy        : address;
   maxMarkets            : nat;
-  threshold             : nat;
 ]
 
 type borrowPauseParams  is [@layout:comb] record [
@@ -116,6 +116,7 @@ type newMarketParams    is [@layout:comb] record [
   reserveFactorF        : nat;
   maxBorrowRate         : nat;
   tokenMetadata         : newMetadataParams;
+  threshold             : nat;
 ]
 
 type oracleParam        is (string * (timestamp * nat))
@@ -126,7 +127,7 @@ type pairParam          is [@layout:comb] record [
 ]
 
 type calculateCollParams is [@layout:comb] record [
-  s                     : tokenStorage;
+  s                     : yStorage;
   user                  : address;
   res                   : nat;
 ]

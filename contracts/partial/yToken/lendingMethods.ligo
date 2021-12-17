@@ -169,7 +169,7 @@ function calcOutstandingBorrowInCU(
 
 function updateInterest(
   const tokenId         : nat;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
     block {
       var _token : tokenType := getToken(tokenId, s.storage.tokens);
@@ -206,7 +206,7 @@ function updateInterest(
 
 function mint(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -247,7 +247,7 @@ function mint(
 
 function redeem(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -327,7 +327,7 @@ function redeem(
 
 function borrow(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -395,7 +395,7 @@ function borrow(
 
 function repay(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -454,7 +454,7 @@ function repay(
 
 function liquidate(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     var operations : list(operation) := list[];
@@ -486,7 +486,7 @@ function liquidate(
             params.borrower,
             s.ledger,
             s.tokens,
-            s.threshold
+            borrowToken.threshold
           );
 
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
@@ -587,7 +587,7 @@ function liquidate(
 
 function enterMarket(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
     case p of
@@ -611,7 +611,7 @@ function enterMarket(
 
 function exitMarket(
   const p               : useAction;
-  var s                 : tokenStorage)
+  var s                 : yStorage)
                         : return is
   block {
       case p of
@@ -657,7 +657,7 @@ function exitMarket(
 
 function priceCallback(
   const params          : yAssetParams;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
   block {
     if Tezos.sender =/= s.storage.priceFeedProxy
@@ -675,7 +675,7 @@ function priceCallback(
 
 function accrueInterest(
   const params          : yAssetParams;
-  var s                 : fullTokenStorage)
+  var s                 : fullyStorage)
                         : fullReturn is
   block {
     var token : tokenType := getToken(params.tokenId, s.storage.tokens);
