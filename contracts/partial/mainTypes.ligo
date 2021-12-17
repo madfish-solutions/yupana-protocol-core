@@ -54,13 +54,13 @@ type entryAction        is
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams
 
-type fullyStorage   is record [
+type fullStorage   is record [
   storage               : yStorage;
   tokenLambdas          : big_map(nat, bytes);
   useLambdas            : big_map(nat, bytes);
 ]
 
-type fullReturn is list (operation) * fullyStorage
+type fullReturn is list (operation) * fullStorage
 
 //Proxy
 type getType is Get of string * contract(oracleParam)
