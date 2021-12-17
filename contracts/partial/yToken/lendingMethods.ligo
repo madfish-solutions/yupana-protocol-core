@@ -80,8 +80,7 @@ function calcLiquidateCollateral(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
-  const tokens          : map(tokenId, tokenType);
-  const threshold       : nat)
+  const tokens          : map(tokenId, tokenType))
                         : nat is
   block {
     function oneToken(
@@ -95,14 +94,13 @@ function calcLiquidateCollateral(
 
         (* sum +=  balance * oraclePrice * exchangeRate *)
         acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
-      } with acc;
+      } with acc * token.threshold / precision;
     const collateralValue : nat = Set.fold(
       oneToken,
       userMarkets,
       0n
     );
-    const result : nat = collateralValue * threshold / precision;
-  } with result
+  } with collateralValue
 
 function applyInterestToBorrows(
   const borrowedTokens  : set(tokenId);
@@ -169,7 +167,7 @@ function calcOutstandingBorrowInCU(
 
 function updateInterest(
   const tokenId         : nat;
-  var s                 : fullyStorage)
+  var s                 : fullStorage)
                         : fullReturn is
     block {
       var _token : tokenType := getToken(tokenId, s.storage.tokens);
@@ -485,8 +483,7 @@ function liquidate(
             getTokenIds(params.borrower, s.markets),
             params.borrower,
             s.ledger,
-            s.tokens,
-            borrowToken.threshold
+            s.tokens
           );
 
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
@@ -657,7 +654,7 @@ function exitMarket(
 
 function priceCallback(
   const params          : yAssetParams;
-  var s                 : fullyStorage)
+  var s                 : fullStorage)
                         : fullReturn is
   block {
     if Tezos.sender =/= s.storage.priceFeedProxy
@@ -675,7 +672,7 @@ function priceCallback(
 
 function accrueInterest(
   const params          : yAssetParams;
-  var s                 : fullyStorage)
+  var s                 : fullStorage)
                         : fullReturn is
   block {
     var token : tokenType := getToken(params.tokenId, s.storage.tokens);
