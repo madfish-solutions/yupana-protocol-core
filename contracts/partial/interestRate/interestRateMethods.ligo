@@ -1,11 +1,11 @@
-[@inline] function mustBeAdmin(
+function mustBeAdmin(
   const s               : rateStorage)
                         : unit is
   if Tezos.sender =/= s.admin
   then failwith("interestRate/not-admin")
   else unit
 
-[@inline] function calcUtilRate(
+function calcUtilRate(
   const borrowsF        : nat;
   const cashF           : nat;
   const reservesF       : nat;
@@ -19,7 +19,7 @@
       end;
   } with precision * borrowsF / denominator
 
-[@inline] function calcBorrowRate(
+function calcBorrowRate(
   const borrowsF        : nat;
   const cashF           : nat;
   const reservesF       : nat;
