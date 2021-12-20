@@ -234,8 +234,6 @@ function redeem(
           then failwith("yToken/yToken-undefined");
           else skip;
 
-          verifyTokenUpdated(token);
-
           userBalance :=
             case is_nat(userBalance - burnTokensF) of
               | None -> (failwith("yToken/not-enough-tokens-to-burn") : nat)
@@ -302,7 +300,6 @@ function borrow(
           const borrowsF : nat = yAssetParams.amount * precision;
 
           ensureNotZero(yAssetParams.amount);
-          verifyTokenUpdated(token);
 
           if yAssetParams.tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
@@ -366,8 +363,6 @@ function repay(
           then failwith("yToken/yToken-undefined");
           else skip;
 
-          verifyTokenUpdated(token);
-
           if repayAmountF = 0n
           then repayAmountF := userAccount.borrow;
           else skip;
@@ -412,7 +407,6 @@ function liquidate(
           var borrowToken : tokenType := getToken(params.borrowToken, s.tokens);
 
           ensureNotZero(params.amount);
-          verifyTokenUpdated(borrowToken);
 
           if params.borrowToken >= s.lastTokenId
           then failwith("yToken/borrow-id-undefined");
@@ -478,7 +472,6 @@ function liquidate(
           else failwith("yToken/no-such-collateral");
 
           var collateralToken : tokenType := getToken(params.collateralToken, s.tokens);
-          verifyTokenUpdated(collateralToken);
 
           (* seizeAmount = actualRepayAmount * liquidationIncentive
             * priceBorrowed / priceCollateral
@@ -549,10 +542,6 @@ function exitMarket(
         ExitMarket(tokenId) -> {
           var userMarkets : set(tokenId) := getTokenIds(Tezos.sender, s.markets);
           var userTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
-          const token : tokenType = getToken(
-            tokenId,
-            s.tokens
-          );
           s.accounts := applyInterestToBorrows(userTokens, Tezos.sender, s.accounts, s.tokens);
           userMarkets := Set.remove(tokenId, userMarkets);
           const maxBorrowInCU : nat = calcMaxCollateralInCU(
@@ -568,8 +557,6 @@ function exitMarket(
             s.ledger,
             s.tokens
           );
-
-          verifyTokenUpdated(token);
 
           if tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
