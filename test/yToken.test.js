@@ -172,7 +172,7 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(0n, "COMP-USD", 100000000);
+    await proxy.updatePair(0, "COMP-USD", Math.pow(10, 6));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
 
@@ -234,7 +234,7 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(1, "XTZ-USD", 1000000);
+    await proxy.updatePair(1, "XTZ-USD", Math.pow(10, 6));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(1), "XTZ-USD");
 
@@ -257,7 +257,7 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(2, "BTC-USD", 100000000);
+    await proxy.updatePair(2, "BTC-USD", Math.pow(10, 8));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(2), "BTC-USD");
 
@@ -267,7 +267,6 @@ describe("yToken tests", async () => {
     await fa2.create_token(tokenMetadata);
     await fa2.updateStorage();
   });
-
   it("add market [3]", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await yToken.addMarket(
@@ -286,7 +285,7 @@ describe("yToken tests", async () => {
     await fa2_2.create_token(tokenMetadata2);
     await fa2_2.updateStorage();
 
-    await proxy.updatePair(3, "ETH-USD", 1000000000000000000);
+    await proxy.updatePair(3, "ETH-USD", Math.pow(10, 18));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(3), "ETH-USD");
 
