@@ -103,6 +103,10 @@ function receivePrice(
     const _decimal : nat = getDecimal(pairName, s.tokensDecimal);
     const price : nat = param.1.1;
 
+    // 48631_657_667
+    // 4019_882_242
+    // 4_196_308
+
     const tokenId : nat = checkPairId(pairName, s.pairId);
     var operations : list(operation) := list[
       Tezos.transaction(
