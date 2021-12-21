@@ -40,7 +40,7 @@ function mustBeAdmin(
 
 [@inline] function getDecimal(
   const pairName        : string;
-  const tokensDecimals   : big_map(string, nat))
+  const tokensDecimals  : big_map(string, nat))
                         : nat is
   case tokensDecimals[pairName] of
     | Some(v) -> v
