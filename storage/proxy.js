@@ -7,4 +7,5 @@ module.exports = {
   yToken: alice.pkh,
   pairName : MichelsonMap.fromLiteral({}),
   pairId: MichelsonMap.fromLiteral({}),
+  tokensDecimal: MichelsonMap.fromLiteral({}),
 };

@@ -295,6 +295,8 @@ function borrow(
         Borrow(yAssetParams) -> {
           var token : tokenType := getToken(yAssetParams.tokenId, s.tokens);
           var borrowTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
+          (* should add a new token to the set to update the lastBorrowIndex *)
+          borrowTokens := Set.add(yAssetParams.tokenId, borrowTokens);
           s.accounts := applyInterestToBorrows(borrowTokens, Tezos.sender, s.accounts, s.tokens);
           var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accounts);
           const borrowsF : nat = yAssetParams.amount * precision;
@@ -308,8 +310,6 @@ function borrow(
           if token.borrowPause
           then failwith("yToken/forbidden-for-borrow");
           else skip;
-
-          borrowTokens := Set.add(yAssetParams.tokenId, borrowTokens);
           userAccount.borrow := userAccount.borrow + borrowsF;
           s.accounts[(Tezos.sender, yAssetParams.tokenId)] := userAccount;
           s.borrows[Tezos.sender] := borrowTokens;
@@ -356,8 +356,8 @@ function repay(
           var token : tokenType := getToken(yAssetParams.tokenId, s.tokens);
           var borrowTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
           s.accounts := applyInterestToBorrows(borrowTokens, Tezos.sender, s.accounts, s.tokens);
-          var repayAmountF : nat := yAssetParams.amount * precision;
           var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accounts);
+          var repayAmountF : nat := yAssetParams.amount * precision;
 
           if yAssetParams.tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
