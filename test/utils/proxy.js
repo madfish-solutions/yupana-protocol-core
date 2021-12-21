@@ -50,7 +50,7 @@ class Proxy {
       yToken: storage.yToken,
       pairName: storage.pairName,
       pairId: storage.pairId,
-      tokensDecimal: storage.tokensDecimal,
+      tokensDecimals: storage.tokensDecimals,
     };
 
     for (const key in maps) {
@@ -71,7 +71,9 @@ class Proxy {
   }
 
   async updateAdmin(newAdmin) {
-    const operation = await this.contract.methods.setProxyAdmin(newAdmin).send();
+    const operation = await this.contract.methods
+      .setProxyAdmin(newAdmin)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
