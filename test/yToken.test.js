@@ -172,7 +172,7 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(0n, "COMP-USD", 6);
+    await proxy.updatePair(0n, "COMP-USD", 100000000);
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
 
@@ -234,7 +234,7 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(1, "XTZ-USD", 6);
+    await proxy.updatePair(1, "XTZ-USD", 1000000);
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(1), "XTZ-USD");
 
@@ -257,7 +257,7 @@ describe("yToken tests", async () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(2, "BTC-USD", 6);
+    await proxy.updatePair(2, "BTC-USD", 100000000);
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(2), "BTC-USD");
 
@@ -286,7 +286,7 @@ describe("yToken tests", async () => {
     await fa2_2.create_token(tokenMetadata2);
     await fa2_2.updateStorage();
 
-    await proxy.updatePair(3, "ETH-USD", 6);
+    await proxy.updatePair(3, "ETH-USD", 1000000000000000000);
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(3), "ETH-USD");
 
@@ -415,6 +415,8 @@ describe("yToken tests", async () => {
 
     await yToken.updateAndMint(proxy, 1, 10000000000);
     await yToken.updateStorage();
+    await proxy.updateStorage();
+
 
     let res = await fa12_2.storage.ledger.get(carol.pkh);
     strictEqual(await res.balance.toString(), "9999999990000000000");
@@ -454,6 +456,8 @@ describe("yToken tests", async () => {
 
     await yToken.updateAndMint2(proxy, 0, 1000);
     await yToken.updateStorage();
+    await proxy.updateStorage();
+
 
     let res = await fa12.storage.ledger.get(peter.pkh);
     strictEqual(await res.balance.toString(), "9999999999999999000");
@@ -507,6 +511,8 @@ describe("yToken tests", async () => {
 
     await yToken.updateAndMint2(proxy, 3, 100000000);
     await yToken.updateStorage();
+    await proxy.updateStorage();
+
 
     let res = await fa2_2.storage.account_info.get(dev2.pkh);
     let res2 = await res.balances.get("0");
@@ -815,6 +821,8 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await yToken.updateAndBorrow(proxy, 1, 50000);
     await yToken.updateStorage();
+    await proxy.updateStorage();
+
 
     res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(
@@ -829,6 +837,8 @@ describe("yToken tests", async () => {
 
     await yToken.updateAndBorrow(proxy, 1, 1000);
     await yToken.updateStorage();
+    await proxy.updateStorage();
+
 
     let res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result

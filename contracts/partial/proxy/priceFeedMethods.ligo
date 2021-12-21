@@ -95,17 +95,13 @@ function updateYToken(
 
 function receivePrice(
   const param           : oracleParam;
-  const s               : proxyStorage)
+  var s               : proxyStorage)
                         : proxyReturn is
   block {
     mustBeOracle(s.oracle);
     const pairName : string = param.0;
-    const _decimal : nat = getDecimal(pairName, s.tokensDecimal);
-    const price : nat = param.1.1;
-
-    // 48631_657_667
-    // 4019_882_242
-    // 4_196_308
+    const decimal : nat = getDecimal(pairName, s.tokensDecimal);
+    const price : nat = param.1.1 * precision / decimal;
 
     const tokenId : nat = checkPairId(pairName, s.pairId);
     var operations : list(operation) := list[
