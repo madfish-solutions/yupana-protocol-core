@@ -4,4 +4,5 @@ type proxyStorage       is [@layout:comb] record [
   yToken                : address;
   pairName              : big_map(tokenId, string);
   pairId                : big_map(string, tokenId);
+  tokensDecimal         : big_map(string, nat);
 ]
