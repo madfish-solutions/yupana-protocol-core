@@ -472,6 +472,7 @@ function liquidate(
           else failwith("yToken/no-such-collateral");
 
           var collateralToken : tokenType := getToken(params.collateralToken, s.tokens);
+          verifyTokenUpdated(collateralToken);
 
           (* seizeAmount = actualRepayAmount * liquidationIncentive
             * priceBorrowed / priceCollateral
