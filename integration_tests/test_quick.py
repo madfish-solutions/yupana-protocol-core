@@ -188,7 +188,17 @@ class DexTest(TestCase):
         chain.execute(self.ct.enterMarket(0))
         chain.execute(self.ct.borrow(1, 50))
 
-        res = chain.execute(self.ct.priceCallback(0, 50), sender=price_feed)
+        self.update_price_and_interest(chain, 0, 50, 0)
+        self.update_price_and_interest(chain, 1, 100, 0)
+
+        # check that can't liquidate without price udpdate even tho liquidation is achieved
+        chain.advance_blocks(1)
+        with self.assertRaises(MichelsonRuntimeError) as error:
+            chain.execute(self.ct.liquidate(1, 0, me, 25), sender=bob)
+        self.assertIn("update", error.exception.args[-1])
+
+        self.update_price_and_interest(chain, 0, 50, 0)
+        self.update_price_and_interest(chain, 1, 100, 0)
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 25), sender=bob)
         transfers = parse_transfers(res)
@@ -546,9 +556,7 @@ class DexTest(TestCase):
         
         chain.execute(self.ct.mint(0, 100))
         chain.execute(self.ct.enterMarket(0))
-        res = chain.execute(self.ct.borrow(0, 50))
-        transfers = parse_transfers(res)
-        pprint(transfers)
+        chain.execute(self.ct.borrow(0, 50))
 
         with self.assertRaises(MichelsonRuntimeError):
             res = chain.execute(self.ct.borrow(0, 1))
@@ -565,12 +573,6 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError) as error:
             chain.execute(self.ct.borrow(0, 100))
         self.assertIn("update", error.exception.args[-1])
-
-        with self.assertRaises(MichelsonRuntimeError) as error:
-            # chain.execute(self.ct.liquidate(0, 100))
-            chain.execute(self.ct.liquidate(1, 0, me, 100), sender=bob)
-        self.assertIn("update", error.exception.args[-1])
-        # TODO verify liquiate updates all necessary tokens
 
     def test_threshold(self):
         chain = LocalChain(storage=self.storage)
