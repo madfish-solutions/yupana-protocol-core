@@ -23,7 +23,7 @@ jobs:
         run: sudo apt install python pip
       - name: Install pytezos and pytest
         run: pip install pytezos pytest
-      - name: Compile contracts:
+      - name: Compile contracts
         run: ./integration_tests/build.sh
       - name: Run scenario tests
         run: pytest -s -v
