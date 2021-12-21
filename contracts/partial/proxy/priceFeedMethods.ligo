@@ -1,14 +1,14 @@
 function mustBeAdmin(
-  const s               : proxyStorage)
+  const admin           : address)
                         : unit is
-  if Tezos.sender =/= s.admin
+  if Tezos.sender =/= admin
   then failwith("proxy/not-admin")
   else unit
 
 [@inline] function mustBeOracle(
-  const s               : proxyStorage)
+  const oracle          : address)
                         : unit is
-  if Tezos.sender =/= s.oracle
+  if Tezos.sender =/= oracle
   then failwith("proxy/not-oracle")
   else unit
 
@@ -26,10 +26,10 @@ function mustBeAdmin(
   end;
 
 [@inline] function getYTokenPriceCallbackMethod(
-  const s               : proxyStorage)
+  const yToken          : address)
                         : contract(yAssetParams) is
   case (
-    Tezos.get_entrypoint_opt("%priceCallback", s.yToken)
+    Tezos.get_entrypoint_opt("%priceCallback", yToken)
                         : option(contract(yAssetParams))
   ) of
     Some(contr) -> contr
@@ -38,20 +38,29 @@ function mustBeAdmin(
     )
   end;
 
+[@inline] function getDecimal(
+  const pairName        : string;
+  const tokensDecimal   : big_map(string, nat))
+                        : nat is
+  case tokensDecimal[pairName] of
+    | Some(v) -> v
+    | None -> (failwith("checkPairName/decimal-not-defined") : nat)
+  end;
+
 [@inline] function checkPairName(
   const tokenId         : tokenId;
-  const s               : proxyStorage)
+  const pairName        : big_map(tokenId, string))
                         : string is
-  case s.pairName[tokenId] of
+  case pairName[tokenId] of
     | Some(v) -> v
     | None -> (failwith("checkPairName/string-not-defined") : string)
   end;
 
 [@inline] function checkPairId(
   const pairName        : string;
-  const s               : proxyStorage)
+  const pairId          : big_map(string, tokenId))
                         : nat is
-  case s.pairId[pairName] of
+  case pairId[pairName] of
     | Some(v) -> v
     | None -> (failwith("checkPairId/tokenId-not-defined") : nat)
   end;
@@ -61,7 +70,7 @@ function setProxyAdmin(
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    mustBeAdmin(s);
+    mustBeAdmin(s.admin);
     s.admin := addr;
   } with (noOperations, s)
 
@@ -70,7 +79,7 @@ function updateOracle(
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    mustBeAdmin(s);
+    mustBeAdmin(s.admin);
     s.oracle := addr;
   } with (noOperations, s)
 
@@ -79,7 +88,7 @@ function updateYToken(
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    mustBeAdmin(s);
+    mustBeAdmin(s.admin);
     s.yToken := addr;
   } with (noOperations, s)
 
@@ -89,11 +98,16 @@ function receivePrice(
   const s               : proxyStorage)
                         : proxyReturn is
   block {
-    mustBeOracle(s);
+    mustBeOracle(s.oracle);
     const pairName : string = param.0;
+    const _decimal : nat = getDecimal(pairName, s.tokensDecimal);
     const price : nat = param.1.1;
 
-    const tokenId : nat = checkPairId(pairName, s);
+    // 48631_657_667
+    // 4019_882_242
+    // 4_196_308
+
+    const tokenId : nat = checkPairId(pairName, s.pairId);
     var operations : list(operation) := list[
       Tezos.transaction(
         record [
@@ -101,7 +115,7 @@ function receivePrice(
           amount = price;
         ],
         0mutez,
-        getYTokenPriceCallbackMethod(s)
+        getYTokenPriceCallbackMethod(s.yToken)
       )
     ];
   } with (operations, s)
@@ -116,7 +130,7 @@ function getPrice(
       const tokenId     : nat)
                         : list(operation) is
       block {
-        const strName : string = checkPairName(tokenId, s);
+        const strName : string = checkPairName(tokenId, s.pairName);
         const param : contract(oracleParam) = Tezos.self("%receivePrice");
 
         const receivePriceOp = Tezos.transaction(
@@ -138,7 +152,8 @@ function updatePair(
   var s                 : proxyStorage)
                         : proxyReturn is
   block {
-    mustBeAdmin(s);
+    mustBeAdmin(s.admin);
     s.pairName[param.tokenId] := param.pairName;
     s.pairId[param.pairName] := param.tokenId;
+    s.tokensDecimal[param.pairName] := param.decimal;
   } with (noOperations, s)
