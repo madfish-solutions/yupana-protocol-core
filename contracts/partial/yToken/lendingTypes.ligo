@@ -124,6 +124,7 @@ type oracleParam        is (string * (timestamp * nat))
 type pairParam          is [@layout:comb] record [
   tokenId               : tokenId;
   pairName              : string;
+  decimal               : nat;
 ]
 
 type calculateCollParams is [@layout:comb] record [

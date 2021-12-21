@@ -50,6 +50,7 @@ class Proxy {
       yToken: storage.yToken,
       pairName: storage.pairName,
       pairId: storage.pairId,
+      tokensDecimal: storage.tokensDecimal,
     };
 
     for (const key in maps) {
@@ -91,9 +92,9 @@ class Proxy {
     return operation;
   }
 
-  async updatePair(tokenId, pairName) {
+  async updatePair(tokenId, pairName, tokenDecimal) {
     const operation = await this.contract.methods
-      .updatePair(tokenId, pairName)
+      .updatePair(tokenId, pairName, tokenDecimal)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;

@@ -234,8 +234,6 @@ function redeem(
           then failwith("yToken/yToken-undefined");
           else skip;
 
-          verifyTokenUpdated(token);
-
           userBalance :=
             case is_nat(userBalance - burnTokensF) of
               | None -> (failwith("yToken/not-enough-tokens-to-burn") : nat)
@@ -297,12 +295,13 @@ function borrow(
         Borrow(yAssetParams) -> {
           var token : tokenType := getToken(yAssetParams.tokenId, s.tokens);
           var borrowTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
+          (* should add a new token to the set to update the lastBorrowIndex *)
+          borrowTokens := Set.add(yAssetParams.tokenId, borrowTokens);
           s.accounts := applyInterestToBorrows(borrowTokens, Tezos.sender, s.accounts, s.tokens);
           var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accounts);
           const borrowsF : nat = yAssetParams.amount * precision;
 
           ensureNotZero(yAssetParams.amount);
-          verifyTokenUpdated(token);
 
           if yAssetParams.tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
@@ -311,8 +310,6 @@ function borrow(
           if token.borrowPause
           then failwith("yToken/forbidden-for-borrow");
           else skip;
-
-          borrowTokens := Set.add(yAssetParams.tokenId, borrowTokens);
           userAccount.borrow := userAccount.borrow + borrowsF;
           s.accounts[(Tezos.sender, yAssetParams.tokenId)] := userAccount;
           s.borrows[Tezos.sender] := borrowTokens;
@@ -359,14 +356,12 @@ function repay(
           var token : tokenType := getToken(yAssetParams.tokenId, s.tokens);
           var borrowTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
           s.accounts := applyInterestToBorrows(borrowTokens, Tezos.sender, s.accounts, s.tokens);
-          var repayAmountF : nat := yAssetParams.amount * precision;
           var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accounts);
+          var repayAmountF : nat := yAssetParams.amount * precision;
 
           if yAssetParams.tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
           else skip;
-
-          verifyTokenUpdated(token);
 
           if repayAmountF = 0n
           then repayAmountF := userAccount.borrow;
@@ -412,7 +407,6 @@ function liquidate(
           var borrowToken : tokenType := getToken(params.borrowToken, s.tokens);
 
           ensureNotZero(params.amount);
-          verifyTokenUpdated(borrowToken);
 
           if params.borrowToken >= s.lastTokenId
           then failwith("yToken/borrow-id-undefined");
@@ -549,10 +543,6 @@ function exitMarket(
         ExitMarket(tokenId) -> {
           var userMarkets : set(tokenId) := getTokenIds(Tezos.sender, s.markets);
           var userTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
-          const token : tokenType = getToken(
-            tokenId,
-            s.tokens
-          );
           s.accounts := applyInterestToBorrows(userTokens, Tezos.sender, s.accounts, s.tokens);
           userMarkets := Set.remove(tokenId, userMarkets);
           const maxBorrowInCU : nat = calcMaxCollateralInCU(
@@ -568,8 +558,6 @@ function exitMarket(
             s.ledger,
             s.tokens
           );
-
-          verifyTokenUpdated(token);
 
           if tokenId >= s.lastTokenId
           then failwith("yToken/yToken-undefined");
