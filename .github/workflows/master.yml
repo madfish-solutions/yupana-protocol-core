@@ -3,7 +3,7 @@ name: Contract Testing Pipeline
 on:
   push:
     branches:
-      - master
+      - audit
 
   pull_request:
     branches:
@@ -19,9 +19,11 @@ jobs:
           node-version: "15"
       - name: Install Git
         run: sudo apt install git -y
-      - name: Install node modules
-        run: yarn
-      - name: Run ganache-cli in background
-        run: ./ci/flextesa.sh
-      - name: Compile and test contracts
-        run: yarn compile && yarn test
+      - name: Install python and pip
+        run: sudo apt install python pip
+      - name: Install pytezos and pytest
+        run: pip install pytezos pytest
+      - name: Compile contracts:
+        run: ./integration_tests/build.sh
+      - name: Run scenario tests
+        run: pytest -s -v
