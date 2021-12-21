@@ -25,3 +25,19 @@ jobs:
         run: ./ci/flextesa.sh
       - name: Compile and test contracts
         run: yarn compile && yarn test
+  scenario-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Git
+        run: sudo apt install git -y
+      - name: Install python and pip
+        run: sudo apt install python pip
+      - name: Install crypto libs
+        run: sudo apt install libsodium-dev libsecp256k1-dev libgmp-dev
+      - name: Install pytezos and pytest
+        run: pip install pytezos pytest
+      - name: Compile contracts
+        run: ./integration_tests/build.sh
+      - name: Run scenario tests
+        run: pytest -s -v
