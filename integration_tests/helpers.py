@@ -316,9 +316,10 @@ def get_map_without_none(map):
     return {key: value for key,value in map.items() if value != None}
 
 def none_sets_to_lists(full_storage):
-    internal = full_storage["storage"]
-    internal["markets"] = get_map_without_none(internal["markets"])
-    internal["borrows"] = get_map_without_none(internal["borrows"])
+    if "storage" in full_storage:
+        internal = full_storage["storage"]
+        internal["markets"] = get_map_without_none(internal["markets"])
+        internal["borrows"] = get_map_without_none(internal["borrows"])
 
     return full_storage
 

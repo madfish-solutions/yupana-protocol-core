@@ -3,6 +3,8 @@
 mkdir -p integration_tests/compiled
 docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-contract $PWD/contracts/main/yToken.ligo main > integration_tests/compiled/yToken.tz
 
+docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-contract $PWD/contracts/main/priceFeed.ligo main > integration_tests/compiled/priceFeed.tz
+
 mkdir -p integration_tests/compiled/lambdas
 
 DIR=integration_tests/compiled/lambdas/use
@@ -44,4 +46,6 @@ for i in 0,transfer \
 
     docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo "SetTokenAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
 done
+
+
 
