@@ -95,7 +95,7 @@ function updateYToken(
 
 function receivePrice(
   const param           : oracleParam;
-  const s               : proxyStorage)
+  var s               : proxyStorage)
                         : proxyReturn is
   block {
     mustBeOracle(s.oracle);
