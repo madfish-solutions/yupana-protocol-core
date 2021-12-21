@@ -21,6 +21,8 @@ jobs:
         run: sudo apt install git -y
       - name: Install python and pip
         run: sudo apt install python pip
+      - name: Install crypto libs
+        run: sudo apt install libsodium-dev libsecp256k1-dev libgmp-dev
       - name: Install pytezos and pytest
         run: pip install pytezos pytest
       - name: Compile contracts
