@@ -64,55 +64,45 @@ function withdrawReserve(
   end
 
 function addMarket(
-  const p               : useAction;
-  var s                 : yStorage)
-                        : return is
+  const params          : newMarketParams;
+  var s                 : fullStorage)
+                        : fullReturn is
   block {
-    case p of
-      AddMarket(params) -> {
-        mustBeAdmin(s);
-        var token : tokenType := getToken(s.lastTokenId, s.tokens);
-        const lastTokenId : nat = s.lastTokenId;
+    mustBeAdmin(s.storage);
+    var token : tokenType := getToken(s.storage.lastTokenId, s.storage.tokens);
+    const lastTokenId : nat = s.storage.lastTokenId;
 
-        checkTypeInfo(s.assets, params.asset);
+    checkTypeInfo(s.storage.assets, params.asset);
 
-        (* TODO: fail if token exist - not fixed yet *)
-        token.interestRateModel := params.interestRateModel;
-        token.mainToken := params.asset;
-        token.collateralFactorF := params.collateralFactorF;
-        token.reserveFactorF := params.reserveFactorF;
-        token.maxBorrowRate := params.maxBorrowRate;
-        token.threshold := params.threshold;
+    (* TODO: fail if token exist - not fixed yet *)
+    token.interestRateModel := params.interestRateModel;
+    token.mainToken := params.asset;
+    token.collateralFactorF := params.collateralFactorF;
+    token.reserveFactorF := params.reserveFactorF;
+    token.maxBorrowRate := params.maxBorrowRate;
+    token.threshold := params.threshold;
 
-        s.assets[params.asset] := lastTokenId;
-        s.tokenMetadata[lastTokenId] := record [
-          token_id = lastTokenId;
-          tokens = params.tokenMetadata;
-        ];
-        s.tokens[lastTokenId] := token;
-        s.lastTokenId := lastTokenId + 1n;
-      }
-    | _                 -> skip
-    end
+    s.storage.assets[params.asset] := lastTokenId;
+    s.token_metadata[lastTokenId] := record [
+      token_id = lastTokenId;
+      token_info = params.token_metadata;
+    ];
+    s.storage.tokens[lastTokenId] := token;
+    s.storage.lastTokenId := lastTokenId + 1n;
   } with (noOperations, s)
 
 function updateMetadata(
-  const p               : useAction;
-  var s                 : yStorage)
-                        : return is
+  const params          : updateMetadataParams;
+  var s                 : fullStorage)
+                        : fullReturn is
   block {
-    case p of
-      UpdateMetadata(params) -> {
-        const tokenId : nat = params.tokenId;
+    const tokenId : nat = params.tokenId;
 
-        mustBeAdmin(s);
-        s.tokenMetadata[tokenId] := record [
-          token_id = tokenId;
-          tokens = params.tokenMetadata;
-        ];
-      }
-    | _                 -> skip
-    end
+    mustBeAdmin(s.storage);
+    s.token_metadata[tokenId] := record [
+      token_id = tokenId;
+      token_info = params.token_metadata;
+    ];
   } with (noOperations, s)
 
 function setTokenFactors(

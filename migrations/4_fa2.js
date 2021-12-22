@@ -23,6 +23,7 @@ const tokenMetadata = MichelsonMap.fromLiteral({
   is_transferable: Buffer.from("true").toString("hex"),
   is_boolean_amount: Buffer.from("false").toString("hex"),
   should_prefer_symbol: Buffer.from("false").toString("hex"),
+  thumbnailUri: Buffer.from("ipfs://QmQxmFng1X5KhLHEgNKZh5f2Da146jBC5tjw3sYnyfd2yS").toString("hex"),
 });
 
 module.exports = async (tezos) => {

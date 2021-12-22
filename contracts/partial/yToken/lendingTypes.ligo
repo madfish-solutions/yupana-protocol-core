@@ -37,8 +37,6 @@ type yStorage           is [@layout:comb] record [
   ledger                : big_map((address * tokenId), nat);
   accounts              : big_map((address * tokenId), account);
   tokens                : map(tokenId, tokenType);
-  metadata              : big_map(string, bytes);
-  tokenMetadata         : big_map(tokenId, tokenMetadataInfo);
   lastTokenId           : nat;
   priceFeedProxy        : address;
   closeFactorF          : nat;
@@ -101,7 +99,7 @@ type newMetadataParams is map(string, bytes)
 
 type updateMetadataParams is [@layout:comb] record [
   tokenId               : nat;
-  tokenMetadata         : newMetadataParams;
+  token_metadata        : newMetadataParams;
 ]
 
 type setModelParams     is [@layout:comb] record [
@@ -115,7 +113,7 @@ type newMarketParams    is [@layout:comb] record [
   collateralFactorF     : nat;
   reserveFactorF        : nat;
   maxBorrowRate         : nat;
-  tokenMetadata         : newMetadataParams;
+  token_metadata        : newMetadataParams;
   threshold             : nat;
 ]
 

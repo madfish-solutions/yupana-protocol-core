@@ -71,11 +71,9 @@ function callToken(
         | ExitMarket(_tokenId) -> 6n
         | SetAdmin(_addr) -> 7n
         | WithdrawReserve(_yAssetParams) -> 8n
-        | AddMarket(_newMarketParams) -> 9n
-        | UpdateMetadata(_updateMetadataParams) -> 10n
-        | SetTokenFactors(_setTokenParams) -> 11n
-        | SetGlobalFactors(_setGlobalParams) -> 12n
-        | SetBorrowPause(_tokenId) -> 13n
+        | SetTokenFactors(_setTokenParams) -> 9n
+        | SetGlobalFactors(_setGlobalParams) -> 10n
+        | SetBorrowPause(_tokenId) -> 11n
       end;
 
     const lambda_bytes : bytes =
@@ -105,6 +103,8 @@ function main(
     | UpdateInterest(params)        -> updateInterest(params, s)
     | AccrueInterest(params)        -> accrueInterest(params, s)
     | PriceCallback(params)         -> priceCallback(params, s)
+    | AddMarket(params)             -> addMarket(params, s)
+    | UpdateMetadata(params)        -> updateMetadata(params, s)
     | Use(params)                   -> callUse(params, s)
     | SetUseAction(params)          -> setUseAction(params.index, params.func, s)
     | SetTokenAction(params)        -> setTokenAction(params.index, params.func, s)

@@ -56,22 +56,14 @@ let yTokenFunctions = [
   },
   {
     index: 9,
-    name: "addMarket",
-  },
-  {
-    index: 10,
-    name: "updateMetadata",
-  },
-  {
-    index: 11,
     name: "setTokenFactors",
   },
   {
-    index: 12,
+    index: 10,
     name: "setGlobalFactors",
   },
   {
-    index: 13,
+    index: 11,
     name: "setBorrowPause",
   },
 ];

@@ -13,8 +13,6 @@ type useAction          is
   | ExitMarket of tokenId
   | SetAdmin of address
   | WithdrawReserve of yAssetParams
-  | AddMarket of newMarketParams
-  | UpdateMetadata of updateMetadataParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
   | SetBorrowPause of borrowPauseParams
@@ -50,12 +48,16 @@ type entryAction        is
   | UpdateInterest of tokenId
   | AccrueInterest of yAssetParams
   | PriceCallback of yAssetParams
+  | AddMarket of newMarketParams
+  | UpdateMetadata of updateMetadataParams
   | Use of useAction
   | SetUseAction of setUseParams
   | SetTokenAction of setUseTokenParams
 
 type fullStorage   is record [
   storage               : yStorage;
+  metadata              : big_map(string, bytes);
+  token_metadata        : big_map(tokenId, token_metadata_info);
   tokenLambdas          : big_map(nat, bytes);
   useLambdas            : big_map(nat, bytes);
 ]
