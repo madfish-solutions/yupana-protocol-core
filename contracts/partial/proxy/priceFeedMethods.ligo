@@ -40,11 +40,11 @@ function mustBeAdmin(
 
 [@inline] function getDecimal(
   const pairName        : string;
-  const tokensDecimal   : big_map(string, nat))
+  const tokensDecimals  : big_map(string, nat))
                         : nat is
-  case tokensDecimal[pairName] of
+  case tokensDecimals[pairName] of
     | Some(v) -> v
-    | None -> (failwith("checkPairName/decimal-not-defined") : nat)
+    | None -> (failwith("checkPairName/decimals-not-defined") : nat)
   end;
 
 [@inline] function checkPairName(
@@ -100,8 +100,8 @@ function receivePrice(
   block {
     mustBeOracle(s.oracle);
     const pairName : string = param.0;
-    const decimal : nat = getDecimal(pairName, s.tokensDecimal);
-    const price : nat = param.1.1 * precision / decimal;
+    const decimals : nat = getDecimal(pairName, s.tokensDecimals);
+    const price : nat = param.1.1 * precision / decimals;
 
     const tokenId : nat = checkPairId(pairName, s.pairId);
     var operations : list(operation) := list[
@@ -151,5 +151,5 @@ function updatePair(
     mustBeAdmin(s.admin);
     s.pairName[param.tokenId] := param.pairName;
     s.pairId[param.pairName] := param.tokenId;
-    s.tokensDecimal[param.pairName] := param.decimal;
+    s.tokensDecimals[param.pairName] := param.decimals;
   } with (noOperations, s)

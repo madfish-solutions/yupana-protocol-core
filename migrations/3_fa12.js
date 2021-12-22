@@ -5,9 +5,9 @@ const metadata = MichelsonMap.fromLiteral({
   "": Buffer.from("tezos-storage:txtz", "ascii").toString("hex"),
   txtz: Buffer.from(
     JSON.stringify({
-      name: "TXZT",
+      name: "TXTZ",
       version: "v1.0.0",
-      description: "TXZT test token.",
+      description: "TXTZ test token.",
     }),
     "ascii"
   ).toString("hex"),
@@ -17,8 +17,8 @@ const tokenMetadata = MichelsonMap.fromLiteral({
   0: {
     token_id: "0",
     token_info: MichelsonMap.fromLiteral({
-      symbol: Buffer.from("TXZT").toString("hex"),
-      name: Buffer.from("TXZTtoken").toString("hex"),
+      symbol: Buffer.from("TXTZ").toString("hex"),
+      name: Buffer.from("TXTZtoken").toString("hex"),
       decimals: Buffer.from("6").toString("hex"),
       is_transferable: Buffer.from("true").toString("hex"),
       is_boolean_amount: Buffer.from("false").toString("hex"),

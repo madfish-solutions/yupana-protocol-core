@@ -5,7 +5,7 @@ module.exports = {
   admin: alice.pkh,
   oracle: alice.pkh,
   yToken: alice.pkh,
-  pairName : MichelsonMap.fromLiteral({}),
+  pairName: MichelsonMap.fromLiteral({}),
   pairId: MichelsonMap.fromLiteral({}),
-  tokensDecimal: MichelsonMap.fromLiteral({}),
+  tokensDecimals: MichelsonMap.fromLiteral({}),
 };
