@@ -6,8 +6,6 @@ const yStorage = {
   ledger: MichelsonMap.fromLiteral({}),
   accounts: MichelsonMap.fromLiteral({}),
   tokens: MichelsonMap.fromLiteral({}),
-  metadata: MichelsonMap.fromLiteral({}),
-  tokenMetadata: MichelsonMap.fromLiteral({}),
   lastTokenId: "0",
   priceFeedProxy: alice.pkh,
   closeFactorF: "0",
@@ -20,6 +18,8 @@ const yStorage = {
 
 module.exports = {
   storage: yStorage,
+  metadata: MichelsonMap.fromLiteral({}),
+  token_metadata: MichelsonMap.fromLiteral({}),
   tokenLambdas: MichelsonMap.fromLiteral({}),
   useLambdas: MichelsonMap.fromLiteral({}),
 };

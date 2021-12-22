@@ -23,6 +23,7 @@ const tokenMetadata = MichelsonMap.fromLiteral({
       is_transferable: Buffer.from("true").toString("hex"),
       is_boolean_amount: Buffer.from("false").toString("hex"),
       should_prefer_symbol: Buffer.from("false").toString("hex"),
+      thumbnailUri: Buffer.from("ipfs://QmRjdJtosqYqHaC8PXUYLZEe2PRi42cTwoVbn1gGj2NoM9").toString("hex"),
     }),
   },
 });

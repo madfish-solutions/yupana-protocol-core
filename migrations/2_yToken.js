@@ -33,8 +33,6 @@ const yStorage = {
   ledger: MichelsonMap.fromLiteral({}),
   accounts: MichelsonMap.fromLiteral({}),
   tokens: MichelsonMap.fromLiteral({}),
-  metadata: metadata,
-  tokenMetadata: MichelsonMap.fromLiteral({}),
   lastTokenId: "0",
   priceFeedProxy: alice.pkh,
   closeFactorF: "0",
@@ -49,6 +47,8 @@ let contractAddress = 0;
 module.exports = async (tezos) => {
   contractAddress = await migrate(tezos, "yToken", {
     storage: yStorage,
+    metadata: metadata,
+    token_metadata: MichelsonMap.fromLiteral({}),
     tokenLambdas: MichelsonMap.fromLiteral({}),
     useLambdas: MichelsonMap.fromLiteral({}),
   });
@@ -130,15 +130,21 @@ module.exports = async (tezos) => {
   const fa2ContractAddress = "KT1W6bLbCgkQSLA1G9YcbJwYGphcYTHPCgsi";
   const tokenMetadata = MichelsonMap.fromLiteral({
     symbol: Buffer.from("TXTZ").toString("hex"),
-    name: Buffer.from("TestXTZ").toString("hex"),
+    name: Buffer.from("TXTZtoken").toString("hex"),
     decimals: Buffer.from("6").toString("hex"),
-    icon: Buffer.from("").toString("hex"),
+    is_transferable: Buffer.from("true").toString("hex"),
+    is_boolean_amount: Buffer.from("false").toString("hex"),
+    should_prefer_symbol: Buffer.from("false").toString("hex"),
+    thumbnailUri: Buffer.from("ipfs://QmRjdJtosqYqHaC8PXUYLZEe2PRi42cTwoVbn1gGj2NoM9").toString("hex"),
   });
   const tokenMetadata2 = MichelsonMap.fromLiteral({
     symbol: Buffer.from("TBTC").toString("hex"),
-    name: Buffer.from("TestBTC").toString("hex"),
+    name: Buffer.from("TBTCtoken").toString("hex"),
     decimals: Buffer.from("8").toString("hex"),
-    icon: Buffer.from("").toString("hex"),
+    is_transferable: Buffer.from("true").toString("hex"),
+    is_boolean_amount: Buffer.from("false").toString("hex"),
+    should_prefer_symbol: Buffer.from("false").toString("hex"),
+    thumbnailUri: Buffer.from("ipfs://QmQxmFng1X5KhLHEgNKZh5f2Da146jBC5tjw3sYnyfd2yS").toString("hex"),
   });
 
   let contract = await tezos.contract.at(contractAddress);

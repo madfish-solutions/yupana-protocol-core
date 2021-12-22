@@ -23,7 +23,7 @@
     "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c fa12 && node -r ts-node/register scripts/cli.js compile -c fa2",
     "migrate": "yarn compile && node -r ts-node/register scripts/cli.js migrate",
     "migrate-gra": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network granadanet",
-    "migrate-hang": "node -r ts-node/register scripts/cli.js migrate --network hangzhounet",
+    "migrate-hang": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network hangzhounet",
     "migrate-s": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network development_server",
     "test": "yarn compile && mocha --bail",
     "start-sandbox": "docker run --rm --name my-sandbox -e flextesa_node_cors_origin='*' -e block_time=1 --detach -p 8732:20000 tqtezos/flextesa:20210602 granabox start"

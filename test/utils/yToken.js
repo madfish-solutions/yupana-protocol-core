@@ -112,7 +112,10 @@ class YToken {
     let storage = await this.contract.storage();
     this.storage = {
       storage: storage.storage,
-      YTokenLambdas: storage.YTokenLambdas,
+      metadata: storage.metadata,
+      token_metadata: storage.token_metadata,
+      tokenLambdas: storage.tokenLambdas,
+      useLambdas: storage.useLambdas,
     };
 
     for (const key in maps) {
