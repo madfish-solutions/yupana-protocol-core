@@ -18,11 +18,9 @@ for i in 0,mint \
         6,exitMarket \
         7,setAdmin \
         8,withdrawReserve \
-        9,addMarket \
-        10,updateMetadata \
-        11,setTokenFactors \
-        12,setGlobalFactors \
-        13,setBorrowPause \
+        9,setTokenFactors \
+        10,setGlobalFactors \
+        11,setBorrowPause \
          ; do 
 
     IDX=${i%,*};

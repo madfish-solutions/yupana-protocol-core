@@ -54,7 +54,7 @@ class DexTest(TestCase):
                 collateralFactorF = int(config["collateral_factor"] * PRECISION),
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
-                tokenMetadata = {"": ""},
+                token_metadata = {"": ""},
                 threshold = int(config["threshold"] * PRECISION)
             ), sender=admin)
 
