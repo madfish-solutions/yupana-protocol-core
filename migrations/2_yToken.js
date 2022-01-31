@@ -45,6 +45,7 @@ const yStorage = {
 let contractAddress = 0;
 
 module.exports = async (tezos) => {
+  return;
   contractAddress = await migrate(tezos, "yToken", {
     storage: yStorage,
     metadata: metadata,

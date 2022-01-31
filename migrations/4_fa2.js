@@ -27,6 +27,7 @@ const tokenMetadata = MichelsonMap.fromLiteral({
 });
 
 module.exports = async (tezos) => {
+  return;
   const contractAddress = await migrate(tezos, "fa2", {
     totalSupplyF: "0",
     ledger: MichelsonMap.fromLiteral({}),

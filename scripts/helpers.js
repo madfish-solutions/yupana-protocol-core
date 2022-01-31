@@ -41,6 +41,13 @@ const getContractsList = () => {
     .map((file) => file.slice(0, file.length - 5));
 };
 
+const getTestContractsList = () => {
+  return fs
+    .readdirSync("contracts/test")
+    .filter((file) => file.endsWith(".ligo"))
+    .map((file) => file.slice(0, file.length - 5));
+};
+
 const getMigrationsList = () => {
   return fs
     .readdirSync(env.migrationsDir)
@@ -50,11 +57,39 @@ const getMigrationsList = () => {
 
 const compile = async (contract) => {
   const ligo = getLigo(true);
-  const contracts = !contract ? getContractsList() : [contract];
+  const contracts = getContractsList();
+  const testContracts = getTestContractsList();
 
   contracts.forEach((contract) => {
     const michelson = execSync(
       `${ligo} compile-contract --michelson-format=json $PWD/${env.contractsDir}/${contract}.ligo main`,
+      { maxBuffer: 1024 * 10000 }
+    ).toString();
+
+    try {
+      const artifacts = JSON.stringify(
+        {
+          michelson: JSON.parse(michelson),
+          networks: {},
+          compiler: "ligo:" + env.ligoVersion,
+        },
+        null,
+        2
+      );
+
+      if (!fs.existsSync(env.buildDir)) {
+        fs.mkdirSync(env.buildDir);
+      }
+
+      fs.writeFileSync(`${env.buildDir}/${contract}.json`, artifacts);
+    } catch (e) {
+      console.error(michelson);
+    }
+  });
+
+  testContracts.forEach((contract) => {
+    const michelson = execSync(
+      `${ligo} compile-contract --michelson-format=json $PWD/contracts/test/${contract}.ligo main`,
       { maxBuffer: 1024 * 10000 }
     ).toString();
 

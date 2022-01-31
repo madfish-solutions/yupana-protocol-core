@@ -2,6 +2,7 @@ const { dev } = require("../scripts/sandbox/accounts");
 const { migrate } = require("../scripts/helpers");
 
 module.exports = async (tezos) => {
+  return;
   const contractAddress = await migrate(tezos, "interestRate", {
     admin: dev.pkh,
     kinkF: "800000000000000000",

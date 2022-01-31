@@ -14,7 +14,7 @@ class GetOracle {
   }
 
   static async originate(tezos) {
-    const Normalizer = fs.readFileSync("./contracts/compiled/Norma.tz").toString();
+    const Normalizer = fs.readFileSync("./contracts/test/Normalizer.tz").toString();
 
     const operation = await tezos.contract
       .originate({

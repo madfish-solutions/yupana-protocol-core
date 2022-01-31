@@ -6,6 +6,7 @@ const { InMemorySigner } = require("@taquito/signer");
 const oracle = "KT1KBrn1udLLrGNbQ3n1mWgMVXkr26krj6Nj";
 
 module.exports = async (tezos) => {
+  return;
   const contractAddress = await migrate(tezos, "priceFeed", {
     admin: dev.pkh,
     oracle: oracle,

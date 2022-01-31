@@ -1,12 +1,6 @@
-const { dev, alice } = require("../scripts/sandbox/accounts");
-const { migrate, getDeployedAddress } = require("../scripts/helpers");
-const { MichelsonMap } = require("@taquito/michelson-encoder");
+const { dev } = require("../scripts/sandbox/accounts");
 const { confirmOperation } = require("../scripts/confirmation");
-const { functions } = require("../storage/functions");
-const { getLigo } = require("../scripts/helpers");
-const { execSync } = require("child_process");
 const { InMemorySigner } = require("@taquito/signer");
-const { Utils } = require("../test/utils/utils");
 const { TezosToolkit } = require("@taquito/taquito");
 
 module.exports = async (tezos) => {
@@ -20,8 +14,12 @@ module.exports = async (tezos) => {
     signer: await InMemorySigner.fromSecretKey(dev.sk),
   });
 
-  let priceFeedContract = await tezos.contract.at("KT1WvRRn1SZc26aLZHZvYmj6ogELyVbCYDqG");
-  let yTokenContract = await tezos.contract.at("KT1LTqpmGJ11EebMVWAzJ7DWd9msgExvHM94");
+  let priceFeedContract = await tezos.contract.at(
+    "KT1WvRRn1SZc26aLZHZvYmj6ogELyVbCYDqG"
+  );
+  let yTokenContract = await tezos.contract.at(
+    "KT1LTqpmGJ11EebMVWAzJ7DWd9msgExvHM94"
+  );
 
   const batchArray = [
     {
@@ -45,9 +43,22 @@ module.exports = async (tezos) => {
       ...yTokenContract.methods
         .setTokenFactors(
           1,
-          750000000000000000,
+          700000000000000000,
           150000000000000000,
           "KT1Wk3PGiFtj2nLf6BWLBUUYFR8Z6WUWAbTp",
+          5000000000000,
+          700000000000000000
+        )
+        .toTransferParams(),
+    },
+    {
+      kind: "transaction",
+      ...yTokenContract.methods
+        .setTokenFactors(
+          0,
+          800000000000000000,
+          150000000000000000,
+          "KT1UoF8AA6M2ReAzZqt9WPeTvXm1WWEDnG7s",
           5000000000000,
           800000000000000000
         )
@@ -59,4 +70,4 @@ module.exports = async (tezos) => {
   const operation = await batch.send();
   await confirmOperation(tezos, operation.opHash);
   console.log("Done");
-}
+};
