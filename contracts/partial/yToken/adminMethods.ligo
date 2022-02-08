@@ -56,9 +56,9 @@ function withdrawReserve(
 
 [@inline] function checkTypeInfo(
   const typeInfo        : big_map(assetType, tokenId);
-  const assertType      : assetType)
+  const assetType      : assetType)
                         : unit is
-  case typeInfo[assertType] of
+  case typeInfo[assetType] of
     None -> unit
   | Some(_v) -> failwith("yToken/token-has-already-been-added")
   end
@@ -74,7 +74,6 @@ function addMarket(
 
     checkTypeInfo(s.storage.assets, params.asset);
 
-    (* TODO: fail if token exist - not fixed yet *)
     token.interestRateModel := params.interestRateModel;
     token.mainToken := params.asset;
     token.collateralFactorF := params.collateralFactorF;
