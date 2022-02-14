@@ -511,7 +511,10 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 16), sender=admin)
 
-        chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
+        res = chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 15)
+        
 
     def test_whale_redeems_its_collateral(self):
         chain = self.create_chain_with_ab_markets()
@@ -763,6 +766,80 @@ class DexTest(TestCase):
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0]["amount"], 13_000)      
         
+    def test_withraw_admin_rewards(self):
+        chain = LocalChain(storage=self.storage)
+
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+
+        chain.execute(self.ct.mint(0, 40_000))
+        chain.execute(self.ct.enterMarket(0))
+        
+        chain.execute(self.ct.borrow(1, 10_000))
+
+        chain.advance_blocks(1)
+
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        chain.execute(self.ct.repay(1, 13_000))
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
+        
+        res = chain.execute(self.ct.withdrawReserve(1, 1_500), sender=admin)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 1_500)
+
+        # nothing left to withdraw
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
+
+        # bob borrows [0] in the meantime
+        chain.execute(self.ct.mint(1, 40_000), sender=bob)
+        chain.execute(self.ct.enterMarket(1), sender=bob)
+        chain.execute(self.ct.borrow(0, 10_000), sender=bob)
+
+        chain.advance_blocks(1)
+
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        chain.execute(self.ct.repay(0, 13_000), sender=bob)
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
+        # receive rewards after bob borrow
+        res = chain.execute(self.ct.withdrawReserve(0, 1_500), sender=admin)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 1_500)
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.withdrawReserve(0, 1), sender=admin)
+
+        # `me` repeats everything as the first time
+        chain.execute(self.ct.borrow(1, 10_000))
+
+        chain.advance_blocks(1)
+
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        # not meaningful, just to add some mess
+        chain.execute(self.ct.redeem(0, 10_000))
+        res = chain.execute(self.ct.repay(1, 0))
+        txs = parse_transfers(res)
+        self.assertEqual(len(txs), 1)
+        self.assertEqual(txs[0]["amount"], 13_000)
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
+        # receive rewards after alice borrow
+        res = chain.execute(self.ct.withdrawReserve(1, 1_500), sender=admin)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 1_500)
+        # nothing left to repay and withdraw
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
 
     def test_real_world_liquidation(self):
         price_a = 5244313
