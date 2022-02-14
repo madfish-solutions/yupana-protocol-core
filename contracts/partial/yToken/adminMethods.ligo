@@ -31,10 +31,6 @@ function withdrawReserve(
         var token : tokenType := getToken(params.tokenId, s.tokens);
         const amountF = params.amount * precision;
 
-        if amountF > token.totalReservesF
-        then failwith("yToken/withdraw-is-too-big");
-        else skip;
-
         token.totalReservesF :=
           case is_nat(token.totalReservesF - amountF) of
             | None -> (failwith("underflow/totalReservesF") : nat)
@@ -46,7 +42,7 @@ function withdrawReserve(
         operations := transfer_token(
           Tezos.self_address,
           Tezos.sender,
-          params.amount / precision,
+          params.amount,
           token.mainToken
         );
       }
