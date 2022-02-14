@@ -783,13 +783,16 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
 
         chain.execute(self.ct.repay(1, 13_000))
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
+        
         res = chain.execute(self.ct.withdrawReserve(1, 1_500), sender=admin)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 1_500)
 
-        # nothing left to repay and withdraw
+        # nothing left to withdraw
         with self.assertRaises(MichelsonRuntimeError):
-            chain.execute(self.ct.repay(1, 1))
             chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
 
         # bob borrows [0] in the meantime
@@ -803,6 +806,9 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
 
         chain.execute(self.ct.repay(0, 13_000), sender=bob)
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
         # receive rewards after bob borrow
         res = chain.execute(self.ct.withdrawReserve(0, 1_500), sender=admin)
         transfers = parse_transfers(res)
@@ -824,13 +830,15 @@ class DexTest(TestCase):
         txs = parse_transfers(res)
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0]["amount"], 13_000)
+        # nothing left to repay
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(1, 1))
         # receive rewards after alice borrow
         res = chain.execute(self.ct.withdrawReserve(1, 1_500), sender=admin)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 1_500)
         # nothing left to repay and withdraw
         with self.assertRaises(MichelsonRuntimeError):
-            chain.execute(self.ct.repay(1, 1))
             chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
 
     def test_real_world_liquidation(self):
