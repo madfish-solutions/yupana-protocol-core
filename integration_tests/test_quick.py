@@ -511,7 +511,10 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 16), sender=admin)
 
-        chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
+        res = chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 15)
+        
 
     def test_whale_redeems_its_collateral(self):
         chain = self.create_chain_with_ab_markets()
