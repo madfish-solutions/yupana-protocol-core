@@ -1,12 +1,12 @@
-const { alice, bob, carol } = require("../scripts/sandbox/accounts");
+const { alice, bob, carol } = require("../../scripts/sandbox/accounts");
 
 const { strictEqual } = require("assert");
 
-const { InterestRate } = require("../test/utils/interestRate");
-const { SendRate } = require("../test/utils/sendRate");
-const { Utils } = require("../test/utils/utils");
+const { InterestRate } = require("./interestRate");
+const { SendRate } = require("./sendRate");
+const { Utils } = require("./utils");
 
-const { confirmOperation } = require("../scripts/confirmation");
+const { confirmOperation } = require("../../scripts/confirmation");
 
 describe("Interest tests", async () => {
   let tezos;
