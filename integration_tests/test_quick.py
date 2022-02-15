@@ -12,9 +12,11 @@ from initial_storage import use_lambdas
 token_a_address = "KT18amZmM5W7qDWVt2pH6uj7sCEd3kbzLrHT"
 token_b_address = "KT1AxaBxkFLCUi3f8rdDAAxBKHfzY8LfKDRA"
 token_c_address = "KT1XXAavg3tTj12W1ADvd3EEnm1pu6XTmiEF"
-token_a = {"fA12": token_a_address}
+token_d_address = "KT1W41EKsq8ryThtC6rZN1H2YfZMqSkpbVjG"
+token_a = {"fA12" : token_a_address}
 token_b = {"fA12" : token_b_address}
 token_c = {"fA12" : token_c_address}
+token_d = {"fA2" : (token_d_address, 0)}
 
 interest_model = "KT1LzyPS8rN375tC31WPAVHaQ4HyBvTSLwBu"
 price_feed = "KT1Qf46j2x37sAN4t2MKRQRVt9gc4FZ5duMs"
@@ -69,10 +71,18 @@ class DexTest(TestCase):
 
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
         chain = LocalChain(storage=self.storage)
-        
+
         self.add_token(chain, token_a, config_a)
         self.add_token(chain, token_b, config_b)
 
+        return chain
+    
+    def create_chain_with_all_markets_and_limit(self, limit = 3, tokens = [ token_a, token_b, token_c, token_d ]):
+        init_store = self.storage
+        init_store["storage"]["maxMarkets"] = limit
+        chain = LocalChain(storage=init_store)
+        for token in tokens:
+            self.add_token(chain, token, None)
         return chain
 
     def update_price_and_interest(self, chain, token_id, price, interest_rate):
@@ -143,6 +153,27 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 100)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        
+    def test_enter_max_markets(self):
+        limit = 3
+        chain = self.create_chain_with_all_markets_and_limit(limit)
+        for i in range(limit):
+            chain.execute(self.ct.mint(i, 100))
+            chain.execute(self.ct.enterMarket(i))
+        overflowed_market_id = limit
+
+        # could mint but not enter
+        chain.execute(self.ct.mint(overflowed_market_id, 100))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.enterMarket(overflowed_market_id))
+
+        for i in range(limit):
+            chain.execute(self.ct.exitMarket(i))
+            res = chain.execute(self.ct.redeem(i, 100))
+            transfers = parse_transfers(res)
+            self.assertEqual(transfers[0]["destination"], me)
+            self.assertEqual(transfers[0]["source"], contract_self_address)
+            self.assertEqual(transfers[0]["amount"], 100)
 
     def test_cant_redeem_too_much_when_on_market(self):
         chain = self.create_chain_with_ab_markets()
