@@ -48,7 +48,8 @@ class DexTest(TestCase):
                 "reserve_factor": 0.5,
                 "price": 100,
                 "liquidity": 100_000,
-                "threshold": 0.8
+                "threshold": 0.8,
+                "reserve_liquidation_rate": 0.5,
             }
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
@@ -57,7 +58,8 @@ class DexTest(TestCase):
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
                 token_metadata = {"": ""},
-                threshold = int(config["threshold"] * PRECISION)
+                threshold = int(config["threshold"] * PRECISION),
+                liquidReserveRateF = int(config["reserve_liquidation_rate"] * PRECISION)
             ), sender=admin)
 
         token_num = res.storage["storage"]["lastTokenId"] - 1
@@ -523,7 +525,8 @@ class DexTest(TestCase):
             "reserve_factor": 0.5,
             "price": 100,
             "liquidity": 0,
-            "threshold": 0.8
+            "threshold": 0.8,
+            "reserve_liquidation_rate": 0.5,
         }
 
         chain = LocalChain(storage=self.storage)
@@ -694,6 +697,7 @@ class DexTest(TestCase):
             "price": 100,
             "liquidity": 0,
             "threshold": 0.8,
+            "reserve_liquidation_rate": 0.5,
         }
 
         chain = LocalChain(storage=self.storage)
@@ -902,6 +906,7 @@ class DexTest(TestCase):
             "price": price_a,
             "liquidity": 100_000,
             "threshold": 0.55,
+            "reserve_liquidation_rate": 0.5,
         }
 
         config_b = {
@@ -910,6 +915,7 @@ class DexTest(TestCase):
             "price": price_b,
             "liquidity": 100_000,
             "threshold": 0.55,
+            "reserve_liquidation_rate": 0.5,
         }
 
         chain = LocalChain(storage=self.storage)

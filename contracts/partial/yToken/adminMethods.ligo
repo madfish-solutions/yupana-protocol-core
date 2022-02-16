@@ -77,6 +77,7 @@ function addMarket(
     token.reserveFactorF := params.reserveFactorF;
     token.maxBorrowRate := params.maxBorrowRate;
     token.threshold := params.threshold;
+    token.liquidReserveRateF := params.liquidReserveRateF;
 
     s.storage.assets[params.asset] := lastTokenId;
     s.token_metadata[lastTokenId] := record [
@@ -120,6 +121,7 @@ function setTokenFactors(
         token.interestRateModel := params.interestRateModel;
         token.maxBorrowRate := params.maxBorrowRate;
         token.threshold := params.threshold;
+        token.liquidReserveRateF := params.liquidReserveRateF;
         s.tokens[params.tokenId] := token;
       }
     | _                 -> skip

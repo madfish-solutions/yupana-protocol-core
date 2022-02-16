@@ -168,7 +168,8 @@ module.exports = async (tezos) => {
       150000000000000000,
       5000000000000,
       tokenMetadata,
-      550000000000000000
+      550000000000000000,
+      500000000000000000
     )
     .send();
   await confirmOperation(tezos, op.hash);
@@ -183,7 +184,8 @@ module.exports = async (tezos) => {
       150000000000000000,
       5000000000000,
       tokenMetadata2,
-      550000000000000000
+      550000000000000000,
+      500000000000000000
     )
     .send();
   await confirmOperation(tezos, op.hash);
