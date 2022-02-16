@@ -315,6 +315,26 @@ class DexTest(TestCase):
         # can't borrow anymore due to collateral factor
         with self.assertRaises(MichelsonRuntimeError):
             res = chain.execute(self.ct.borrow(1, 1), sender=alice)
+            
+    def test_borrow_max_markets(self):
+        limit = 2
+        chain = self.create_chain_with_all_markets_and_limit(limit)
+        chain.execute(self.ct.mint(0, 10000))
+        chain.execute(self.ct.enterMarket(0))
+        for i in range(1, limit + 1):
+            chain.execute(self.ct.borrow(i, 100))
+        overflowed_market_id = limit + 1
+        # could mint but not borrow
+        res = chain.execute(self.ct.mint(overflowed_market_id, 100))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.borrow(overflowed_market_id, 100))
+
+        for i in range(1, limit + 1):
+            res = chain.execute(self.ct.repay(i, 0))
+            transfers = parse_transfers(res)
+            self.assertEqual(transfers[0]["destination"], contract_self_address)
+            self.assertEqual(transfers[0]["source"], me)
+            self.assertEqual(transfers[0]["amount"], 100)
 
     def test_liquidate_collateral_price_down(self):
         chain = LocalChain(storage=self.storage)
