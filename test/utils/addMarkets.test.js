@@ -7,17 +7,17 @@ const {
   peter,
   dev,
   dev2,
-} = require("../scripts/sandbox/accounts");
+} = require("../../scripts/sandbox/accounts");
 
 const { strictEqual, rejects, ok } = require("assert");
 
-const { Proxy } = require("../test/utils/proxy");
-const { InterestRate } = require("../test/utils/interestRate");
-const { GetOracle } = require("../test/utils/getOracle");
-const { YToken } = require("../test/utils/yToken");
-const { FA12 } = require("../test/utils/fa12");
-const { FA2 } = require("../test/utils/fa2");
-const { Utils } = require("../test/utils/utils");
+const { Proxy } = require("./proxy");
+const { InterestRate } = require("./interestRate");
+const { GetOracle } = require("./getOracle");
+const { YToken } = require("./yToken");
+const { FA12 } = require("./fa12");
+const { FA2 } = require("./fa2");
+const { Utils } = require("./utils");
 
 const tokenMetadata0 = MichelsonMap.fromLiteral({
   symbol: Buffer.from("TST0").toString("hex"),

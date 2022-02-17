@@ -1,15 +1,15 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 
-const { alice, bob, carol } = require("../scripts/sandbox/accounts");
+const { alice, bob, carol } = require("../../scripts/sandbox/accounts");
 
 const { strictEqual } = require("assert");
 
-const { Proxy } = require("../test/utils/proxy");
-const { GetOracle } = require("../test/utils/getOracle");
-const { YToken } = require("../test/utils/yToken");
-const { Utils } = require("../test/utils/utils");
+const { Proxy } = require("./proxy");
+const { GetOracle } = require("./getOracle");
+const { YToken } = require("./yToken");
+const { Utils } = require("./utils");
 
-const { confirmOperation } = require("../scripts/confirmation");
+const { confirmOperation } = require("../../scripts/confirmation");
 
 const tokenMetadata = MichelsonMap.fromLiteral({
   symbol: Buffer.from("TST").toString("hex"),

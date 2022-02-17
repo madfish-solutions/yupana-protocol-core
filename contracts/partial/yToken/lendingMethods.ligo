@@ -296,6 +296,9 @@ function borrow(
           var token : tokenType := getToken(yAssetParams.tokenId, s.tokens);
           var borrowTokens : set(tokenId) := getTokenIds(Tezos.sender, s.borrows);
           (* should add a new token to the set to update the lastBorrowIndex *)
+          if Set.size(borrowTokens) >= s.maxMarkets
+          then failwith("yToken/max-market-limit");
+          else skip;
           borrowTokens := Set.add(yAssetParams.tokenId, borrowTokens);
           s.accounts := applyInterestToBorrows(borrowTokens, Tezos.sender, s.accounts, s.tokens);
           var userAccount : account := getAccount(Tezos.sender, yAssetParams.tokenId, s.accounts);
