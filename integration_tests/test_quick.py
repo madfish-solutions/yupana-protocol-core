@@ -321,15 +321,15 @@ class DexTest(TestCase):
         chain = self.create_chain_with_all_markets_and_limit(limit)
         chain.execute(self.ct.mint(0, 10000))
         chain.execute(self.ct.enterMarket(0))
-        for i in range(1, limit + 1):
+        for i in range(limit):
             chain.execute(self.ct.borrow(i, 100))
-        overflowed_market_id = limit + 1
+        overflowed_market_id = limit
         # could mint but not borrow
         res = chain.execute(self.ct.mint(overflowed_market_id, 100))
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.borrow(overflowed_market_id, 100))
 
-        for i in range(1, limit + 1):
+        for i in range(limit):
             res = chain.execute(self.ct.repay(i, 0))
             transfers = parse_transfers(res)
             self.assertEqual(transfers[0]["destination"], contract_self_address)
