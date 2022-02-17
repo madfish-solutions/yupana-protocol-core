@@ -49,7 +49,7 @@ class DexTest(TestCase):
                 "price": 100,
                 "liquidity": 100_000,
                 "threshold": 0.8,
-                "reserve_liquidation_rate": 0.5,
+                "reserve_liquidation_rate": 1.05,
             }
         res = chain.execute(self.ct.addMarket(
                 interestRateModel = interest_model,
@@ -526,7 +526,7 @@ class DexTest(TestCase):
             "price": 100,
             "liquidity": 0,
             "threshold": 0.8,
-            "reserve_liquidation_rate": 0.5,
+            "reserve_liquidation_rate": 1.05,
         }
 
         chain = LocalChain(storage=self.storage)
@@ -697,7 +697,7 @@ class DexTest(TestCase):
             "price": 100,
             "liquidity": 0,
             "threshold": 0.8,
-            "reserve_liquidation_rate": 0.5,
+            "reserve_liquidation_rate": 1.05,
         }
 
         chain = LocalChain(storage=self.storage)
@@ -906,7 +906,7 @@ class DexTest(TestCase):
             "price": price_a,
             "liquidity": 100_000,
             "threshold": 0.55,
-            "reserve_liquidation_rate": 0.5,
+            "reserve_liquidation_rate": 1.05,
         }
 
         config_b = {
@@ -915,7 +915,7 @@ class DexTest(TestCase):
             "price": price_b,
             "liquidity": 100_000,
             "threshold": 0.55,
-            "reserve_liquidation_rate": 0.5,
+            "reserve_liquidation_rate": 1.05,
         }
 
         chain = LocalChain(storage=self.storage)
