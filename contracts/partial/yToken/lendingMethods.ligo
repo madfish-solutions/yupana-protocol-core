@@ -206,7 +206,7 @@ function mint(
           userBalance := userBalance + mintTokensF;
           s.ledger[(Tezos.sender, yAssetParams.tokenId)] := userBalance;
           token.totalSupplyF := token.totalSupplyF + mintTokensF;
-          token.totalLiquidF := token.totalLiquidF + mintTokensF;
+          token.totalLiquidF := token.totalLiquidF + yAssetParams.amount * precision;
           s.tokens[yAssetParams.tokenId] := token;
           operations := transfer_token(Tezos.sender, Tezos.self_address, yAssetParams.amount, token.mainToken);
         }
