@@ -471,7 +471,7 @@ class DexTest(TestCase):
         self.assertEqual(txs[0]["amount"], 100_000)
 
         # another person just does usual stuff after another one is liquidated
-        chain.execute(self.ct.mint(0, 60_000), sender=carol)
+        chain.execute(self.ct.mint(0, 70_000), sender=carol)
         chain.execute(self.ct.enterMarket(0), sender=carol)
         chain.execute(self.ct.borrow(1, 10_000), sender=carol)
 
