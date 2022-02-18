@@ -501,9 +501,8 @@ function liquidate(
           liquidatorBalance := liquidatorBalance + seizeTokensF;
 
           (* collect reserves incentive from liquidation *)
-          const reserveAmount : nat = liqAmountF * collateralToken.liquidReserveRateF
-            * borrowToken.lastPrice * collateralToken.totalSupplyF;
-          const reserveTokensF : nat = reserveAmount / exchangeRateF;
+          const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF
+            * borrowToken.lastPrice / ( precision * collateralToken.lastPrice) ;
           borrowerBalance :=
             case is_nat(borrowerBalance - reserveTokensF) of
               | None -> (failwith("yToken/reserve/not-enough-tokens") : nat)

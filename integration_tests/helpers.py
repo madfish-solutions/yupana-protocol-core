@@ -332,8 +332,10 @@ def liquidate_and_check_reserves(self, chain, borrowId, collateralId, borrwer, a
     price_bor = res.storage["storage"]["tokens"][borrowId]["lastPrice"]
     price_col = res.storage["storage"]["tokens"][collateralId]["lastPrice"]
     expected_bonus = (amount * reserve_rate * price_bor / price_col)
-    actual_bonus = (res.storage["storage"]["tokens"][collateralId]["totalReservesF"] - initial_reserves) / PRECISION
-    self.assertAlmostEqual(actual_bonus, expected_bonus, delta = amount * 0.02)
+    actual_reserves = res.storage["storage"]["tokens"][collateralId]["totalReservesF"]
+    actual_bonus = (actual_reserves - initial_reserves) / PRECISION
+    self.assertAlmostEqual(actual_bonus, expected_bonus)
+    initial_reserves
     return res
 
 class LocalChain:
