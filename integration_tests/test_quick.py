@@ -950,3 +950,31 @@ class DexTest(TestCase):
             chain.execute(self.ct.exitMarket(0))
     
         chain.execute(self.ct.exitMarket(1))
+
+    def test_sequential_mints_exchange_rate(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+
+        chain.execute(self.ct.mint(0, 15_000), sender=alice)
+
+        chain.execute(self.ct.mint(1, 75_000), sender=bob)
+        chain.execute(self.ct.enterMarket(1), sender=bob)
+        chain.execute(self.ct.borrow(0, 10_000), sender=bob)
+
+        chain.advance_blocks(100)
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+        
+        # repay everything
+        res = chain.execute(self.ct.repay(0, 0), sender=bob)
+
+        res = chain.execute(self.ct.mint(0, 10_000), sender=carol)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 10_000)
+        
+        res = chain.execute(self.ct.redeem(0, 0), sender=carol)
+        transfers = parse_transfers(res)
+        self.assertAlmostEqual(transfers[0]["amount"], 10_000, delta=1)
+
+
