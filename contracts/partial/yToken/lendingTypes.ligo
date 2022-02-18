@@ -25,6 +25,7 @@ type tokenType          is [@layout:comb] record [
   borrowIndex           : nat;
   maxBorrowRate         : nat;
   collateralFactorF     : nat;
+  liquidReserveRateF    : nat;
   reserveFactorF        : nat;
   lastPrice             : nat;
   borrowPause           : bool;
@@ -81,6 +82,7 @@ type setTokenParams     is [@layout:comb] record [
   interestRateModel     : address;
   maxBorrowRate         : nat;
   threshold             : nat;
+  liquidReserveRateF    : nat;
 ]
 
 type setGlobalParams    is [@layout:comb] record [
@@ -115,6 +117,7 @@ type newMarketParams    is [@layout:comb] record [
   maxBorrowRate         : nat;
   token_metadata        : newMetadataParams;
   threshold             : nat;
+  liquidReserveRateF    : nat;
 ]
 
 type oracleParam        is (string * (timestamp * nat))

@@ -41,6 +41,7 @@ function getToken(
       maxBorrowRate           = 0n;
       collateralFactorF       = 0n;
       reserveFactorF          = 0n;
+      liquidReserveRateF      = 0n;
       lastPrice               = 0n;
       borrowPause             = False;
       isInterestUpdating      = False;

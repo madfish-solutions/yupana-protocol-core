@@ -33,7 +33,7 @@ const tokenMetadata2 = MichelsonMap.fromLiteral({
   icon: Buffer.from("").toString("hex"),
 });
 
-describe("yToken tests", async () => {
+describe("yToken tests", () => {
   let tezos;
   let yToken;
   let interest;
@@ -139,17 +139,19 @@ describe("yToken tests", async () => {
   it("add market [0] by non admin", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(
-      yToken.addMarket(
-        interestContractAddress,
-        "fA12",
-        fa12ContractAddress,
-        0,
-        500000000000000000,
-        500000000000000000,
-        5000000000000,
-        tokenMetadata,
-        550000000000000000
-      ),
+      async () =>
+        await yToken.addMarket(
+          interestContractAddress,
+          "fA12",
+          fa12ContractAddress,
+          0,
+          500000000000000000,
+          500000000000000000,
+          5000000000000,
+          tokenMetadata,
+          550000000000000000,
+          500000000000000000
+        ),
       (err) => {
         ok(err.message == "yToken/not-admin", "Error message mismatch");
         return true;
@@ -168,7 +170,8 @@ describe("yToken tests", async () => {
       200000000000000000,
       5000000000000,
       tokenMetadata,
-      550000000000000000
+      550000000000000000,
+      500000000000000000
     );
     await yToken.updateStorage();
 
@@ -184,7 +187,7 @@ describe("yToken tests", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
 
     await rejects(
-      yToken.addMarket(
+      async () => await yToken.addMarket(
         interest2ContractAddress,
         "fA12",
         fa12ContractAddress,
@@ -193,7 +196,8 @@ describe("yToken tests", async () => {
         400000000000000000,
         9000000000000,
         tokenMetadata,
-        550000000000000000
+        550000000000000000,
+        500000000000000000
       ),
       (err) => {
         ok(
@@ -230,7 +234,8 @@ describe("yToken tests", async () => {
       150000000000000000,
       5000000000000,
       tokenMetadata,
-      550000000000000000
+      550000000000000000,
+      500000000000000000
     );
     await yToken.updateStorage();
 
@@ -253,7 +258,8 @@ describe("yToken tests", async () => {
       150000000000000000,
       5000000000000,
       tokenMetadata,
-      550000000000000000
+      550000000000000000,
+      500000000000000000
     );
     await yToken.updateStorage();
 
@@ -278,7 +284,8 @@ describe("yToken tests", async () => {
       150000000000000000,
       5000000000000,
       tokenMetadata2,
-      550000000000000000
+      550000000000000000,
+      500000000000000000
     );
     await yToken.updateStorage();
 
@@ -1070,7 +1077,7 @@ describe("yToken tests", async () => {
   it("setTokenFactors by non admin", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(
-      yToken.setTokenFactors(0, 0, 0, interestContractAddress, 0, 0),
+      yToken.setTokenFactors(0, 0, 0, interestContractAddress, 0, 0, 0),
       (err) => {
         ok(err.message == "yToken/not-admin", "Error message mismatch");
         return true;
@@ -1087,7 +1094,8 @@ describe("yToken tests", async () => {
       200000000000000000,
       interest2ContractAddress,
       5000000000000,
-      0
+      0,
+      5000000000000
     );
     await yToken.updateStorage();
   });
@@ -1101,7 +1109,8 @@ describe("yToken tests", async () => {
       150000000000000000,
       interestContractAddress,
       5000000000000,
-      0
+      0,
+      5000000000000
     );
     await yToken.updateStorage();
   });
@@ -1128,7 +1137,8 @@ describe("yToken tests", async () => {
       200000000000000000,
       interest2ContractAddress,
       5000000000000,
-      550000000000000000
+      550000000000000000,
+      5000000000000
     );
     await yToken.updateStorage();
   });
@@ -1142,7 +1152,8 @@ describe("yToken tests", async () => {
       150000000000000000,
       interestContractAddress,
       5000000000000,
-      550000000000000000
+      550000000000000000,
+      5000000000000
     );
     await yToken.updateStorage();
   });

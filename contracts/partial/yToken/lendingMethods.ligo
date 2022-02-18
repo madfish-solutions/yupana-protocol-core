@@ -493,13 +493,27 @@ function liquidate(
           );
           var borrowerBalance : nat := getBalanceByToken(params.borrower, params.collateralToken, s.ledger);
           var liquidatorBalance : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
-
           borrowerBalance :=
             case is_nat(borrowerBalance - seizeTokensF) of
               | None -> (failwith("yToken/seize/not-enough-tokens") : nat)
               | Some(value) -> value
             end;
           liquidatorBalance := liquidatorBalance + seizeTokensF;
+
+          (* collect reserves incentive from liquidation *)
+          const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF
+            * borrowToken.lastPrice / ( precision * collateralToken.lastPrice) ;
+          borrowerBalance :=
+            case is_nat(borrowerBalance - reserveTokensF) of
+              | None -> (failwith("yToken/reserve/not-enough-tokens") : nat)
+              | Some(value) -> value
+            end;
+          collateralToken.totalLiquidF :=
+            case is_nat(collateralToken.totalLiquidF - reserveTokensF) of
+              | None -> (failwith("underflow/totalLiquidF") : nat)
+              | Some(value) -> value
+            end;
+          collateralToken.totalReservesF := collateralToken.totalReservesF + reserveTokensF;
 
           s.ledger[(params.borrower, params.collateralToken)] := borrowerBalance;
           s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalance;

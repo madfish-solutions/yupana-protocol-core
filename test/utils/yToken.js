@@ -221,7 +221,8 @@ class YToken {
     reserveFactorF,
     maxBorrowRate,
     tokenMetadata,
-    threshold
+    threshold,
+    liquidReserveRate
   ) {
     if (type == "fA2") {
       const operation = await this.contract.methods
@@ -234,7 +235,8 @@ class YToken {
           reserveFactorF,
           maxBorrowRate,
           tokenMetadata,
-          threshold
+          threshold,
+          liquidReserveRate
         )
         .send();
     } else {
@@ -247,7 +249,8 @@ class YToken {
           reserveFactorF,
           maxBorrowRate,
           tokenMetadata,
-          threshold
+          threshold,
+          liquidReserveRate
         )
         .send();
     }
@@ -262,7 +265,8 @@ class YToken {
     reserveFactorF,
     interestRateModel,
     maxBorrowRate,
-    threshold
+    threshold,
+    liquidReserveRate
   ) {
     const operation = await this.contract.methods
       .setTokenFactors(
@@ -271,7 +275,8 @@ class YToken {
         reserveFactorF,
         interestRateModel,
         maxBorrowRate,
-        threshold
+        threshold,
+        liquidReserveRate
       )
       .send();
     await confirmOperation(this.tezos, operation.hash);
@@ -376,7 +381,8 @@ class YToken {
     reserveFactorF,
     interestRateModel,
     maxBorrowRate,
-    threshold
+    threshold,
+    liquidReserveRate
   ) {
     const batchArray = [
       {
@@ -404,7 +410,8 @@ class YToken {
             reserveFactorF,
             interestRateModel,
             maxBorrowRate,
-            threshold
+            threshold,
+            liquidReserveRate
           )
           .toTransferParams(),
       },
@@ -423,7 +430,8 @@ class YToken {
     reserveFactorF,
     interestRateModel,
     maxBorrowRate,
-    threshold
+    threshold,
+    liquidReserveRate
   ) {
     const batchArray = [
       {
@@ -451,7 +459,8 @@ class YToken {
             reserveFactorF,
             interestRateModel,
             maxBorrowRate,
-            threshold
+            threshold,
+            liquidReserveRate
           )
           .toTransferParams(),
       },
