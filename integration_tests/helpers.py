@@ -323,20 +323,17 @@ def none_sets_to_lists(full_storage):
 
     return full_storage
 
-def liquidate_and_check_reserves(self, chain, borrowId, collateralId, borrwer, amount, sender):
-    initial_reserves = chain.storage["storage"]["tokens"][collateralId]["totalReservesF"]
+def calculate_reserves_bonus_by_liqidation(tokens, borrow_id, collateral_id, amount):
+    '''
+    after the liquidation reserve bonus check
+    '''
+    reserve_rate = tokens[collateral_id]["liquidReserveRateF"] / PRECISION
+    price_bor = tokens[borrow_id]["lastPrice"]
+    price_col = tokens[collateral_id]["lastPrice"]
+    return amount * reserve_rate * price_bor / price_col
 
-    res = chain.execute(self.ct.liquidate(borrowId, collateralId, borrwer, amount), sender=sender)
-    # after the liquidation reserve bonus check
-    reserve_rate = res.storage["storage"]["tokens"][collateralId]["liquidReserveRateF"] / PRECISION
-    price_bor = res.storage["storage"]["tokens"][borrowId]["lastPrice"]
-    price_col = res.storage["storage"]["tokens"][collateralId]["lastPrice"]
-    expected_bonus = (amount * reserve_rate * price_bor / price_col)
-    actual_reserves = res.storage["storage"]["tokens"][collateralId]["totalReservesF"]
-    actual_bonus = (actual_reserves - initial_reserves) / PRECISION
-    self.assertAlmostEqual(actual_bonus, expected_bonus)
-    initial_reserves
-    return res
+def get_reserves(res, token_id):
+    return res.storage["storage"]["tokens"][token_id]["totalReservesF"] / PRECISION
 
 class LocalChain:
     def __init__(self, storage=None):
