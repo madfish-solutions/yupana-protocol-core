@@ -69,11 +69,25 @@ type yAssetParams       is [@layout:comb] record [
   amount                : nat;
 ]
 
-type faTransferParams   is [@layout:comb] record [
-  [@annot:from] from_   : address;
-  [@annot:to] to_       : address;
-  value                 : nat;
+type fa12TransferParams   is [@layout:comb] record [
+  [@annot:] from_         : address;
+  [@annot:] to_           : address;
+  [@annot:] value         : nat;
 ]
+
+
+type fa2TransferDestination is [@layout:comb] record [
+  [@annot:]to_                   : address;
+  [@annot:]token_id              : tokenId;
+  [@annot:]amount                : nat;
+]
+
+type fa2TransferParam is [@layout:comb] record [
+  [@annot:]from_                 : address;
+  [@annot:]txs                   : list(fa2TransferDestination);
+]
+
+type fa2TransferParams   is list(fa2TransferParam)
 
 type setTokenParams     is [@layout:comb] record [
   tokenId               : nat;
@@ -134,8 +148,8 @@ type calculateCollParams is [@layout:comb] record [
   res                   : nat;
 ]
 
-type transferType is TransferOutside of faTransferParams
-type iterTransferType is FA2TransferOutside of transferParams
+type transferType is TransferOutside of fa12TransferParams
+type iterTransferType is FA2TransferOutside of fa2TransferParams
 
 [@inline] const zeroAddress : address = ("tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg" : address);
 [@inline] const zeroTimestamp : timestamp = (0 : timestamp);

@@ -65,6 +65,8 @@ function calcMaxCollateralInCU(
         const token : tokenType = getToken(tokenId, tokens);
         const liquidityF : nat = getLiquidity(token);
 
+        verifyTokenUpdated(token);
+
         (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
         acc := acc + userBalance * token.lastPrice
           * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
@@ -86,6 +88,8 @@ function calcLiquidateCollateral(
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
         const liquidityF : nat = getLiquidity(token);
+
+        verifyTokenUpdated(token);
 
         (* sum +=  balance * oraclePrice * exchangeRate *)
         acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
