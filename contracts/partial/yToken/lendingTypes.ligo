@@ -69,23 +69,26 @@ type yAssetParams       is [@layout:comb] record [
   amount                : nat;
 ]
 
-type fa12TransferParams   is [@layout:comb] record [
-  [@annot:] from_         : address;
-  [@annot:] to_           : address;
-  [@annot:] value         : nat;
-]
+type fa12TransferParams   is michelson_pair(
+  address,
+  "",
+  michelson_pair(address, "", nat, ""),
+  ""
+)
 
+type fa2TransferDestination is michelson_pair(
+  address,
+  "",
+  michelson_pair(tokenId, "", nat, ""),
+  ""
+)
 
-type fa2TransferDestination is [@layout:comb] record [
-  [@annot:]to_                   : address;
-  [@annot:]token_id              : tokenId;
-  [@annot:]amount                : nat;
-]
-
-type fa2TransferParam is [@layout:comb] record [
-  [@annot:]from_                 : address;
-  [@annot:]txs                   : list(fa2TransferDestination);
-]
+type fa2TransferParam       is michelson_pair(
+  address,
+  "",
+  list(fa2TransferDestination),
+  ""
+)
 
 type fa2TransferParams   is list(fa2TransferParam)
 
