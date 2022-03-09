@@ -53,7 +53,7 @@ function calcMaxCollateralInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
-  const tokens          : map(tokenId, tokenType))
+  const tokens          : big_map(tokenId, tokenType))
                         : nat is
   block {
     function oneToken(
@@ -77,7 +77,7 @@ function calcLiquidateCollateral(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
-  const tokens          : map(tokenId, tokenType))
+  const tokens          : big_map(tokenId, tokenType))
                         : nat is
   block {
     function oneToken(
@@ -100,7 +100,7 @@ function applyInterestToBorrows(
   const borrowedTokens  : set(tokenId);
   const user            : address;
   const accountsMap     : accountsMapType;
-  const tokensMap       : map(tokenId, tokenType))
+  const tokensMap       : big_map(tokenId, tokenType))
                         : accountsMapType is
   block {
     function oneToken(
@@ -126,7 +126,7 @@ function calcOutstandingBorrowInCU(
   const user            : address;
   const accounts        : big_map((address * tokenId), account);
   const ledger          : big_map((address * tokenId), nat);
-  const tokens          : map(tokenId, tokenType))
+  const tokens          : big_map(tokenId, tokenType))
                         : nat is
   block {
     function oneToken(

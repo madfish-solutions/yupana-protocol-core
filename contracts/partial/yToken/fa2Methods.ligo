@@ -25,7 +25,7 @@ function getTokenIds(
 (* Helper function to get token info *)
 function getToken(
   const token_id        : tokenId;
-  const tokens          : map(tokenId, tokenType))
+  const tokens          : big_map(tokenId, tokenType))
                         : tokenType is
   case tokens[token_id] of
     None -> record [
