@@ -41,7 +41,7 @@ function ensureNotZero(
       else result.0
   | None -> failwith("ceil-div-error")
   end;
-  
+
 [@inline]
 function verifyInterestUpdated(
     const token         : tokenType)
@@ -420,6 +420,7 @@ function liquidate(
       case p of
         Liquidate(params) -> {
           var userBorrowedTokens : set(tokenId) := getTokenIds(params.borrower, s.borrows);
+          var userCollateralTokens : set(tokenId) := getTokenIds(params.borrower, s.markets);
           s.accounts := applyInterestToBorrows(userBorrowedTokens, params.borrower, s.accounts, s.tokens);
           var borrowerAccount : account := getAccount(params.borrower, params.borrowToken, s.accounts);
           var borrowToken : tokenType := getToken(params.borrowToken, s.tokens);
@@ -439,13 +440,13 @@ function liquidate(
           else skip;
 
           const liquidateCollateral : nat = calcLiquidateCollateral(
-            getTokenIds(params.borrower, s.markets),
+            userCollateralTokens,
             params.borrower,
             s.ledger,
             s.tokens
           );
           const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
-            getTokenIds(params.borrower, s.borrows),
+            userBorrowedTokens,
             params.borrower,
             s.accounts,
             s.ledger,
@@ -485,13 +486,11 @@ function liquidate(
           borrowToken.totalLiquidF := borrowToken.totalLiquidF + liqAmountF;
           operations := transfer_token(Tezos.sender, Tezos.self_address, params.amount, borrowToken.mainToken);
 
-          if getTokenIds(params.borrower, s.markets) contains params.collateralToken
+          if userCollateralTokens contains params.collateralToken
           then skip
           else failwith("yToken/no-such-collateral");
 
           var collateralToken : tokenType := getToken(params.collateralToken, s.tokens);
-          verifyPriceUpdated(collateralToken);
-          verifyInterestUpdated(collateralToken);
 
           (* seizeAmount = actualRepayAmount * liquidationIncentive
             * priceBorrowed / priceCollateral
