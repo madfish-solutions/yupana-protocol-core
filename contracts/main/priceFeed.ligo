@@ -1,4 +1,5 @@
 #include "../partial/mainTypes.ligo"
+#include "../partial/commonHelpers.ligo"
 #include "../partial/proxy/priceFeedMethods.ligo"
 
 function main(

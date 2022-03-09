@@ -54,7 +54,7 @@ const compile = async (contract) => {
 
   contracts.forEach((contract) => {
     const michelson = execSync(
-      `${ligo} compile-contract --michelson-format=json $PWD/${env.contractsDir}/${contract}.ligo main`,
+      `${ligo} compile contract --michelson-format json $PWD/${env.contractsDir}/${contract}.ligo`,
       { maxBuffer: 1024 * 10000 }
     ).toString();
 
