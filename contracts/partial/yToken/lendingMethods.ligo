@@ -41,11 +41,20 @@ function ensureNotZero(
       else result.0
   | None -> failwith("ceil-div-error")
   end;
-
-function verifyTokenUpdated(
+  
+[@inline]
+function verifyInterestUpdated(
     const token         : tokenType)
                         : unit is
-    if token.interestUpdateTime < Tezos.now or token.priceUpdateTime < Tezos.now
+    if token.interestUpdateTime < Tezos.now
+    then failwith("yToken/need-update")
+    else unit;
+
+[@inline]
+function verifyPriceUpdated(
+    const token         : tokenType)
+                        : unit is
+    if token.priceUpdateTime < Tezos.now
     then failwith("yToken/need-update")
     else unit;
 
@@ -65,7 +74,8 @@ function calcMaxCollateralInCU(
         const token : tokenType = getToken(tokenId, tokens);
         const liquidityF : nat = getLiquidity(token);
 
-        verifyTokenUpdated(token);
+        verifyPriceUpdated(token);
+        verifyInterestUpdated(token);
 
         (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
         acc := acc + userBalance * token.lastPrice
@@ -89,7 +99,8 @@ function calcLiquidateCollateral(
         const token : tokenType = getToken(tokenId, tokens);
         const liquidityF : nat = getLiquidity(token);
 
-        verifyTokenUpdated(token);
+        verifyPriceUpdated(token);
+        verifyInterestUpdated(token);
 
         (* sum +=  balance * oraclePrice * exchangeRate *)
         acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
@@ -111,7 +122,7 @@ function applyInterestToBorrows(
         var userAccount : account := getAccount(user, tokenId, accountsMap);
         const token : tokenType = getToken(tokenId, tokensMap);
 
-        verifyTokenUpdated(token);
+        verifyInterestUpdated(token);
 
         if userAccount.lastBorrowIndex =/= 0n
           then userAccount.borrow := userAccount.borrow * token.borrowIndex / userAccount.lastBorrowIndex;
@@ -201,7 +212,7 @@ function mint(
 
           if token.totalSupplyF =/= 0n
           then {
-            verifyTokenUpdated(token);
+            verifyInterestUpdated(token);
             const liquidityF : nat = getLiquidity(token);
             mintTokensF := mintTokensF * token.totalSupplyF / liquidityF;
           } else skip;
@@ -479,7 +490,8 @@ function liquidate(
           else failwith("yToken/no-such-collateral");
 
           var collateralToken : tokenType := getToken(params.collateralToken, s.tokens);
-          verifyTokenUpdated(collateralToken);
+          verifyPriceUpdated(collateralToken);
+          verifyInterestUpdated(collateralToken);
 
           (* seizeAmount = actualRepayAmount * liquidationIncentive
             * priceBorrowed / priceCollateral
