@@ -29,11 +29,7 @@ function wrap_fa12_transfer_trx(
   const to_             : address;
   const amt             : nat)
                         : transferType is
-  TransferOutside(record [
-      from_ = from_;
-      to_ = to_;
-      value = amt
-    ])
+  TransferOutside((from_, (to_, amt)))
 
 function wrap_fa2_transfer_trx(
   const from_           : address;
@@ -41,18 +37,9 @@ function wrap_fa2_transfer_trx(
   const amt             : nat;
   const id              : nat)
                         : iterTransferType is
-  FA2TransferOutside(list[
-    record [
-      from_ = from_;
-      txs = list[
-        record[
-          to_ = to_;
-          token_id = id;
-          amount = amt
-        ]
-      ]
-    ]
-  ])
+  FA2TransferOutside(list[(from_, list[
+        (to_, (id, amt))
+    ])])
 
 function transfer_fa12(
   const from_           : address;
