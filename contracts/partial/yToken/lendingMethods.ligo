@@ -414,9 +414,7 @@ function liquidate(
           var borrowerAccount : account := getAccount(params.borrower, params.borrowToken, s.accounts);
           var borrowToken : tokenType := getToken(params.borrowToken, s.tokens);
 
-          if Tezos.sender = params.borrower
-          then failwith("yToken/borrower-cannot-be-liquidator")
-          else skip;
+          require(Tezos.sender =/= params.borrower, "yToken/borrower-cannot-be-liquidator");
 
           const liquidateCollateral : nat = calcLiquidateCollateral(
             getTokenIds(params.borrower, s.markets),
