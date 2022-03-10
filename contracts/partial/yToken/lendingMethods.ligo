@@ -284,6 +284,8 @@ function borrow(
     var operations : list(operation) := list[];
       case p of
         Borrow(params) -> {
+          check_deadline(params.deadline);
+          
           ensureNotZero(params.amount);
 
           require(params.tokenId < s.lastTokenId, "yToken/yToken-undefined");
@@ -339,6 +341,8 @@ function repay(
     var operations : list(operation) := list[];
       case p of
         Repay(params) -> {
+          check_deadline(params.deadline);
+
           require(params.tokenId < s.lastTokenId, "yToken/yToken-undefined");
 
           var token : tokenType := getToken(params.tokenId, s.tokens);
@@ -377,6 +381,7 @@ function liquidate(
     var operations : list(operation) := list[];
       case p of
         Liquidate(params) -> {
+          check_deadline(params.deadline);
           ensureNotZero(params.amount);
           require(params.collateralToken < s.lastTokenId, "yToken/collateral-id-undefined");
           require(params.borrowToken < s.lastTokenId, "yToken/borrow-id-undefined");
