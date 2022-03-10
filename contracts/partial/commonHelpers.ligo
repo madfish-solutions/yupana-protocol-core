@@ -45,3 +45,8 @@ function get_nat_or_fail(
   | Some(natural) -> natural
   | None -> (failwith(error): nat)
   end;
+
+[@inline] function check_deadline(
+  const exp             : timestamp)
+                        : unit is
+  require(exp >= Tezos.now, "deadline-expired");

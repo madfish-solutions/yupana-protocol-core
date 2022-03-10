@@ -62,11 +62,18 @@ type liquidateParams    is [@layout:comb] record [
   collateralToken       : nat;
   borrower              : address;
   amount                : nat;
+  deadline              : timestamp;
 ]
 
 type yAssetParams       is [@layout:comb] record [
   tokenId               : nat;
   amount                : nat;
+]
+
+type yAssetParamsWithDL is [@layout:comb] record [
+  tokenId               : nat;
+  amount                : nat;
+  deadline              : timestamp;
 ]
 
 type fa12TransferParams   is michelson_pair(

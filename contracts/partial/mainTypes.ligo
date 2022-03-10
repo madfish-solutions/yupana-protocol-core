@@ -6,8 +6,8 @@
 type useAction          is
   | Mint of yAssetParams
   | Redeem of yAssetParams
-  | Borrow of yAssetParams
-  | Repay of yAssetParams
+  | Borrow of yAssetParamsWithDL
+  | Repay of yAssetParamsWithDL
   | Liquidate of liquidateParams
   | EnterMarket of tokenId
   | ExitMarket of tokenId
