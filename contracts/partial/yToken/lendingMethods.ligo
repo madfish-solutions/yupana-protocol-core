@@ -547,7 +547,7 @@ function accrueInterest(
     var token : tokenType := getToken(params.tokenId, s.storage.tokens);
     const borrowRateF : nat = params.amount;
 
-    if token.isInterestUpdating = False 
+    if token.isInterestUpdating = False
     then failwith("yToken/interest-update-wrong-state");
     else token.isInterestUpdating := False;
 
