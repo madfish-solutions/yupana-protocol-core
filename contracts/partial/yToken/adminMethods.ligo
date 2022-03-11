@@ -31,11 +31,7 @@ function withdrawReserve(
         var token : tokenType := getToken(params.tokenId, s.tokens);
         const amountF = params.amount * precision;
 
-        token.totalReservesF :=
-          case is_nat(token.totalReservesF - amountF) of
-            | None -> (failwith("underflow/totalReservesF") : nat)
-            | Some(value) -> value
-          end;
+        token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, "underflow/totalReservesF");
 
         s.tokens[params.tokenId] := token;
 

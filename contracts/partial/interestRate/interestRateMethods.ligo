@@ -12,11 +12,7 @@
   const precision       : nat)
                         : nat is
   block {
-    const denominator : nat =
-      case is_nat(cashF + borrowsF - reservesF) of
-        | None -> (failwith("underflow/cashF+borrowsF") : nat)
-        | Some(value) -> value
-      end;
+    const denominator : nat = get_nat_or_fail(cashF + borrowsF - reservesF, "underflow/cashF+borrowsF");
   } with precision * borrowsF / denominator
 
 [@inline] function calcBorrowRate(
@@ -38,12 +34,7 @@
     if utilizationRateF <= s.kinkF
     then borrowRateF := s.baseRateF + utilizationRateF * s.multiplierF / precision;
     else block {
-      const utilizationSubkink : nat =
-        case is_nat(utilizationRateF - s.kinkF) of
-          | None -> (failwith("underflow/utilizationRateF") : nat)
-          | Some(value) -> value
-        end;
-
+      const utilizationSubkink : nat = get_nat_or_fail(utilizationRateF - s.kinkF, "underflow/utilizationRateF");
       borrowRateF := ((s.kinkF * s.multiplierF / precision + s.baseRateF) +
       (utilizationSubkink * s.jumpMultiplierF) / precision);
     }
@@ -136,12 +127,7 @@ function getSupplyRate(
       param.precision
     );
 
-    const precisionSubReserve : nat =
-      case is_nat(param.precision - param.reserveFactorF) of
-        | None -> (failwith("underflow/precision") : nat)
-        | Some(value) -> value
-      end;
-
+    const precisionSubReserve : nat = get_nat_or_fail(param.precision - param.reserveFactorF, "underflow/precision");
 
     var operations : list(operation) := list[
       Tezos.transaction(record[
