@@ -287,7 +287,7 @@ function borrow(
           ensureNotZero(params.amount);
 
           require(params.tokenId < s.lastTokenId, "yToken/yToken-undefined");
-          
+
           var token : tokenType := getToken(params.tokenId, s.tokens);
           require(token.borrowPause = False, "yToken/forbidden-for-borrow");
 
@@ -450,7 +450,6 @@ function liquidate(
           const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF
             * borrowToken.lastPrice / ( precision * collateralToken.lastPrice) ;
           borrowerBalance := get_nat_or_fail(borrowerBalance - reserveTokensF, "yToken/reserve/not-enough-tokens");
-          collateralToken.totalLiquidF := get_nat_or_fail(collateralToken.totalLiquidF - reserveTokensF, "underflow/totalLiquidF");
           collateralToken.totalReservesF := collateralToken.totalReservesF + reserveTokensF;
 
           s.ledger[(params.borrower, params.collateralToken)] := borrowerBalance;
