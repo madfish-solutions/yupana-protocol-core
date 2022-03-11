@@ -46,6 +46,13 @@ type update_operator_param is
 
 type update_operator_params is list(update_operator_param)
 
+type token_meta_info_t    is [@layout:comb] record [
+  token_id                : nat;
+  token_info              : map(string, bytes);
+]
+
+type upd_meta_param_t     is token_meta_info_t
+
 type account is [@layout:comb] record [
   balances            : map(token_id, nat);
   updated             : timestamp;
@@ -85,6 +92,7 @@ type fa2_action is
 | Transfer                of transfer_params
 | Balance_of              of balance_params
 | Update_operators        of update_operator_params
+| Update_metadata         of upd_meta_param_t
 
 [@inline] const no_operations : list(operation) = nil;
 
@@ -244,9 +252,9 @@ function mint_asset(
   const s               : fa2_storage)
                         : fa2_storage is
   block {
-    if s.admin =/= Tezos.sender
-    then failwith("fa2/not-admin");
-    else skip;
+    // if s.admin =/= Tezos.sender
+    // then failwith("fa2/not-admin");
+    // else skip;
 
     function make_mint(
       var s             : fa2_storage;
@@ -295,6 +303,18 @@ function create_token(
     s.last_token_id := s.last_token_id + 1n;
   } with s
 
+function update_metadata(
+    const params        : upd_meta_param_t;
+    var   s             : fa2_storage)
+                        : fa2_storage is
+  block {
+    if s.admin =/= Tezos.sender
+    then failwith("fa2/not-admin");
+    else skip;
+    s.token_metadata[params.token_id] := params;
+  } with s
+
+
 function main(
   const action          : fa2_action;
   const s               : fa2_storage)
@@ -305,4 +325,5 @@ function main(
   | Transfer(params)                  -> (no_operations, transfer(s, params))
   | Update_operators(params)          -> (no_operations, update_operators(s, params))
   | Balance_of(params)                -> (get_balance_of(params, s), s)
+  | Update_metadata(params)           -> (no_operations, update_metadata(params, s))
   end

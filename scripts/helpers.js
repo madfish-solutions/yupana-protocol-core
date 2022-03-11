@@ -129,11 +129,12 @@ const getDeployedAddress = (contract) => {
 
 const runMigrations = async (options) => {
   try {
-    const migrations = getMigrationsList();
-
+    let migrations = getMigrationsList()
     options.network = options.network || "development";
     options.optionFrom = options.from || 0;
     options.optionTo = options.to || migrations.length;
+
+    migrations = migrations.slice(options.optionFrom, options.optionTo + 1);
 
     const networkConfig = env.networks[options.network];
 
