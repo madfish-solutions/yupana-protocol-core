@@ -199,7 +199,6 @@ function mint(
           require(params.tokenId < s.lastTokenId, "yToken/yToken-undefined");
 
           var mintTokensF : nat := params.amount * precision;
-          require(mintTokensF >= params.minReceived, "yToken/mint/low-mint");
           var token : tokenType := getToken(params.tokenId, s.tokens);
 
           if token.totalSupplyF =/= 0n
@@ -208,6 +207,8 @@ function mint(
             const liquidityF : nat = getLiquidity(token);
             mintTokensF := mintTokensF * token.totalSupplyF / liquidityF;
           } else skip;
+
+          require(mintTokensF / precision >= params.minReceived, "yToken/mint/low-mint");
 
           var userBalance : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
           userBalance := userBalance + mintTokensF;
@@ -443,7 +444,7 @@ function liquidate(
           const liquidityF : nat = getLiquidity(collateralToken);
           const exchangeRateF : nat = liquidityF * precision * collateralToken.lastPrice;
           const seizeTokensF : nat = seizeAmount / exchangeRateF;
-          require(seizeTokensF >= params.minSeized, "yToken/seize/low-seize-tokens");
+          require(seizeTokensF / precision >= params.minSeized, "yToken/seize/low-seize-tokens");
           var liquidatorAccount : account := getAccount(
             Tezos.sender,
             params.collateralToken,
