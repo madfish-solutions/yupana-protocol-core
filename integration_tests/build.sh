@@ -1,9 +1,9 @@
 #!/bin/sh
 
 mkdir -p integration_tests/compiled
-docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-contract $PWD/contracts/main/yToken.ligo main > integration_tests/compiled/yToken.tz
+docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.35.0 compile contract $PWD/contracts/main/yToken.ligo  > integration_tests/compiled/yToken.tz
 
-docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-contract $PWD/contracts/main/priceFeed.ligo main > integration_tests/compiled/priceFeed.tz
+docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.35.0 compile contract $PWD/contracts/main/priceFeed.ligo  > integration_tests/compiled/priceFeed.tz
 
 mkdir -p integration_tests/compiled/lambdas
 
@@ -27,7 +27,7 @@ for i in 0,mint \
     FUNC=${i#*,};
     echo $IDX-$FUNC;
 
-    docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo "SetUseAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
+    docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.35.0 compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo "SetUseAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
 done
 
 DIR=integration_tests/compiled/lambdas/token
@@ -42,7 +42,7 @@ for i in 0,transfer \
     FUNC=${i#*,};
     echo $IDX-$FUNC;
 
-    docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.24.0 compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo "SetTokenAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
+    docker run -v $PWD:$PWD --rm -i ligolang/ligo:0.35.0 compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo "SetTokenAction(record index = ${IDX}n; func = Bytes.pack(${FUNC}); end)" > $PWD/$DIR/${IDX}-${FUNC}.json
 done
 
 

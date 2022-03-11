@@ -37,7 +37,7 @@ type yStorage           is [@layout:comb] record [
   admin                 : address;
   ledger                : big_map((address * tokenId), nat);
   accounts              : big_map((address * tokenId), account);
-  tokens                : map(tokenId, tokenType);
+  tokens                : big_map(tokenId, tokenType);
   lastTokenId           : nat;
   priceFeedProxy        : address;
   closeFactorF          : nat;
