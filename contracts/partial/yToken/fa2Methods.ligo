@@ -123,17 +123,8 @@ function iterateTransfer(
         var srcBalance : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
         const transferAmountF : nat = transferDst.amount * precision;
 
-        (* Balance check *)
-        if srcBalance < transferAmountF
-        then failwith("FA2_INSUFFICIENT_BALANCE")
-        else skip;
-
         (* Update source balance *)
-        srcBalance :=
-          case is_nat(srcBalance - transferAmountF) of
-            | None -> (failwith("underflow/srcBalance") : nat)
-            | Some(value) -> value
-          end;
+        srcBalance := get_nat_or_fail(srcBalance - transferAmountF, "FA2_INSUFFICIENT_BALANCE");
 
         s.ledger[(params.from_, transferDst.token_id)] := srcBalance;
 

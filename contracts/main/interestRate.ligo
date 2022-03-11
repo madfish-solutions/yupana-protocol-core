@@ -1,4 +1,5 @@
 #include "../partial/mainTypes.ligo"
+#include "../partial/commonHelpers.ligo"
 #include "../partial/interestRate/interestRateMethods.ligo"
 
 function main(
