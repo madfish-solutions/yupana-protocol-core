@@ -62,12 +62,19 @@ type liquidateParams    is [@layout:comb] record [
   collateralToken       : nat;
   borrower              : address;
   amount                : nat;
+  minSeized             : nat;
   deadline              : timestamp;
 ]
 
 type yAssetParams       is [@layout:comb] record [
   tokenId               : nat;
   amount                : nat;
+]
+
+type yAssetParamsWithMR is [@layout:comb] record [
+  tokenId               : nat;
+  amount                : nat;
+  minReceived           : nat;
 ]
 
 type yAssetParamsWithDL is [@layout:comb] record [

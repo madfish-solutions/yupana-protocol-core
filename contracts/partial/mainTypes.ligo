@@ -4,8 +4,8 @@
 #include "/proxy/priceFeedTypes.ligo"
 
 type useAction          is
-  | Mint of yAssetParams
-  | Redeem of yAssetParams
+  | Mint of yAssetParamsWithMR
+  | Redeem of yAssetParamsWithMR
   | Borrow of yAssetParamsWithDL
   | Repay of yAssetParamsWithDL
   | Liquidate of liquidateParams
