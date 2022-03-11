@@ -195,6 +195,7 @@ function getBalance(
             const request     : balance_of_request)
                               : list(balance_of_response) is
             block {
+              require(request.token_id < s.lastTokenId, "FA2_TOKEN_UNDEFINED");
               (* Retrieve the asked account from the storage *)
               const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
 
