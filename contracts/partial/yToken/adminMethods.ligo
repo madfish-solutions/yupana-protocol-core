@@ -31,11 +31,7 @@ function withdrawReserve(
         var token : tokenType := getToken(params.tokenId, s.tokens);
         const amountF = params.amount * precision;
 
-        token.totalReservesF :=
-          case is_nat(token.totalReservesF - amountF) of
-            | None -> (failwith("underflow/totalReservesF") : nat)
-            | Some(value) -> value
-          end;
+        token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, "underflow/totalReservesF");
 
         s.tokens[params.tokenId] := token;
 
@@ -50,11 +46,11 @@ function withdrawReserve(
     end
   } with (operations, s)
 
-[@inline] function checkTypeInfo(
+[@inline] function checkDuplicateAsset(
   const typeInfo        : big_map(assetType, tokenId);
-  const assertType      : assetType)
+  const asset           : assetType)
                         : unit is
-  case typeInfo[assertType] of
+  case typeInfo[asset] of
     None -> unit
   | Some(_v) -> failwith("yToken/token-has-already-been-added")
   end
@@ -68,7 +64,7 @@ function addMarket(
     var token : tokenType := getToken(s.storage.lastTokenId, s.storage.tokens);
     const lastTokenId : nat = s.storage.lastTokenId;
 
-    checkTypeInfo(s.storage.assets, params.asset);
+    checkDuplicateAsset(s.storage.assets, params.asset);
 
     (* TODO: fail if token exist - not fixed yet *)
     token.interestRateModel := params.interestRateModel;
@@ -112,6 +108,7 @@ function setTokenFactors(
         mustBeAdmin(s);
         var token : tokenType := getToken(params.tokenId, s.tokens);
 
+        // TODO change to verifyInterestUpdated
         if token.interestUpdateTime < Tezos.now
         then failwith("yToken/need-update")
         else skip;

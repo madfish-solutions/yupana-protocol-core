@@ -63,7 +63,7 @@ module.exports = async (tezos) => {
   console.log("Start setting Token lambdas");
   for (const yTokenFunction of functions.token) {
     const stdout = execSync(
-      `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
+      `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
       { maxBuffer: 1024 * 1000 }
     );
 
@@ -84,7 +84,7 @@ module.exports = async (tezos) => {
 
   for (yTokenFunction of functions.yToken) {
     const stdout = execSync(
-      `${ligo} compile-expression pascaligo --michelson-format=json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
+      `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
       { maxBuffer: 1024 * 1000 }
     );
     const input_params = JSON.parse(stdout.toString());
