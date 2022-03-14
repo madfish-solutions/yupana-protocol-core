@@ -5,6 +5,7 @@ const storage = require("../../storage/yToken");
 const { functions } = require("../../storage/functions");
 const { getLigo } = require("../../scripts/helpers");
 const { execSync } = require("child_process");
+const BigNumber = require("bignumber.js");
 
 class YToken {
   contract;
@@ -287,53 +288,80 @@ class YToken {
     closeFactorF,
     liqIncentiveF,
     priceFeedProxy,
-    maxMarkets,
+    maxMarkets
   ) {
     const operation = await this.contract.methods
-      .setGlobalFactors(
-        closeFactorF,
-        liqIncentiveF,
-        priceFeedProxy,
-        maxMarkets,
-      )
+      .setGlobalFactors(closeFactorF, liqIncentiveF, priceFeedProxy, maxMarkets)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async mint(token_id, amount) {
-    const operation = await this.contract.methods.mint(token_id, amount).send();
+  async mint(token_id, amount, minReceive = 1) {
+    const operation = await this.contract.methods
+      .mint(token_id, amount, minReceive)
+      .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async redeem(token_id, amount) {
+  async redeem(token_id, amount, minReceive = 1) {
     const operation = await this.contract.methods
-      .redeem(token_id, amount)
+      .redeem(token_id, amount, minReceive)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
   async borrow(token_id, amount) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const operation = await this.contract.methods
-      .borrow(token_id, amount)
+      .borrow(
+        token_id,
+        amount,
+        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+      )
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
   async repay(token_id, amount) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const operation = await this.contract.methods
-      .repay(token_id, amount)
+      .repay(
+        token_id,
+        amount,
+        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+      )
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
   }
 
-  async liquidate(borrowToken, collateralToken, borrower, amount) {
+  async liquidate(
+    borrowToken,
+    collateralToken,
+    borrower,
+    amount,
+    minSeized = 1
+  ) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const operation = await this.contract.methods
-      .liquidate(borrowToken, collateralToken, borrower, amount)
+      .liquidate(
+        borrowToken,
+        collateralToken,
+        borrower,
+        amount,
+        minSeized,
+        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+      )
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
@@ -472,7 +500,7 @@ class YToken {
     return operation;
   }
 
-  async updateAndMint(proxy, token, amount) {
+  async updateAndMint(proxy, token, amount, minReceive = 1) {
     const batchArray = [
       {
         kind: "transaction",
@@ -492,7 +520,9 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...this.contract.methods.mint(token, amount).toTransferParams(),
+        ...this.contract.methods
+          .mint(token, amount, minReceive)
+          .toTransferParams(),
       },
     ];
     const batch = await this.tezos.wallet.batch(batchArray);
@@ -504,7 +534,7 @@ class YToken {
     return operation;
   }
 
-  async updateAndMint2(proxy, token, amount) {
+  async updateAndMint2(proxy, token, amount, minReceive = 1) {
     const batchArray = [
       {
         kind: "transaction",
@@ -524,7 +554,9 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...this.contract.methods.mint(token, amount).toTransferParams(),
+        ...this.contract.methods
+          .mint(token, amount, minReceive)
+          .toTransferParams(),
       },
     ];
     const batch = await this.tezos.wallet.batch(batchArray);
@@ -535,6 +567,9 @@ class YToken {
   }
 
   async updateAndBorrow(proxy, borrowToken, amount) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const batchArray = [
       {
         kind: "transaction",
@@ -554,7 +589,13 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...this.contract.methods.borrow(borrowToken, amount).toTransferParams(),
+        ...this.contract.methods
+          .borrow(
+            borrowToken,
+            amount,
+            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+          )
+          .toTransferParams(),
       },
     ];
     const batch = await this.tezos.wallet.batch(batchArray);
@@ -566,6 +607,9 @@ class YToken {
   }
 
   async updateAndBorrow2(proxy, borrowToken, amount) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const batchArray = [
       {
         kind: "transaction",
@@ -585,7 +629,13 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...this.contract.methods.borrow(borrowToken, amount).toTransferParams(),
+        ...this.contract.methods
+          .borrow(
+            borrowToken,
+            amount,
+            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+          )
+          .toTransferParams(),
       },
     ];
     const batch = await this.tezos.wallet.batch(batchArray);
@@ -596,6 +646,9 @@ class YToken {
   }
 
   async updateAndRepay(proxy, repayToken, amount) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const batchArray = [
       {
         kind: "transaction",
@@ -607,7 +660,13 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...this.contract.methods.repay(repayToken, amount).toTransferParams(),
+        ...this.contract.methods
+          .repay(
+            repayToken,
+            amount,
+            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+          )
+          .toTransferParams(),
       },
     ];
     const batch = await this.tezos.wallet.batch(batchArray);
@@ -618,7 +677,7 @@ class YToken {
     return operation;
   }
 
-  async updateAndRedeem(proxy, redeemToken, amount) {
+  async updateAndRedeem(proxy, redeemToken, amount, minReceive = 1) {
     const batch = await this.tezos.wallet.batch([
       {
         kind: "transaction",
@@ -638,7 +697,7 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...this.contract.methods.redeem(redeemToken, amount).toTransferParams(),
+        ...this.contract.methods.redeem(redeemToken, amount, minReceive).toTransferParams(),
       },
     ]);
     const operation = await batch.send();
@@ -704,7 +763,10 @@ class YToken {
     return operation;
   }
 
-  async updateAndLiq(proxy, borrowToken, collateralToken, borrower, amount) {
+  async updateAndLiq(proxy, borrowToken, collateralToken, borrower, amount, minReceive = 1) {
+    const deadline = Date.parse(
+      (await this.tezos.rpc.getBlockHeader()).timestamp
+    );
     const batch = await this.tezos.wallet.batch([
       {
         kind: "transaction",
@@ -729,7 +791,14 @@ class YToken {
       {
         kind: "transaction",
         ...this.contract.methods
-          .liquidate(borrowToken, collateralToken, borrower, amount)
+          .liquidate(
+            borrowToken,
+            collateralToken,
+            borrower,
+            amount,
+            minReceive,
+            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+          )
           .toTransferParams(),
       },
     ]);
