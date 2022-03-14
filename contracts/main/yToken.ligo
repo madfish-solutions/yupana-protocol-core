@@ -75,6 +75,7 @@ function callToken(
         | SetTokenFactors(_setTokenParams) -> 9n
         | SetGlobalFactors(_setGlobalParams) -> 10n
         | SetBorrowPause(_tokenId) -> 11n
+        | ApproveAdmin(_) -> 12n
       end;
 
     const lambda_bytes : bytes =

@@ -35,6 +35,7 @@ class DexTest(TestCase):
         storage = cls.ct.storage.dummy()
         storage["useLambdas"] = use_lambdas
         storage["storage"]["admin"] = admin
+        storage["storage"]["admin_candidate"] = admin
         storage["storage"]["priceFeedProxy"] = price_feed
         storage["storage"]["maxMarkets"] = 10
         storage["storage"]["closeFactorF"] = int(0.5 * PRECISION)

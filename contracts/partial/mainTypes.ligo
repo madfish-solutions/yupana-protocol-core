@@ -16,6 +16,7 @@ type useAction          is
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
   | SetBorrowPause of borrowPauseParams
+  | ApproveAdmin of unit
 
 type tokenAction        is
   | ITransfer of transferParams

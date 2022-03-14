@@ -204,6 +204,12 @@ class YToken {
     return operation;
   }
 
+  async approveAdmin() {
+    const operation = await this.contract.methods.approveAdmin().send();
+    await confirmOperation(this.tezos, operation.hash);
+    return operation;
+  }
+
   async withdrawReserve(token_id, amount) {
     const operation = await this.contract.methods
       .withdrawReserve(token_id, amount)

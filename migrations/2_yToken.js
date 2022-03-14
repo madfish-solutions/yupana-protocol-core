@@ -30,6 +30,7 @@ const metadata = MichelsonMap.fromLiteral({
 
 const yStorage = {
   admin: dev.pkh,
+  admin_candidate: dev.pkh,
   ledger: MichelsonMap.fromLiteral({}),
   accounts: MichelsonMap.fromLiteral({}),
   tokens: MichelsonMap.fromLiteral({}),

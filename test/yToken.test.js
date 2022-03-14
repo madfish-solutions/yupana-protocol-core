@@ -129,11 +129,43 @@ describe("yToken tests", () => {
     });
   });
 
-  it("set yToken admin by admin", async () => {
+  it("set yToken admin by admin and approve by candidate", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await yToken.setAdmin(bob.pkh);
     await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.admin_candidate, bob.pkh);
+    // check that non-candidate could not trigger
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await rejects(yToken.approveAdmin(), (err) => {
+      strictEqual(
+        err.message, "yToken/not-admin-or-candidate"
+      );
+      return true;
+    });
+    // approve admin by candidate
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.approveAdmin();
+    await yToken.updateStorage();
     strictEqual(yToken.storage.storage.admin, bob.pkh);
+  });
+
+  it("stop setting yToken admin by admin", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.setAdmin(alice.pkh);
+    await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.admin_candidate, alice.pkh);
+    // check that non-candidate could not trigger
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await rejects(yToken.approveAdmin(), (err) => {
+      strictEqual(err.message, "yToken/not-admin-or-candidate");
+      return true;
+    });
+    // approve admin by candidate
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.approveAdmin();
+    await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.admin, bob.pkh);
+    strictEqual(yToken.storage.storage.admin_candidate, bob.pkh);
   });
 
   it("add market [0] by non admin", async () => {
