@@ -33,6 +33,9 @@ burn_address = "tz1ZZZZZZZZZZZZZZZZZZZZZZZZZZZZNkiRg"
 def get_balance(res, address):
     return res.storage["ledger"][address]["balance"] 
 
+def get_balance_by_token_id(res, address, token_id): # yToken storage variant
+    return res.storage["storage"]["ledger"][(address, token_id)]
+
 def get_frozen_balance(res, address):
     return res.storage["ledger"][address]["frozenBalance"] 
 

@@ -677,6 +677,48 @@ class DexTest(TestCase):
 
         with self.assertRaises(MichelsonRuntimeError):
             res = chain.execute(self.ct.borrow(0, 1, chain.now + 2))
+            
+    def test_deadline(self):
+        chain = self.create_chain_with_ab_markets()
+        
+        chain.execute(self.ct.mint(0, 100, 1))
+        chain.execute(self.ct.enterMarket(0))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.borrow(0, 50, chain.now - 1))
+        chain.execute(self.ct.borrow(0, 50, chain.now + 2))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.repay(0, 50, chain.now - 1))
+        chain.execute(self.ct.repay(0, 50, chain.now + 2))
+    
+    def test_min_received(self):
+        chain = self.create_chain_with_ab_markets()
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.mint(0, 100, 101))
+        chain.execute(self.ct.mint(0, 100, 99))
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(0, 50, 51))
+        chain.execute(self.ct.redeem(0, 50, 49))
+    
+    def test_liquidate_min_seized_and_deadline(self):
+        chain = LocalChain(storage=self.storage)
+        self.add_token(chain, token_a)
+        self.add_token(chain, token_b)
+
+        chain.execute(self.ct.mint(0, 100_000, 1), sender=alice)
+        chain.execute(self.ct.enterMarket(0), sender=alice)
+        chain.execute(self.ct.borrow(1, 50_000, chain.now + 2), sender=alice)
+
+        # collateral price goes down
+        res = chain.execute(self.ct.priceCallback(1, 300), sender=price_feed)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.liquidate(1, 0, alice, 50_001, 1, chain.now + 2), sender=bob)
+        with self.assertRaises(MichelsonRuntimeError): # minSeized check (should seize 78750)
+            res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 80_000, chain.now + 2), sender=bob)
+        with self.assertRaises(MichelsonRuntimeError): # deadline check
+            chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now - 1), sender=bob)
+        res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now + 2), sender=bob)
+
 
     def test_should_verify_token_updates(self):
         chain = self.create_chain_with_ab_markets()
