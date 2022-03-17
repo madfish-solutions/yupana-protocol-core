@@ -158,7 +158,7 @@ describe("yToken tests", () => {
       strictEqual(err.message, "yToken/not-admin-or-candidate");
       return true;
     });
-    // approve admin by candidate
+    // stop approving admin by admin
     tezos = await Utils.setProvider(tezos, bob.sk);
     await yToken.approveAdmin();
     await yToken.updateStorage();
