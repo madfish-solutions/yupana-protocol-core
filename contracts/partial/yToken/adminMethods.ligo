@@ -27,9 +27,9 @@ function approveAdmin(
     case p of
       ApproveAdmin(_) -> {
         const admin_candidate : address = unwrap(s.admin_candidate, "yToken/no-candidate");
-        if Tezos.sender = admin_candidate
+        if Tezos.sender = admin_candidate or Tezos.sender = s.admin
         then {
-          s.admin := admin_candidate;
+          s.admin := Tezos.sender;
           s.admin_candidate := (None : option(address));
         }
         else failwith("yToken/not-admin-or-candidate");
