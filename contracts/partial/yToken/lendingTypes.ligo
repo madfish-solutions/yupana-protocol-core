@@ -35,6 +35,7 @@ type tokenType          is [@layout:comb] record [
 
 type yStorage           is [@layout:comb] record [
   admin                 : address;
+  admin_candidate       : option(address);
   ledger                : big_map((address * tokenId), nat);
   accounts              : big_map((address * tokenId), account);
   tokens                : big_map(tokenId, tokenType);

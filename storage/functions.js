@@ -66,6 +66,10 @@ let yTokenFunctions = [
     index: 11,
     name: "setBorrowPause",
   },
+  {
+    index: 12,
+    name: "approveAdmin",
+  },
 ];
 
 let proxyFunctions = [

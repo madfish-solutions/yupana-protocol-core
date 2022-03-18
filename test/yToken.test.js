@@ -108,7 +108,7 @@ describe("yToken tests", () => {
       "500000000000000000",
       "1050000000000000000",
       proxyContractAddress,
-      "2",
+      "2"
     );
     await yToken.updateStorage();
     strictEqual(yToken.storage.storage.priceFeedProxy, proxyContractAddress);
@@ -129,11 +129,41 @@ describe("yToken tests", () => {
     });
   });
 
-  it("set yToken admin by admin", async () => {
+  it("set yToken admin by admin and approve by candidate", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await yToken.setAdmin(bob.pkh);
     await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.admin_candidate, bob.pkh);
+    // check that non-candidate could not trigger
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await rejects(yToken.approveAdmin(), (err) => {
+      strictEqual(err.message, "yToken/not-admin-or-candidate");
+      return true;
+    });
+    // approve admin by candidate
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.approveAdmin();
+    await yToken.updateStorage();
     strictEqual(yToken.storage.storage.admin, bob.pkh);
+  });
+
+  it("stop setting yToken admin by admin", async () => {
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.setAdmin(alice.pkh);
+    await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.admin_candidate, alice.pkh);
+    // check that non-candidate could not trigger
+    tezos = await Utils.setProvider(tezos, carol.sk);
+    await rejects(yToken.approveAdmin(), (err) => {
+      strictEqual(err.message, "yToken/not-admin-or-candidate");
+      return true;
+    });
+    // stop approving admin by admin
+    tezos = await Utils.setProvider(tezos, bob.sk);
+    await yToken.approveAdmin();
+    await yToken.updateStorage();
+    strictEqual(yToken.storage.storage.admin, bob.pkh);
+    strictEqual(yToken.storage.storage.admin_candidate, null);
   });
 
   it("add market [0] by non admin", async () => {
@@ -187,18 +217,19 @@ describe("yToken tests", () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
 
     await rejects(
-      async () => await yToken.addMarket(
-        interest2ContractAddress,
-        "fA12",
-        fa12ContractAddress,
-        0,
-        750000000000000000,
-        400000000000000000,
-        9000000000000,
-        tokenMetadata,
-        550000000000000000,
-        500000000000000000
-      ),
+      async () =>
+        await yToken.addMarket(
+          interest2ContractAddress,
+          "fA12",
+          fa12ContractAddress,
+          0,
+          750000000000000000,
+          400000000000000000,
+          9000000000000,
+          tokenMetadata,
+          550000000000000000,
+          500000000000000000
+        ),
       (err) => {
         ok(
           err.message == "yToken/token-has-already-been-added",
@@ -423,7 +454,6 @@ describe("yToken tests", () => {
     await yToken.updateStorage();
     await proxy.updateStorage();
 
-
     let res = await fa12_2.storage.ledger.get(carol.pkh);
     strictEqual(await res.balance.toString(), "9999999990000000000");
 
@@ -463,7 +493,6 @@ describe("yToken tests", () => {
     await yToken.updateAndMint2(proxy, 0, 1000);
     await yToken.updateStorage();
     await proxy.updateStorage();
-
 
     let res = await fa12.storage.ledger.get(peter.pkh);
     strictEqual(await res.balance.toString(), "9999999999999999000");
@@ -519,7 +548,6 @@ describe("yToken tests", () => {
     await yToken.updateStorage();
     await proxy.updateStorage();
 
-
     let res = await fa2_2.storage.account_info.get(dev2.pkh);
     let res2 = await res.balances.get("0");
     strictEqual(await res2.toString(), "9999999999900000000");
@@ -541,7 +569,10 @@ describe("yToken tests", () => {
   it("return price by not oracle", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.priceCallback(0, 2000), (err) => {
-      ok(err.message == "yToken/sender-is-not-price-feed", "Error message mismatch");
+      ok(
+        err.message == "yToken/sender-is-not-price-feed",
+        "Error message mismatch"
+      );
       return true;
     });
   });
@@ -829,7 +860,6 @@ describe("yToken tests", () => {
     await yToken.updateStorage();
     await proxy.updateStorage();
 
-
     res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(
       res.borrow.toPrecision(40).split(".")[0],
@@ -844,7 +874,6 @@ describe("yToken tests", () => {
     await yToken.updateAndBorrow(proxy, 1, 1000);
     await yToken.updateStorage();
     await proxy.updateStorage();
-
 
     let res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result

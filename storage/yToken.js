@@ -3,6 +3,7 @@ const { alice } = require("../scripts/sandbox/accounts");
 
 const yStorage = {
   admin: alice.pkh,
+  admin_candidate: alice.pkh,
   ledger: MichelsonMap.fromLiteral({}),
   accounts: MichelsonMap.fromLiteral({}),
   tokens: MichelsonMap.fromLiteral({}),

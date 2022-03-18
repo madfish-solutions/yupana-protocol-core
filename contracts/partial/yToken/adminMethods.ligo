@@ -13,7 +13,26 @@ function setAdmin(
     case p of
       SetAdmin(newAdmin) -> {
         mustBeAdmin(s);
-        s.admin := newAdmin;
+        s.admin_candidate := Some(newAdmin);
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
+
+function approveAdmin(
+  const p               : useAction;
+  var s                 : yStorage)
+                        : return is
+  block {
+    case p of
+      ApproveAdmin(_) -> {
+        const admin_candidate : address = unwrap(s.admin_candidate, "yToken/no-candidate");
+        if Tezos.sender = admin_candidate or Tezos.sender = s.admin
+        then {
+          s.admin := Tezos.sender;
+          s.admin_candidate := (None : option(address));
+        }
+        else failwith("yToken/not-admin-or-candidate");
       }
     | _                 -> skip
     end
