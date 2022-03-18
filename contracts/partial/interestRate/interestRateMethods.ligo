@@ -127,13 +127,13 @@ function getSupplyRate(
       param.precision
     );
 
-    const precisionSubReserve : nat = get_nat_or_fail(param.precision - param.reserveFactorF, "underflow/precision");
+    const precisionSubReserveF : nat = get_nat_or_fail(param.precision - param.reserveFactorF, "underflow/precision");
 
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
           amount = borrowRateF * utilizationRateF *
-            precisionSubReserve;
+            precisionSubReserveF / param.precision / param.precision;
         ],
         0mutez,
         param.callback
