@@ -1,9 +1,7 @@
 function mustBeAdmin(
   const s               : yStorage)
                         : unit is
-  if Tezos.sender =/= s.admin
-  then failwith("yToken/not-admin")
-  else unit
+  require(Tezos.sender = s.admin, Errors.yToken.notAdmin)
 
 function setAdmin(
   const p               : useAction;
@@ -26,13 +24,10 @@ function approveAdmin(
   block {
     case p of
       ApproveAdmin(_) -> {
-        const admin_candidate : address = unwrap(s.admin_candidate, "yToken/no-candidate");
-        if Tezos.sender = admin_candidate or Tezos.sender = s.admin
-        then {
-          s.admin := Tezos.sender;
-          s.admin_candidate := (None : option(address));
-        }
-        else failwith("yToken/not-admin-or-candidate");
+        const admin_candidate : address = unwrap(s.admin_candidate, Errors.yToken.noCandidate);
+        require(Tezos.sender = admin_candidate or Tezos.sender = s.admin, Errors.yToken.notAdminOrCandidate);
+        s.admin := Tezos.sender;
+        s.admin_candidate := (None : option(address));
       }
     | _                 -> skip
     end
@@ -71,7 +66,7 @@ function withdrawReserve(
                         : unit is
   case typeInfo[asset] of
     None -> unit
-  | Some(_v) -> failwith("yToken/token-has-already-been-added")
+  | Some(_v) -> failwith(Errors.yToken.token_already_added)
   end
 
 function addMarket(
@@ -128,9 +123,7 @@ function setTokenFactors(
         var token : tokenType := getToken(params.tokenId, s.tokens);
 
         // TODO change to verifyInterestUpdated
-        if token.interestUpdateTime < Tezos.now
-        then failwith("yToken/need-update")
-        else skip;
+        require(token.interestUpdateTime >= Tezos.now, Errors.yToken.needUpdate);
 
         token.collateralFactorF := params.collateralFactorF;
         token.reserveFactorF := params.reserveFactorF;

@@ -105,26 +105,20 @@ function iterateTransfer(
                         : yStorage is
       block {
         (* Check permissions *)
-        if isApprovedOperator(params, transferDst.token_id, s)
-        then skip
-        else failwith("FA2_NOT_OPERATOR");
+        require(isApprovedOperator(params, transferDst.token_id, s), Errors.FA2.notOperator);
 
         (* Check the entered markets *)
-        if Set.mem(transferDst.token_id, getTokenIds(params.from_, s.markets))
-        then failwith("yToken/token-taken-as-collateral")
-        else skip;
+        require(not Set.mem(transferDst.token_id, getTokenIds(params.from_, s.markets), Errors.yToken.collateralTaken);
 
         (* Token id check *)
-        if transferDst.token_id >= s.lastTokenId
-        then failwith("FA2_TOKEN_UNDEFINED");
-        else skip;
+        require(transferDst.token_id < s.lastTokenId, Errors.FA2.undefined);
 
         (* Get source info *)
         var srcBalance : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
         const transferAmountF : nat = transferDst.amount * precision;
 
         (* Update source balance *)
-        srcBalance := get_nat_or_fail(srcBalance - transferAmountF, "FA2_INSUFFICIENT_BALANCE");
+        srcBalance := get_nat_or_fail(srcBalance - transferAmountF, Errors.FA2.lowBalance);
 
         s.ledger[(params.from_, transferDst.token_id)] := srcBalance;
 
@@ -146,12 +140,8 @@ function iterate_update_operators(
     case params of
       Add_operator(param) -> block {
       (* Check an owner *)
-      if Tezos.sender =/= param.owner
-      then failwith("FA2_NOT_OWNER")
-      else skip;
-      if param.token_id >= s.lastTokenId
-      then failwith("FA2_TOKEN_UNDEFINED");
-      else skip;
+      require(Tezos.sender = param.owner, Errors.FA2.notOwner);
+      require(param.token_id < s.lastTokenId, Errors.FA2.undefined);
 
       (* Create or get source account *)
       var srcAccount : account := getAccount(param.owner, param.token_id, s.accounts);
@@ -162,12 +152,8 @@ function iterate_update_operators(
     }
     | Remove_operator(param) -> block {
       (* Check an owner *)
-      if Tezos.sender =/= param.owner
-      then failwith("FA2_NOT_OWNER")
-      else skip;
-      if param.token_id >= s.lastTokenId
-      then failwith("FA2_TOKEN_UNDEFINED");
-      else skip;
+      require(Tezos.sender = param.owner, Errors.FA2.notOwner);
+      require(param.token_id < s.lastTokenId, Errors.FA2.undefined);
 
       (* Create or get source account *)
       var srcAccount : account := getAccount(param.owner, param.token_id, s.accounts);
@@ -195,7 +181,7 @@ function getBalance(
             const request     : balance_of_request)
                               : list(balance_of_response) is
             block {
-              require(request.token_id < s.lastTokenId, "FA2_TOKEN_UNDEFINED");
+              require(request.token_id < s.lastTokenId, Errors.FA2.undefined);
               (* Retrieve the asked account from the storage *)
               const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
 

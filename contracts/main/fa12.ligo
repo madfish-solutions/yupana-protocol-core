@@ -1,3 +1,4 @@
+#import "../partials/errors.ligo" "Errors"
 // FA1.2 CONTRACT FOR TESTING
 
 (* Define types *)
@@ -98,7 +99,7 @@ function transfer(
 
     (* Balance check *)
     if senderAccount.balance < value
-    then failwith("fa12/not-enough-balance(transfer)")
+    then failwith(Errors.FA12.lowBalance)
     else skip;
 
     (* Check this address can spend the tokens *)
@@ -110,12 +111,12 @@ function transfer(
       );
 
       if spenderAllowance < value
-      then failwith("fa12/not-enough-allowance")
+      then failwith(Errors.FA12.lowAllowance)
       else skip;
       (* Decrease any allowances *)
       senderAccount.allowances[Tezos.sender] :=
         case is_nat(spenderAllowance - value) of
-          | None -> (failwith("underflow/spenderAllowance") : nat)
+          | None -> (failwith(Errors.FA12.lowAllowance) : nat)
           | Some(value) -> value
         end;
     } else skip;
@@ -123,7 +124,7 @@ function transfer(
     (* Update sender balance *)
     senderAccount.balance :=
       case is_nat(senderAccount.balance - value) of
-        | None -> (failwith("underflow/senderAccount.balance") : nat)
+        | None -> (failwith(Errors.FA12.lowBalance) : nat)
         | Some(value) -> value
       end;
 
@@ -157,7 +158,7 @@ function approve(
 
     (* Prevent a corresponding attack vector *)
     if spenderAllowance > 0n and value > 0n
-    then failwith("fa12/unsafe-allowance-change")
+    then failwith(Errors.FA12.unsafeAllowance)
     else skip;
 
     (* Set spender allowance *)
@@ -217,12 +218,12 @@ function withdraw(
   block {
     var senderAccount : account := getAccount(Tezos.sender, s);
     if senderAccount.balance < value
-    then failwith("fa12/not-enough-balance(mint)")
+    then failwith(Errors.FA12.lowBalance)
     else skip;
 
     senderAccount.balance :=
       case is_nat(senderAccount.balance - value) of
-        | None -> (failwith("underflow/senderAccount.balance") : nat)
+        | None -> (failwith(Errors.FA12.lowBalance) : nat)
         | Some(value) -> value
       end;
 

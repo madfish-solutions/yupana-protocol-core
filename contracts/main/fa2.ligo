@@ -1,3 +1,4 @@
+#import "../partials/errors.ligo" "Errors"
 // FA2 CONTRACT FOR TESTING
 type token_id is nat
 
@@ -138,12 +139,12 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
         if params.from_ = Tezos.sender or src_account.permits contains Tezos.sender then
           skip
         else
-          failwith("fa2/not-operator");
+          failwith(Errors.FA2.notOperator);
 
 
         // (* Token id check *)
         if transfer_dst.token_id >= s.last_token_id
-        then failwith("fa2/token-undefined");
+        then failwith(Errors.FA2.undefined);
         else skip;
 
 
@@ -152,13 +153,13 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
 
         (* Balance check *)
         if src_balance < transfer_dst.amount
-        then failwith("fa2/insufficient-balance")
+        then failwith(Errors.FA2.lowBalance)
         else skip;
 
         (* Update source balance *)
         src_account.balances[transfer_dst.token_id] :=
           case is_nat(src_balance - transfer_dst.amount) of
-            | None -> (failwith("underflow/src_balance") : nat)
+            | None -> (failwith(Errors.FA2.lowBalance) : nat)
             | Some(value) -> value
           end;
 
@@ -186,7 +187,7 @@ function iterate_update_operators(var s : fa2_storage; const params : update_ope
     | Add_operator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("fa2/not-owner")
+      then failwith(Errors.FA2.notOwner)
       else skip;
 
       (* Create or get source account *)
@@ -201,7 +202,7 @@ function iterate_update_operators(var s : fa2_storage; const params : update_ope
     | Remove_operator(param) -> block {
       (* Check an owner *)
       if Tezos.sender =/= param.owner
-      then failwith("fa2/not-owner")
+      then failwith(Errors.FA2.notOwner)
       else skip;
 
       (* Create or get source account *)
@@ -252,9 +253,6 @@ function mint_asset(
   const s               : fa2_storage)
                         : fa2_storage is
   block {
-    // if s.admin =/= Tezos.sender
-    // then failwith("fa2/not-admin");
-    // else skip;
 
     function make_mint(
       var s             : fa2_storage;
@@ -262,7 +260,7 @@ function mint_asset(
                         : fa2_storage is
       block {
         if param.token_id >= s.last_token_id
-        then failwith("FA2_TOKEN_UNDEFINED");
+        then failwith(Errors.FA2.undefined);
         else skip;
 
         (* Get receiver account *)
@@ -293,7 +291,7 @@ function create_token(
                         : fa2_storage is
   block {
     if s.admin =/= Tezos.sender
-    then failwith("fa2/not-admin");
+    then failwith(Errors.FA2.notAdmin);
     else skip;
 
     s.token_metadata[s.last_token_id] := record [
@@ -309,7 +307,7 @@ function update_metadata(
                         : fa2_storage is
   block {
     if s.admin =/= Tezos.sender
-    then failwith("fa2/not-admin");
+    then failwith(Errors.FA2.notAdmin);
     else skip;
     s.token_metadata[params.token_id] := params;
   } with s

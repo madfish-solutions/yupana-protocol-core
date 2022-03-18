@@ -10,23 +10,15 @@ function getLiquidity(
 function ensureNotZero(
   const amt             : nat)
                         : unit is
-    if amt = 0n
-    then failwith("yToken/amount-is-zero");
-    else unit
+  require(amt > 0n, Errors.FA2.zeroAmount);
 
 [@inline] function getBorrowRateContract(
   const rateAddress     : address)
                         : contract(rateParams) is
-  case(
-    Tezos.get_entrypoint_opt("%getBorrowRate", rateAddress)
-                        : option(contract(rateParams))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("yToken/cant-get-interestRate-contract(getBorrowRate)")
-        : contract(rateParams)
-    )
-  end;
+  unwrap(
+    (Tezos.get_entrypoint_opt("%getBorrowRate", rateAddress): option(contract(rateParams))),
+    Errors.yToken.borrowRate404
+  )
 
 [@inline] function ceil_div(
   const numerator       : nat;
@@ -36,7 +28,7 @@ function ensureNotZero(
     Some(result) -> if result.1 > 0n
       then result.0 + 1n
       else result.0
-  | None -> failwith("ceil-div-error")
+  | None -> failwith(Errors.Math.ceilDivision)
   end;
 
 [@inline]
@@ -44,7 +36,7 @@ function verifyInterestUpdated(
     const token         : tokenType)
                         : unit is
     if token.interestUpdateTime < Tezos.now
-    then failwith("yToken/need-update")
+    then failwith(Errors.yToken.needUpdate)
     else unit;
 
 [@inline]
@@ -52,7 +44,7 @@ function verifyPriceUpdated(
     const token         : tokenType)
                         : unit is
     if token.priceUpdateTime < Tezos.now
-    then failwith("yToken/need-update")
+    then failwith(Errors.yToken.needUpdate)
     else unit;
 
 function calcMaxCollateralInCU(
@@ -269,9 +261,7 @@ function redeem(
             s.tokens
           );
 
-          if outstandingBorrowInCU > maxBorrowInCU
-          then failwith("yToken/exceeds-allowable-redeem");
-          else skip;
+          require(outstandingBorrowInCU <= maxBorrowInCU, Errors.redeemExceeds);
 
           operations := transfer_token(Tezos.self_address, Tezos.sender, redeemAmount, token.mainToken);
         }
@@ -323,12 +313,10 @@ function borrow(
             s.tokens
           );
 
-          if outstandingBorrowInCU > maxBorrowInCU
-          then failwith("yToken/exceeds-the-permissible-debt");
-          else skip;
+          require(outstandingBorrowInCU <= maxBorrowInCU, Errors.yToken.debtExceeds);
 
           token.totalBorrowsF := token.totalBorrowsF + borrowsF;
-          token.totalLiquidF := get_nat_or_fail(token.totalLiquidF - borrowsF, "yToken/not-enough-liquidity");
+          token.totalLiquidF := get_nat_or_fail(token.totalLiquidF - borrowsF, Errors.yToken.lowLiquidity);
           s.tokens[params.tokenId] := token;
           operations := transfer_token(Tezos.self_address, Tezos.sender, params.amount, token.mainToken);
         }
@@ -429,9 +417,7 @@ function liquidate(
           borrowToken.totalLiquidF := borrowToken.totalLiquidF + liqAmountF;
           operations := transfer_token(Tezos.sender, Tezos.self_address, params.amount, borrowToken.mainToken);
 
-          if userCollateralTokens contains params.collateralToken
-          then skip
-          else failwith("yToken/no-such-collateral");
+          require(userCollateralTokens contains params.collateralToken, Errors.yToken.noCollateral);
 
           var collateralToken : tokenType := getToken(params.collateralToken, s.tokens);
 
@@ -520,9 +506,8 @@ function exitMarket(
             s.tokens
           );
 
-          if outstandingBorrowInCU <= maxBorrowInCU
-          then s.markets[Tezos.sender] := userMarkets;
-          else failwith("yToken/debt-not-repaid");
+          require(outstandingBorrowInCU <= maxBorrowInCU, Errors.yToken.unpaidDebt);
+          s.markets[Tezos.sender] := userMarkets;
         }
       | _                         -> skip
       end
@@ -552,9 +537,8 @@ function accrueInterest(
     var token : tokenType := getToken(params.tokenId, s.storage.tokens);
     const borrowRateF : nat = params.amount;
 
-    if token.isInterestUpdating = False
-    then failwith("yToken/interest-update-wrong-state");
-    else token.isInterestUpdating := False;
+    require(token.isInterestUpdating, Errors.yToken.wrongUpdateState);
+    token.isInterestUpdating := False;
 
     require(Tezos.sender = token.interestRateModel, "yToken/not-interest-rate-model-address");
     require(borrowRateF < token.maxBorrowRate, "yToken/borrow-rate-is-absurdly-high");
