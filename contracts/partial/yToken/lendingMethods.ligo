@@ -208,6 +208,8 @@ function mint(
             mintTokensF := mintTokensF * token.totalSupplyF / liquidityF;
           } else skip;
 
+          require(mintTokensF / precision >= params.minReceived, "yToken/mint/low-mint");
+
           var userBalance : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
           userBalance := userBalance + mintTokensF;
           s.ledger[(Tezos.sender, params.tokenId)] := userBalance;
@@ -236,6 +238,7 @@ function redeem(
           const redeemAmount : nat = if params.amount = 0n
           then userBalance * liquidityF / token.totalSupplyF / precision
           else params.amount;
+          require(redeemAmount >= params.minReceived, "yToken/redeem/low-received");
           var burnTokensF : nat := redeemAmount * precision * token.totalSupplyF / liquidityF;
 
           userBalance := get_nat_or_fail(userBalance - burnTokensF, "yToken/not-enough-tokens-to-burn");
@@ -284,6 +287,8 @@ function borrow(
     var operations : list(operation) := list[];
       case p of
         Borrow(params) -> {
+          check_deadline(params.deadline);
+          
           ensureNotZero(params.amount);
 
           require(params.tokenId < s.lastTokenId, "yToken/yToken-undefined");
@@ -339,6 +344,8 @@ function repay(
     var operations : list(operation) := list[];
       case p of
         Repay(params) -> {
+          check_deadline(params.deadline);
+
           require(params.tokenId < s.lastTokenId, "yToken/yToken-undefined");
 
           var token : tokenType := getToken(params.tokenId, s.tokens);
@@ -377,6 +384,7 @@ function liquidate(
     var operations : list(operation) := list[];
       case p of
         Liquidate(params) -> {
+          check_deadline(params.deadline);
           ensureNotZero(params.amount);
           require(params.collateralToken < s.lastTokenId, "yToken/collateral-id-undefined");
           require(params.borrowToken < s.lastTokenId, "yToken/borrow-id-undefined");
@@ -436,6 +444,7 @@ function liquidate(
           const liquidityF : nat = getLiquidity(collateralToken);
           const exchangeRateF : nat = liquidityF * precision * collateralToken.lastPrice;
           const seizeTokensF : nat = seizeAmount / exchangeRateF;
+          require(seizeTokensF / precision >= params.minSeized, "yToken/seize/low-seize-tokens");
           var liquidatorAccount : account := getAccount(
             Tezos.sender,
             params.collateralToken,
