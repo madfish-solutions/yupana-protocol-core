@@ -3,6 +3,7 @@ const { migrate, getDeployedAddress } = require("../scripts/helpers");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { confirmOperation } = require("../scripts/confirmation");
 const { functions } = require("../storage/functions");
+const yTokenErrors = require("../storage/yTokenTZIP16Errors")
 const { getLigo } = require("../scripts/helpers");
 const { execSync } = require("child_process");
 const { InMemorySigner } = require("@taquito/signer");
@@ -21,7 +22,7 @@ const metadata = MichelsonMap.fromLiteral({
       },
       homepage: "https://yupana.com",
       interfaces: ["TZIP-12", "TZIP-16"],
-      errors: [],
+      errors: yTokenErrors,
       views: [],
     }),
     "ascii"

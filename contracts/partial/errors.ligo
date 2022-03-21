@@ -18,34 +18,36 @@ module YToken is {
   const notAdmin                 : string = "Y_NOT_ADMIN";
   const notAdminOrCandidate      : string = "Y_NOT_ADMIN_OR_CANDIDATE";
   const noCandidate              : string = "Y_NO_CANDIDATE";
+  const notProxy                 : string = "Y_NOT_PROXY";
+  const notIR                    : string = "Y_NOT_INTEREST_RATE";
+  const borrowRate404            : string = "Y_CANT_GET_IR_getBorrowRate";
+  const wrongUpdateState         : string = "Y_INTEREST_UPDATE_STATE";
   const lambdaSet                : string = "Y_LAMBDA_ALREADY_SET";
   const lambdaNotSet             : string = "Y_LAMBDA_NOT_SET_YET";
   const unpackLambdaFailed       : string = "Y_CANT_UNPACK_LAMBDA";
+  const collateralTaken          : string = "Y_TOKEN_TAKEN_AS_COLLATERAL";
+  const noCollateral             : string = "Y_NO_COLLATERAL";
   const tokenAlreadyAdded        : string = "Y_DUP_ASSET";
   const needUpdate               : string = "Y_NEED_UPDATE";
-  const collateralTaken          : string = "Y_TOKEN_TAKEN_AS_COLLATERAL";
   const zeroAmount               : string = "Y_ZERO_AMOUNT";
-  const borrowRate404            : string = "Y_CANT_GET_IR_getBorrowRate";
-  const redeemExceeds            : string = "Y_ALLOWED_REDEEM_EXCEEDS";
-  const debtExceeds              : string = "Y_PERMITTED_DEBT_EXCEEDS";
-  const noCollateral             : string = "Y_NO_COLLATERAL";
+
   const unpaidDebt               : string = "Y_DEBT_NOT_REPAID";
-  const wrongUpdateState         : string = "Y_INTEREST_UPDATE_STATE";
-  const lowLiquidity             : string = "Y_LOW_LIQUIDITY";
-  const deadlineReached          : string = "Y_DEADLINE_EXPIRED";
-  const undefined                : string = "Y_TOKEN_UNDEFINED";
-  const highReceived             : string = "Y_HIGH_MIN_RECEIVED";
-  const maxMarketLimit           : string = "Y_MAX_MARKET_LIMIT";
   const borrowPaused             : string = "Y_BORROW_PAUSED";
   const borrowerNotLiquidator    : string = "Y_BORROWER_CANNOT_BE_LIQUIDATOR";
   const marketId404              : string = "Y_MARKET_UNDEFINED";
+  const undefined                : string = "Y_TOKEN_UNDEFINED";
+  const redeemExceeds            : string = "Y_ALLOWED_REDEEM_EXCEEDS";
+  const debtExceeds              : string = "Y_PERMITTED_DEBT_EXCEEDS";
+  const maxMarketLimit           : string = "Y_MAX_MARKET_LIMIT";
   const repayOverflow            : string = "Y_TOO_MUCH_REPAY";
+  const timeOverflow             : string = "Y_TIME_OVERFLOW";
+  const deadlineReached          : string = "Y_DEADLINE_EXPIRED";
   const highSeize                : string = "Y_HIGH_MIN_SEIZED";
-  const notProxy                 : string = "Y_NOT_PROXY";
-  const notIR                    : string = "Y_NOT_INTEREST_RATE";
+  const highReceived             : string = "Y_HIGH_MIN_RECEIVED";
   const highBorrowRate           : string = "Y_BORROW_RATE_ABSURDLY_HIGH";
   const cantLiquidate            : string = "Y_LIQUIDATION_NOT_ACHIEVED";
   const lowReserves              : string = "Y_LOW_RESERVES";
+  const lowLiquidity             : string = "Y_LOW_LIQUIDITY";
   const lowBalance               : string = "Y_TOKEN_NOT_ENOUGH_BALANCE";
   const lowSupply                : string = "Y_TOKEN_LOW_TOTAL_SUPPLY";
   const lowLiquidity             : string = "Y_TOKEN_LOW_LIQUIDITY";
@@ -53,7 +55,6 @@ module YToken is {
   const lowBorrowerBalanceS      : string = "Y_TOKEN_LOW_BORROWER_BALANCE_SEIZE";
   const lowBorrowerBalanceR      : string = "Y_TOKEN_LOW_BORROWER_BALANCE_RESERVES";
   const lowTotalBorrow           : string = "Y_TOKEN_LOW_TOTAL_BORROWED";
-  const timeOverflow             : string = "Y_TIME_OVERFLOW";
 }
 
 module Proxy is {
