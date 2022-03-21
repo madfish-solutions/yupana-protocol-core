@@ -1,69 +1,48 @@
 function mustBeAdmin(
   const admin           : address)
                         : unit is
-  if Tezos.sender =/= admin
-  then failwith("proxy/not-admin")
-  else unit
+  require(Tezos.sender = admin, Errors.Proxy.notAdmin)
 
 [@inline] function mustBeOracle(
   const oracle          : address)
                         : unit is
-  if Tezos.sender =/= oracle
-  then failwith("proxy/not-oracle")
-  else unit
+  require(Tezos.sender = oracle, Errors.Proxy.notOracle)
 
 [@inline] function getNormalizerContract(
   const oracleAddress   : address)
                         : contract(getType) is
-  case (
-    Tezos.get_entrypoint_opt("%get", oracleAddress)
-                        : option(contract(getType))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("proxy/cant-get-oracle") : contract(getType)
-    )
-  end;
+  unwrap(
+    (Tezos.get_entrypoint_opt("%get", oracleAddress)
+                        : option(contract(getType))),
+    Errors.Proxy.wrongOContract
+  )
 
 [@inline] function getYTokenPriceCallbackMethod(
   const yToken          : address)
                         : contract(yAssetParams) is
-  case (
-    Tezos.get_entrypoint_opt("%priceCallback", yToken)
-                        : option(contract(yAssetParams))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("proxy/cant-get-yToken") : contract(yAssetParams)
-    )
-  end;
+  unwrap(
+    (Tezos.get_entrypoint_opt("%priceCallback", yToken)
+                        : option(contract(yAssetParams))),
+    Errors.Proxy.wrongYContract
+  )
 
 [@inline] function getDecimal(
   const pairName        : string;
   const tokensDecimals  : big_map(string, nat))
                         : nat is
-  case tokensDecimals[pairName] of
-    | Some(v) -> v
-    | None -> (failwith("checkPairName/decimals-not-defined") : nat)
-  end;
+  unwrap(tokensDecimals[pairName], Errors.Proxy.PairCheck.decimals)
 
 [@inline] function checkPairName(
   const tokenId         : tokenId;
   const pairName        : big_map(tokenId, string))
                         : string is
-  case pairName[tokenId] of
-    | Some(v) -> v
-    | None -> (failwith("checkPairName/string-not-defined") : string)
-  end;
+  unwrap(pairName[tokenId], Errors.Proxy.PairCheck.pairString)
 
 [@inline] function checkPairId(
   const pairName        : string;
   const pairId          : big_map(string, tokenId))
                         : nat is
-  case pairId[pairName] of
-    | Some(v) -> v
-    | None -> (failwith("checkPairId/tokenId-not-defined") : nat)
-  end;
+  unwrap(pairId[pairName], Errors.Proxy.PairCheck.tokenId)
 
 function setProxyAdmin(
   const addr            : address;

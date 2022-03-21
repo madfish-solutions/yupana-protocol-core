@@ -1,9 +1,7 @@
 [@inline] function mustBeAdmin(
   const s               : rateStorage)
                         : unit is
-  if Tezos.sender =/= s.admin
-  then failwith("interestRate/not-admin")
-  else unit
+  require(Tezos.sender = s.admin, Errors.InterestRate.notAdmin)
 
 [@inline] function calcUtilRate(
   const borrowsF        : nat;
@@ -12,7 +10,7 @@
   const precision       : nat)
                         : nat is
   block {
-    const denominator : nat = get_nat_or_fail(cashF + borrowsF - reservesF, "underflow/cashF+borrowsF");
+    const denominator : nat = get_nat_or_fail(cashF + borrowsF - reservesF, Errors.Math.lowLiquidityUtil);
   } with precision * borrowsF / denominator
 
 [@inline] function calcBorrowRate(
@@ -34,7 +32,7 @@
     if utilizationRateF <= s.kinkF
     then borrowRateF := s.baseRateF + utilizationRateF * s.multiplierF / precision;
     else block {
-      const utilizationSubkink : nat = get_nat_or_fail(utilizationRateF - s.kinkF, "underflow/utilizationRateF");
+      const utilizationSubkink : nat = get_nat_or_fail(utilizationRateF - s.kinkF, Errors.Math.lowUtilRateKink);
       borrowRateF := ((s.kinkF * s.multiplierF / precision + s.baseRateF) +
       (utilizationSubkink * s.jumpMultiplierF) / precision);
     }
@@ -127,7 +125,7 @@ function getSupplyRate(
       param.precision
     );
 
-    const precisionSubReserveF : nat = get_nat_or_fail(param.precision - param.reserveFactorF, "underflow/precision");
+    const precisionSubReserveF : nat = get_nat_or_fail(param.precision - param.reserveFactorF, Errors.Math.lowPrecisionReserve);
 
     var operations : list(operation) := list[
       Tezos.transaction(record[

@@ -49,4 +49,4 @@ function get_nat_or_fail(
 [@inline] function check_deadline(
   const exp             : timestamp)
                         : unit is
-  require(exp >= Tezos.now, "deadline-expired");
+  require(exp >= Tezos.now, Errors.YToken.deadlineReached);

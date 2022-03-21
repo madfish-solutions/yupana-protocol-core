@@ -1,4 +1,5 @@
-#import "../partials/errors.ligo" "Errors"
+#import  "../partial/errors.ligo" "Errors"
+#include "../partial/commonHelpers.ligo"
 // FA1.2 CONTRACT FOR TESTING
 
 (* Define types *)
@@ -98,35 +99,22 @@ function transfer(
     var senderAccount : account := getAccount(from_, s);
 
     (* Balance check *)
-    if senderAccount.balance < value
-    then failwith(Errors.FA12.lowBalance)
-    else skip;
+    require(senderAccount.balance >= value, Errors.FA12.lowBalance);
 
     (* Check this address can spend the tokens *)
     if from_ =/= Tezos.sender
-    then block {
+    then {
       const spenderAllowance : amt = getAllowance(
         senderAccount,
         Tezos.sender
       );
 
-      if spenderAllowance < value
-      then failwith(Errors.FA12.lowAllowance)
-      else skip;
       (* Decrease any allowances *)
-      senderAccount.allowances[Tezos.sender] :=
-        case is_nat(spenderAllowance - value) of
-          | None -> (failwith(Errors.FA12.lowAllowance) : nat)
-          | Some(value) -> value
-        end;
+      senderAccount.allowances[Tezos.sender] := get_nat_or_fail(spenderAllowance - value, Errors.FA12.lowAllowance);
     } else skip;
 
     (* Update sender balance *)
-    senderAccount.balance :=
-      case is_nat(senderAccount.balance - value) of
-        | None -> (failwith(Errors.FA12.lowBalance) : nat)
-        | Some(value) -> value
-      end;
+    senderAccount.balance := get_nat_or_fail(senderAccount.balance - value, Errors.FA12.lowBalance);
 
     (* Update storage *)
     s.ledger[from_] := senderAccount;
@@ -157,9 +145,7 @@ function approve(
     const spenderAllowance : amt = getAllowance(senderAccount, spender);
 
     (* Prevent a corresponding attack vector *)
-    if spenderAllowance > 0n and value > 0n
-    then failwith(Errors.FA12.unsafeAllowance)
-    else skip;
+    require(spenderAllowance = 0n or value = 0n, Errors.FA12.unsafeAllowance);
 
     (* Set spender allowance *)
     senderAccount.allowances[spender] := value;
@@ -217,15 +203,8 @@ function withdraw(
                         : return is
   block {
     var senderAccount : account := getAccount(Tezos.sender, s);
-    if senderAccount.balance < value
-    then failwith(Errors.FA12.lowBalance)
-    else skip;
 
-    senderAccount.balance :=
-      case is_nat(senderAccount.balance - value) of
-        | None -> (failwith(Errors.FA12.lowBalance) : nat)
-        | Some(value) -> value
-      end;
+    senderAccount.balance := get_nat_or_fail(senderAccount.balance - value, Errors.FA12.lowBalance);
 
     s.ledger[Tezos.sender] := senderAccount;
   } with (list [Tezos.transaction(

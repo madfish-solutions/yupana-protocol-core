@@ -1,7 +1,7 @@
 function mustBeAdmin(
   const s               : yStorage)
                         : unit is
-  require(Tezos.sender = s.admin, Errors.yToken.notAdmin)
+  require(Tezos.sender = s.admin, Errors.YToken.notAdmin)
 
 function setAdmin(
   const p               : useAction;
@@ -24,8 +24,8 @@ function approveAdmin(
   block {
     case p of
       ApproveAdmin(_) -> {
-        const admin_candidate : address = unwrap(s.admin_candidate, Errors.yToken.noCandidate);
-        require(Tezos.sender = admin_candidate or Tezos.sender = s.admin, Errors.yToken.notAdminOrCandidate);
+        const admin_candidate : address = unwrap(s.admin_candidate, Errors.YToken.noCandidate);
+        require(Tezos.sender = admin_candidate or Tezos.sender = s.admin, Errors.YToken.notAdminOrCandidate);
         s.admin := Tezos.sender;
         s.admin_candidate := (None : option(address));
       }
@@ -45,7 +45,7 @@ function withdrawReserve(
         var token : tokenType := getToken(params.tokenId, s.tokens);
         const amountF = params.amount * precision;
 
-        token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, "underflow/totalReservesF");
+        token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, Errors.YToken.lowReserves);
 
         s.tokens[params.tokenId] := token;
 
@@ -64,10 +64,7 @@ function withdrawReserve(
   const typeInfo        : big_map(assetType, tokenId);
   const asset           : assetType)
                         : unit is
-  case typeInfo[asset] of
-    None -> unit
-  | Some(_v) -> failwith(Errors.yToken.token_already_added)
-  end
+  require_none(typeInfo[asset], Errors.YToken.tokenAlreadyAdded)
 
 function addMarket(
   const params          : newMarketParams;
@@ -123,7 +120,7 @@ function setTokenFactors(
         var token : tokenType := getToken(params.tokenId, s.tokens);
 
         // TODO change to verifyInterestUpdated
-        require(token.interestUpdateTime >= Tezos.now, Errors.yToken.needUpdate);
+        require(token.interestUpdateTime >= Tezos.now, Errors.YToken.needUpdate);
 
         token.collateralFactorF := params.collateralFactorF;
         token.reserveFactorF := params.reserveFactorF;

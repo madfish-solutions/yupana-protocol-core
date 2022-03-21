@@ -108,7 +108,7 @@ function iterateTransfer(
         require(isApprovedOperator(params, transferDst.token_id, s), Errors.FA2.notOperator);
 
         (* Check the entered markets *)
-        require(not Set.mem(transferDst.token_id, getTokenIds(params.from_, s.markets), Errors.yToken.collateralTaken);
+        require(not Set.mem(transferDst.token_id, getTokenIds(params.from_, s.markets)), Errors.YToken.collateralTaken);
 
         (* Token id check *)
         require(transferDst.token_id < s.lastTokenId, Errors.FA2.undefined);
