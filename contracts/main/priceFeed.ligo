@@ -9,6 +9,7 @@ function main(
                         : proxyReturn is
   case p of
     | SetProxyAdmin(params)   -> setProxyAdmin(params, s)
+    | SetTimeLimit(params)    -> setTimeLimit(params, s)
     | UpdateOracle(params)    -> updateOracle(params, s)
     | UpdateYToken(params)    -> updateYToken(params, s)
     | UpdatePair(params)      -> updatePair(params, s)

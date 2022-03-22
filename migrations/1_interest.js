@@ -1,15 +1,15 @@
 const { dev } = require("../scripts/sandbox/accounts");
+const storage = require("../storage/interestRate");
 const { migrate } = require("../scripts/helpers");
 
 module.exports = async (tezos) => {
-  const contractAddress = await migrate(tezos, "interestRate", {
+  const interestRateStorage = {
+    ...storage,
     admin: dev.pkh,
     kinkF: "800000000000000000",
-    baseRateF: "0",
     multiplierF: "1585489599",
     jumpMultiplierF: "34563673262",
-    reserveFactorF: "0",
-    lastUpdTime: "2021-08-20T09:06:50Z",
-  });
+  };
+  const contractAddress = await migrate(tezos, "interestRate", interestRateStorage);
   console.log(`InterestRate1 contract: ${contractAddress}`);
 };

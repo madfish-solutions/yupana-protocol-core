@@ -3,6 +3,12 @@ function mustBeAdmin(
                         : unit is
   require(Tezos.sender = admin, Errors.Proxy.notAdmin)
 
+function checkTimestamp(
+  const oracleTimestamp : timestamp
+  const limit           : int)
+                        : unit is
+  require(oracleTimestamp >= Tezos.now - limit, Errors.Proxy.timestampLimit)
+
 [@inline] function mustBeOracle(
   const oracle          : address)
                         : unit is
@@ -53,6 +59,15 @@ function setProxyAdmin(
     s.admin := addr;
   } with (noOperations, s)
 
+function setTimeLimit(
+  const limit           : nat;
+  var s                 : proxyStorage)
+                        : proxyReturn is
+  block {
+    mustBeAdmin(s.admin);
+    s.timestampLimit := int(limit);
+  } with (noOperations, s)
+
 function updateOracle(
   const addr            : address;
   var s                 : proxyStorage)
@@ -74,10 +89,11 @@ function updateYToken(
 
 function receivePrice(
   const param           : oracleParam;
-  var s               : proxyStorage)
+  var s                 : proxyStorage)
                         : proxyReturn is
   block {
     mustBeOracle(s.oracle);
+    checkTimestamp(param.1.0, s.timestampLimit);
     const pairName : string = param.0;
     const decimals : nat = getDecimal(pairName, s.tokensDecimals);
     const price : nat = param.1.1 * precision / decimals;
@@ -131,4 +147,5 @@ function updatePair(
     s.pairName[param.tokenId] := param.pairName;
     s.pairId[param.pairName] := param.tokenId;
     s.tokensDecimals[param.pairName] := param.decimals;
+    s.priceCorrelations[param.pairName] = param.priceCorrelation;
   } with (noOperations, s)

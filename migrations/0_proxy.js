@@ -3,17 +3,17 @@ const { migrate } = require("../scripts/helpers");
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { confirmOperation } = require("../scripts/confirmation");
 const { InMemorySigner } = require("@taquito/signer");
+const storage = require("../storage/proxy")
 const oracle = "KT1KBrn1udLLrGNbQ3n1mWgMVXkr26krj6Nj";
 
+
 module.exports = async (tezos) => {
-  const contractAddress = await migrate(tezos, "priceFeed", {
+  const proxyStorage = {
+    ...storage,
     admin: dev.pkh,
     oracle: oracle,
-    yToken: alice.pkh,
-    pairName: MichelsonMap.fromLiteral({}),
-    pairId: MichelsonMap.fromLiteral({}),
-    tokensDecimals: MichelsonMap.fromLiteral({}),
-  });
+  }
+  const contractAddress = await migrate(tezos, "priceFeed", proxyStorage);
 
   console.log(`Proxy contract: ${contractAddress}`);
   let contract = await tezos.contract.at(contractAddress);

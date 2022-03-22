@@ -8,4 +8,6 @@ module.exports = {
   pairName: MichelsonMap.fromLiteral({}),
   pairId: MichelsonMap.fromLiteral({}),
   tokensDecimals: MichelsonMap.fromLiteral({}),
+  priceCorrelations: MichelsonMap.fromLiteral({}),
+  timestampLimit: "300",
 };

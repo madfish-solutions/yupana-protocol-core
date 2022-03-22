@@ -8,6 +8,7 @@ const { getLigo } = require("../scripts/helpers");
 const { execSync } = require("child_process");
 const { InMemorySigner } = require("@taquito/signer");
 const { storage, metadata } = require("../storage/yToken");
+const interestRateStorage = require("../storage/interestRate");
 
 let contractAddress = 0;
 
@@ -83,13 +84,12 @@ module.exports = async (tezos) => {
   const contract = await tezos.contract.at(contractAddress);
 
   const interest2Address = await migrate(tezos, "interestRate", {
+    ...interestRateStorage,
     admin: dev.pkh,
     kinkF: "800000000000000000",
     baseRateF: "634195839",
     multiplierF: "7134703196",
     jumpMultiplierF: "31709791983",
-    reserveFactorF: "0",
-    lastUpdTime: "2021-08-20T09:06:50Z",
   });
   console.log(`InterestRate2 contract: ${interest2Address}`);
 
