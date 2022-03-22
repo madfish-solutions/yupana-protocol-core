@@ -372,7 +372,7 @@ function liquidate(
           check_deadline(params.deadline);
           ensureNotZero(params.amount);
           require(
-            params.collateralToken < s.lastTokenId and params.borrowToken < s.lastTokenId, 
+            params.collateralToken < s.lastTokenId and params.borrowToken < s.lastTokenId,
             Errors.YToken.marketId404
           );
 

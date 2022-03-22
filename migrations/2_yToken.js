@@ -7,49 +7,19 @@ const yTokenErrors = require("../storage/yTokenTZIP16Errors")
 const { getLigo } = require("../scripts/helpers");
 const { execSync } = require("child_process");
 const { InMemorySigner } = require("@taquito/signer");
+const { storage, metadata } = require("../storage/yToken");
 
-const metadata = MichelsonMap.fromLiteral({
-  "": Buffer.from("tezos-storage:yupana", "ascii").toString("hex"),
-  yupana: Buffer.from(
-    JSON.stringify({
-      name: "Yupana",
-      version: "v1.0.0",
-      description: "Yupana protocol.",
-      authors: ["madfish.solutions"],
-      source: {
-        tools: ["Ligo", "Flextesa"],
-        location: "https://ligolang.org/",
-      },
-      homepage: "https://yupana.com",
-      interfaces: ["TZIP-12", "TZIP-16"],
-      errors: yTokenErrors,
-      views: [],
-    }),
-    "ascii"
-  ).toString("hex"),
-});
-
-const yStorage = {
-  admin: dev.pkh,
-  admin_candidate: dev.pkh,
-  ledger: MichelsonMap.fromLiteral({}),
-  accounts: MichelsonMap.fromLiteral({}),
-  tokens: MichelsonMap.fromLiteral({}),
-  lastTokenId: "0",
-  priceFeedProxy: alice.pkh,
-  closeFactorF: "0",
-  liqIncentiveF: "0",
-  markets: MichelsonMap.fromLiteral({}),
-  borrows: MichelsonMap.fromLiteral({}),
-  maxMarkets: "0",
-  assets: MichelsonMap.fromLiteral({}),
-};
 let contractAddress = 0;
 
 module.exports = async (tezos) => {
+  const yStorage = {
+    ...storage,
+    admin: dev.pkh,
+  }
+
   contractAddress = await migrate(tezos, "yToken", {
     storage: yStorage,
-    metadata: metadata,
+    metadata,
     token_metadata: MichelsonMap.fromLiteral({}),
     tokenLambdas: MichelsonMap.fromLiteral({}),
     useLambdas: MichelsonMap.fromLiteral({}),

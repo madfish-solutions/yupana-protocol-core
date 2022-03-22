@@ -624,7 +624,7 @@ describe("yToken tests", () => {
         },
       ]),
       (err) => {
-        strictEqual(err.message, "FA2_NOT_ENOUGH_BALANCE");
+        strictEqual(err.message, "FA2_INSUFFICIENT_BALANCE");
         return true;
       }
     );

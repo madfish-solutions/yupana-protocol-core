@@ -2,7 +2,7 @@ module FA2 is {
   const notOperator              : string = "FA2_NOT_OPERATOR";
   const undefined                : string = "FA2_TOKEN_UNDEFINED";
   const notOwner                 : string = "FA2_NOT_OWNER";
-  const lowBalance               : string = "FA2_NOT_ENOUGH_BALANCE";
+  const lowBalance               : string = "FA2_INSUFFICIENT_BALANCE";
   const notAdmin                 : string = "FA2_NOT_ADMIN";
   const wrongContract            : string = "NOT_FA2_CONTRACT";
 }
@@ -30,7 +30,6 @@ module YToken is {
   const tokenAlreadyAdded        : string = "Y_DUP_ASSET";
   const needUpdate               : string = "Y_NEED_UPDATE";
   const zeroAmount               : string = "Y_ZERO_AMOUNT";
-
   const unpaidDebt               : string = "Y_DEBT_NOT_REPAID";
   const borrowPaused             : string = "Y_BORROW_PAUSED";
   const borrowerNotLiquidator    : string = "Y_BORROWER_CANNOT_BE_LIQUIDATOR";
@@ -50,7 +49,6 @@ module YToken is {
   const lowLiquidity             : string = "Y_LOW_LIQUIDITY";
   const lowBalance               : string = "Y_TOKEN_NOT_ENOUGH_BALANCE";
   const lowSupply                : string = "Y_TOKEN_LOW_TOTAL_SUPPLY";
-  const lowLiquidity             : string = "Y_TOKEN_LOW_LIQUIDITY";
   const lowBorrowAmount          : string = "Y_TOKEN_LOW_BORROW_AMOUNT";
   const lowBorrowerBalanceS      : string = "Y_TOKEN_LOW_BORROWER_BALANCE_SEIZE";
   const lowBorrowerBalanceR      : string = "Y_TOKEN_LOW_BORROWER_BALANCE_RESERVES";
