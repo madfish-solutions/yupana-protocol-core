@@ -6,5 +6,6 @@ type proxyStorage       is [@layout:comb] record [
   pairId                : big_map(string, tokenId);
   tokensDecimals        : big_map(string, nat);
   priceCorrelations     : big_map(string, nat);
+  oldPrices             : big_map(string, nat);
   timestampLimit        : int;
 ]

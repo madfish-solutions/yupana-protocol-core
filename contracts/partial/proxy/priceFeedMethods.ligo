@@ -4,10 +4,17 @@ function mustBeAdmin(
   require(Tezos.sender = admin, Errors.Proxy.notAdmin)
 
 function checkTimestamp(
-  const oracleTimestamp : timestamp
+  const oracleTimestamp : timestamp;
   const limit           : int)
                         : unit is
-  require(oracleTimestamp >= Tezos.now - limit, Errors.Proxy.timestampLimit)
+  require(oracleTimestamp >= Tezos.now - limit, Errors.Proxy.timestampLimit);
+
+function checkPriceCorrelation(
+  const priceF          : nat;
+  const oldPriceF       : nat;
+  const priceCorrF      : nat)
+                        : unit is
+  require((abs(priceF - oldPriceF) * precision) / oldPriceF <= priceCorrF, Errors.Proxy.priceCorrLimit);
 
 [@inline] function mustBeOracle(
   const oracle          : address)
@@ -95,8 +102,17 @@ function receivePrice(
     mustBeOracle(s.oracle);
     checkTimestamp(param.1.0, s.timestampLimit);
     const pairName : string = param.0;
+    const oraclePrice = param.1.1;
+    case s.oldPrices[pairName] of
+    | None -> s.oldPrices[pairName] := oraclePrice * precision // for the first update case
+    | Some(oldPriceF) -> checkPriceCorrelation(
+        oraclePrice * precision,
+        oldPriceF,
+        unwrap(s.priceCorrelations[pairName], Errors.Proxy.PairCheck.noCorrelation)
+      )
+    end;
     const decimals : nat = getDecimal(pairName, s.tokensDecimals);
-    const price : nat = param.1.1 * precision / decimals;
+    const price : nat = oraclePrice * precision / decimals;
 
     const tokenId : nat = checkPairId(pairName, s.pairId);
     var operations : list(operation) := list[
@@ -147,5 +163,5 @@ function updatePair(
     s.pairName[param.tokenId] := param.pairName;
     s.pairId[param.pairName] := param.tokenId;
     s.tokensDecimals[param.pairName] := param.decimals;
-    s.priceCorrelations[param.pairName] = param.priceCorrelation;
+    s.priceCorrelations[param.pairName] := param.priceCorrelationF;
   } with (noOperations, s)

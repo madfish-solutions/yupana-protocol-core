@@ -60,10 +60,13 @@ module Proxy is {
   const notOracle                : string = "P_NOT_ORACLE";
   const wrongYContract           : string = "P_NOT_YTOKEN_CONTRACT";
   const wrongOContract           : string = "P_NOT_ORACLE_CONTRACT";
+  const timestampLimit           : string = "P_OLD_PRICE_RECEIVED";
+  const priceCorrLimit           : string = "P_PRICE_CHANGE_ABSURDLY_HIGH";
   module PairCheck is {
     const decimals               : string = "DECIMALS_NOT_DEFINED";
     const pairString             : string = "STRING_NOT_DEFINED";
     const tokenId                : string = "TOKEN_ID_NOT_DEFINED";
+    const noCorrelation          : string = "PRICE_CORRELATION_NOT_DEFINED";
   }
 }
 
