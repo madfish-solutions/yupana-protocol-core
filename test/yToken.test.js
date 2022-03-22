@@ -879,7 +879,7 @@ describe("yToken tests", () => {
   it("redeem borrowed yTokens by alice", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.updateAndRedeem(proxy, 1, 0), (err) => {
-      strictEqual(err.message, "Y_TOKEN_LOW_LIQUIDITY");
+      strictEqual(err.message, "Y_LOW_LIQUIDITY");
       return true;
     });
   });
