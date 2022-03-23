@@ -205,7 +205,7 @@ describe("yToken tests", () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(0, "COMP-USD", Math.pow(10, 6), 4 * Math.pow(10, 16));
+    await proxy.updatePair(0, "COMP-USD", Math.pow(10, 6), Math.pow(10, 25));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(0), "COMP-USD");
 
@@ -267,7 +267,7 @@ describe("yToken tests", () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(1, "XTZ-USD", Math.pow(10, 6), 7 * Math.pow(10, 16));
+    await proxy.updatePair(1, "XTZ-USD", Math.pow(10, 6), Math.pow(10, 25));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(1), "XTZ-USD");
 
@@ -291,7 +291,7 @@ describe("yToken tests", () => {
     );
     await yToken.updateStorage();
 
-    await proxy.updatePair(2, "BTC-USD", Math.pow(10, 8), Math.pow(10, 16));
+    await proxy.updatePair(2, "BTC-USD", Math.pow(10, 8), Math.pow(10, 25));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(2), "BTC-USD");
 
@@ -320,7 +320,7 @@ describe("yToken tests", () => {
     await fa2_2.create_token(tokenMetadata2);
     await fa2_2.updateStorage();
 
-    await proxy.updatePair(3, "ETH-USD", Math.pow(10, 18), 2 * Math.pow(10, 16));
+    await proxy.updatePair(3, "ETH-USD", Math.pow(10, 18), Math.pow(10, 18));
     await proxy.updateStorage();
     strictEqual(await proxy.storage.pairName.get(3), "ETH-USD");
 

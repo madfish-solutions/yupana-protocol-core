@@ -23,11 +23,13 @@ module.exports = async (tezos) => {
   });
 
   let op = await contract.methods
-    .updatePair(0, "XTZ-USD", Math.pow(10, 6))
+    .updatePair(0, "XTZ-USD", Math.pow(10, 6), 3 * Math.pow(10, 16))
     .send();
 
   await confirmOperation(tezos, op.hash);
 
-  op = await contract.methods.updatePair(1, "BTC-USD", Math.pow(10, 8)).send();
+  op = await contract.methods
+    .updatePair(1, "BTC-USD", Math.pow(10, 8), Math.pow(10, 16))
+    .send();
   await confirmOperation(tezos, op.hash);
 };
