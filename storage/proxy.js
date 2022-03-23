@@ -9,5 +9,6 @@ module.exports = {
   pairId: MichelsonMap.fromLiteral({}),
   tokensDecimals: MichelsonMap.fromLiteral({}),
   priceCorrelations: MichelsonMap.fromLiteral({}),
+  oldPrices: MichelsonMap.fromLiteral({}),
   timestampLimit: "300",
 };
