@@ -104,13 +104,14 @@ function receivePrice(
     const pairName : string = param.0;
     const oraclePrice = param.1.1;
     case s.oldPrices[pairName] of
-    | None -> s.oldPrices[pairName] := oraclePrice * precision // for the first update case
+    | None -> skip // for the first update case
     | Some(oldPriceF) -> checkPriceCorrelation(
         oraclePrice * precision,
         oldPriceF,
         unwrap(s.priceCorrelations[pairName], Errors.Proxy.PairCheck.noCorrelation)
       )
     end;
+    s.oldPrices[pairName] := oraclePrice * precision;
     const decimals : nat = getDecimal(pairName, s.tokensDecimals);
     const price : nat = oraclePrice * precision / decimals;
 
