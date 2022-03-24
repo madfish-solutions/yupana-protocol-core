@@ -6,7 +6,17 @@ type rateStorage        is [@layout:comb] record [
   jumpMultiplierF       : nat;
   reserveFactorF        : nat;
   lastUpdTime           : timestamp;
+  utilLambda            : bytes;
 ]
+
+type utilRateParams     is [@layout:comb] record [
+  borrowsF              : nat;
+  cashF                 : nat;
+  reservesF             : nat;
+  precision             : nat;
+]
+
+type rateLambda         is utilRateParams -> nat
 
 type setCoeffParams     is [@layout:comb] record [
   kinkF                 : nat;

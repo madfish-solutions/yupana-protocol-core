@@ -1,7 +1,7 @@
 require("dotenv").config();
 
 const yargs = require("yargs");
-const { compile, runMigrations } = require("./helpers");
+const { compile, compileLambdas, runMigrations } = require("./helpers");
 
 const argv = yargs
   .command(
@@ -14,9 +14,19 @@ const argv = yargs
         type: "string",
       },
     },
-    async (argv) => {
-      compile(argv.contract);
-    }
+    async (argv) => compile(argv.contract)
+  )
+  .command(
+    "compile-lambda [type]",
+    "compiles lambda functions and stores to json",
+    {
+      type: {
+        description: "Type of lambda function (interest or ytoken)",
+        alias: "t",
+        type: "string",
+      }
+    },
+    async (argv) => compileLambdas(argv.type)
   )
   .command(
     "migrate [network] [from] [to]",

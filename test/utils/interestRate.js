@@ -53,6 +53,7 @@ class InterestRate {
       jumpMultiplierF: storage.jumpMultiplierF,
       reserveFactorF: storage.reserveFactorF,
       lastUpdTime: storage.lastUpdTime,
+      utilLambda: storage.utilLambda,
     };
 
     for (const key in maps) {
