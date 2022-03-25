@@ -26,13 +26,13 @@ class PriceFeedTest(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.maxDiff = None
-
         code = open("./integration_tests/compiled/priceFeed.tz", 'r').read()
         cls.ct = ContractInterface.from_michelson(code)
 
         storage = cls.ct.storage.dummy()
         storage["admin"] = admin
         storage["oracle"] = oracle
+        storage["timestampLimit"] = 300
         cls.storage = storage
 
     def test_price_feed_decimals(self):
@@ -45,9 +45,49 @@ class PriceFeedTest(TestCase):
         op = res.operations[0]["parameters"]
         price = op["value"]["args"][1]["int"]
         price = int(price)
-
         one_btc = 1e8
         usd_precision = 1e6
         protocol_precision = 1e18
 
         self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_252)
+
+    def test_price_feed_receive_outdated(self):
+        chain = LocalChain(storage=self.storage)
+
+        chain.execute(self.ct.updatePair(3, "BTC-USD", 1_0000_0000), sender=admin)
+
+        res = chain.execute(self.ct.receivePrice("BTC-USD", 0, 45_252_000_000), sender=oracle)
+        
+        op = res.operations[0]["parameters"]
+        price = op["value"]["args"][1]["int"]
+        price = int(price)
+        one_btc = 1e8
+        usd_precision = 1e6
+        protocol_precision = 1e18
+
+        self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_252)
+
+        chain.advance_blocks(300)
+        # timestamp should be in allowed limit
+        with self.assertRaises(MichelsonRuntimeError) as error:
+            res = chain.execute(self.ct.receivePrice("BTC-USD", 289, 45_500_000_000), sender=oracle)
+        self.assertIn("OLD_PRICE", error.exception.args[-1])
+        res = chain.execute(self.ct.receivePrice("BTC-USD", 299 * SECONDS_PER_BLOCK, 45_500_000_000), sender=oracle)
+        op = res.operations[0]["parameters"]
+        price = op["value"]["args"][1]["int"]
+        price = int(price)
+
+        self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_500)
+    
+
+
+        
+
+
+        
+
+
+
+
+        
+    

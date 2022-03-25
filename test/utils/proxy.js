@@ -30,7 +30,10 @@ class Proxy {
     const operation = await tezos.contract
       .originate({
         code: artifacts.michelson,
-        storage: storage,
+        storage: {
+          ...storage,
+          timestampLimit: "10000000000",
+        },
       })
       .catch((e) => {
         console.error(JSON.stringify(e));
@@ -51,6 +54,7 @@ class Proxy {
       pairName: storage.pairName,
       pairId: storage.pairId,
       tokensDecimals: storage.tokensDecimals,
+      timestampLimit: storage.timestampLimit,
     };
 
     for (const key in maps) {
