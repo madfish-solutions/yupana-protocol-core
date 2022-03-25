@@ -66,7 +66,6 @@ module Proxy is {
     const decimals               : string = "DECIMALS_NOT_DEFINED";
     const pairString             : string = "STRING_NOT_DEFINED";
     const tokenId                : string = "TOKEN_ID_NOT_DEFINED";
-    const noCorrelation          : string = "PRICE_CORRELATION_NOT_DEFINED";
   }
 }
 
