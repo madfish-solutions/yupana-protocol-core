@@ -229,7 +229,7 @@ class DexTest(TestCase):
         chain.advance_blocks(1)
         with self.assertRaises(MichelsonRuntimeError) as error:
             chain.execute(self.ct.liquidate(1, 0, me, 25, 1, chain.now + 2), sender=bob)
-        self.assertIn("update", error.exception.args[-1])
+        self.assertIn("UPDATE", error.exception.args[-1])
 
         self.update_price_and_interest(chain, 0, 50, 0)
         self.update_price_and_interest(chain, 1, 100, 0)
@@ -728,11 +728,11 @@ class DexTest(TestCase):
 
         with self.assertRaises(MichelsonRuntimeError) as error:
             chain.execute(self.ct.mint(0, 100, 1))
-        self.assertIn("update", error.exception.args[-1])
+        self.assertIn("UPDATE", error.exception.args[-1])
 
         with self.assertRaises(MichelsonRuntimeError) as error:
             chain.execute(self.ct.borrow(0, 100, chain.now + 2))
-        self.assertIn("update", error.exception.args[-1])
+        self.assertIn("UPDATE", error.exception.args[-1])
 
     def test_threshold(self):
         chain = LocalChain(storage=self.storage)

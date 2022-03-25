@@ -72,6 +72,7 @@ type proxyReturn is list (operation) * proxyStorage
 
 type entryProxyAction   is
   | SetProxyAdmin of address
+  | SetTimeLimit of nat
   | UpdateOracle of address
   | UpdateYToken of address
   | UpdatePair of pairParam

@@ -3,7 +3,8 @@ const env = require("../../env");
 const { confirmOperation } = require("../../scripts/confirmation");
 const storage = require("../../storage/yToken");
 const { functions } = require("../../storage/functions");
-const { getLigo } = require("../../scripts/helpers");
+const tokenLambdas = require("../../build/lambdas/tokenLambdas.json");
+const useLambdas = require("../../build/lambdas/yTokenLambdas.json");
 const { execSync } = require("child_process");
 const BigNumber = require("bignumber.js");
 
@@ -36,18 +37,10 @@ class YToken {
         return { contractAddress: null };
       });
     await confirmOperation(tezos, operation.hash);
-
-    const ligo = getLigo(true);
     let params = [];
 
     console.log("Start setting Token lambdas");
-    for (const yTokenFunction of functions.token) {
-      const stdout = execSync(
-        `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
-        { maxBuffer: 1024 * 1000 }
-      );
-
-      const input_params = JSON.parse(stdout.toString());
+    for (const yTokenFunction of tokenLambdas) {
 
       params.push({
         kind: "transaction",
@@ -55,36 +48,14 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setTokenAction",
-          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
+          value: yTokenFunction, // TODO get rid of this mess
         },
       });
     }
 
     console.log("Start setting yToken lambdas");
 
-    for (yTokenFunction of functions.yToken) {
-      const stdout = execSync(
-        `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
-        // `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
-
-        // TODO alternative packing to use with direct call below
-        // `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'Bytes.pack(${yTokenFunction.name})'`,
-
-        { maxBuffer: 1024 * 1000 }
-      );
-
-      // const util = require('util')
-      const input_params = JSON.parse(stdout.toString());
-      // console.log(input_params);
-      // console.log(util.inspect(input_params, false, null, true /* enable colors */))
-
-      // const converted = hexToBytes(input_params.bytes);
-      // console.log(converted);
-
-      // const res = await tezos.contract.at(operation.contractAddress);
-
-      // const setCall = res.methods.setUseAction(yTokenFunction.index, converted);
-      // params.push(setCall.toTransferParams());
+    for (yTokenFunction of useLambdas) {
 
       params.push({
         kind: "transaction",
@@ -92,7 +63,7 @@ class YToken {
         amount: 0,
         parameter: {
           entrypoint: "setUseAction",
-          value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
+          value: yTokenFunction, // TODO get rid of this mess
         },
       });
     }

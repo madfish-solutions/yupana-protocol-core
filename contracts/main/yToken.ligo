@@ -1,3 +1,4 @@
+#import  "../partial/errors.ligo" "Errors"
 #include "../partial/mainTypes.ligo"
 #include "../partial/commonHelpers.ligo"
 #include "../partial/yToken/lendingMethods.ligo"
@@ -8,12 +9,9 @@ function setUseAction(
   var s                 : fullStorage)
                         : fullReturn is
   block {
-    if Tezos.sender = s.storage.admin
-    then case s.useLambdas[idx] of
-        Some(_n) -> failwith("yToken/use-lambda-already-set")
-        | None -> s.useLambdas[idx] := lambda_bytes
-      end;
-    else failwith("yToken/you-not-admin")
+    mustBeAdmin(s.storage);
+    require_none(s.useLambdas[idx], Errors.YToken.lambdaSet);
+    s.useLambdas[idx] := lambda_bytes;
   } with (noOperations, s)
 
 function setTokenAction(
@@ -22,12 +20,9 @@ function setTokenAction(
   var s                 : fullStorage)
                         : fullReturn is
   block {
-    if Tezos.sender = s.storage.admin
-    then case s.tokenLambdas[idx] of
-        Some(_n) -> failwith("yToken/token-lambda-already-set")
-        | None -> s.tokenLambdas[idx] := lambda_bytes
-      end;
-    else failwith("yToken/you-not-admin")
+    mustBeAdmin(s.storage);
+    require_none(s.tokenLambdas[idx], Errors.YToken.lambdaSet);
+    s.tokenLambdas[idx] := lambda_bytes;
   } with (noOperations, s)
 
 function callToken(
@@ -42,16 +37,12 @@ function callToken(
       | IGet_total_supply(_totalSupplyParams) -> 3n
     end;
 
-    const lambda_bytes : bytes =
-      case s.tokenLambdas[idx] of
-        | Some(l) -> l
-        | None -> failwith("yToken/token-lambda-not-set")
-      end;
+    const lambda_bytes : bytes = unwrap(s.tokenLambdas[idx], Errors.YToken.lambdaNotSet);
 
     const res : return =
       case (Bytes.unpack(lambda_bytes) : option(tokenFunc)) of
         | Some(f) -> f(p, s.storage)
-        | None -> failwith("cant-unpack-token-lambda")
+        | None -> failwith(Errors.YToken.unpackLambdaFailed)
       end;
 
     s.storage := res.1;
@@ -78,16 +69,12 @@ function callToken(
         | ApproveAdmin(_) -> 12n
       end;
 
-    const lambda_bytes : bytes =
-      case s.useLambdas[idx] of
-        | Some(l) -> l
-        | None -> failwith("yToken/use-lambda-not-set")
-      end;
+    const lambda_bytes : bytes = unwrap(s.useLambdas[idx], Errors.YToken.lambdaNotSet);
 
     const res : return =
       case (Bytes.unpack(lambda_bytes) : option(useFunc)) of
         | Some(f) -> f(p, s.storage)
-        | None -> failwith("cant-unpack-use-lambda")
+        | None -> failwith(Errors.YToken.unpackLambdaFailed)
       end;
 
     s.storage := res.1;

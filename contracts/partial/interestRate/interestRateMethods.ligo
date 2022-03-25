@@ -1,19 +1,15 @@
 [@inline] function mustBeAdmin(
   const s               : rateStorage)
                         : unit is
-  if Tezos.sender =/= s.admin
-  then failwith("interestRate/not-admin")
-  else unit
+  require(Tezos.sender = s.admin, Errors.InterestRate.notAdmin)
 
-[@inline] function calcUtilRate(
-  const borrowsF        : nat;
-  const cashF           : nat;
-  const reservesF       : nat;
-  const precision       : nat)
-                        : nat is
-  block {
-    const denominator : nat = get_nat_or_fail(cashF + borrowsF - reservesF, "underflow/cashF+borrowsF");
-  } with precision * borrowsF / denominator
+[@inline] function getUtilLambda(
+  const s               : rateStorage)
+                        : rateLambda is
+  unwrap(
+    (Bytes.unpack(s.utilLambda) : option(rateLambda)),
+    Errors.InterestRate.unpackLambdaFailed
+  )
 
 [@inline] function calcBorrowRate(
   const borrowsF        : nat;
@@ -23,22 +19,22 @@
   const s               : rateStorage)
                         : nat is
   block {
-    const utilizationRateF : nat = calcUtilRate(
-      borrowsF,
-      cashF,
-      reservesF,
-      precision
-    );
+    const calcUtilRate = getUtilLambda(s);
+    const utilizationRateF : nat = calcUtilRate(record[
+      borrowsF = borrowsF;
+      cashF = cashF;
+      reservesF = reservesF;
+      precision = precision;
+    ]);
     var borrowRateF : nat := 0n;
 
     if utilizationRateF <= s.kinkF
     then borrowRateF := s.baseRateF + utilizationRateF * s.multiplierF / precision;
-    else block {
-      const utilizationSubkink : nat = get_nat_or_fail(utilizationRateF - s.kinkF, "underflow/utilizationRateF");
+    else {
+      const utilizationSubkink : nat = get_nat_or_fail(utilizationRateF - s.kinkF, Errors.Math.lowUtilRateKink);
       borrowRateF := ((s.kinkF * s.multiplierF / precision + s.baseRateF) +
       (utilizationSubkink * s.jumpMultiplierF) / precision);
     }
-
   } with borrowRateF
 
 function updateAdmin(
@@ -67,12 +63,13 @@ function getUtilizationRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const utilizationRateF : nat = calcUtilRate(
-      param.borrowsF,
-      param.cashF,
-      param.reservesF,
-      param.precision
-    );
+    const calcUtilRate = getUtilLambda(s);
+    const utilizationRateF : nat = calcUtilRate(record[
+      borrowsF = param.borrowsF;
+      cashF = param.cashF;
+      reservesF = param.reservesF;
+      precision = param.precision;
+    ]);
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
@@ -113,6 +110,7 @@ function getSupplyRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
+    const calcUtilRate = getUtilLambda(s);
     const borrowRateF : nat = calcBorrowRate(
       param.borrowsF,
       param.cashF,
@@ -120,14 +118,14 @@ function getSupplyRate(
       param.precision,
       s
     );
-    const utilizationRateF : nat = calcUtilRate(
-      param.borrowsF,
-      param.cashF,
-      param.reservesF,
-      param.precision
-    );
+    const utilizationRateF : nat = calcUtilRate(record[
+      borrowsF = param.borrowsF;
+      cashF = param.cashF;
+      reservesF = param.reservesF;
+      precision = param.precision;
+    ]);
 
-    const precisionSubReserveF : nat = get_nat_or_fail(param.precision - param.reserveFactorF, "underflow/precision");
+    const precisionSubReserveF : nat = get_nat_or_fail(param.precision - param.reserveFactorF, Errors.Math.lowPrecisionReserve);
 
     var operations : list(operation) := list[
       Tezos.transaction(record[

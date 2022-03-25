@@ -1,3 +1,5 @@
+#import  "../partial/errors.ligo" "Errors"
+#include "../partial/commonHelpers.ligo"
 // FA2 CONTRACT FOR TESTING
 type token_id is nat
 
@@ -135,32 +137,22 @@ function iterate_transfer(const s : fa2_storage; const params : transfer_param) 
         var src_account : account := get_account(params.from_, s);
 
         (* Check permissions *)
-        if params.from_ = Tezos.sender or src_account.permits contains Tezos.sender then
-          skip
-        else
-          failwith("fa2/not-operator");
+        require(params.from_ = Tezos.sender or src_account.permits contains Tezos.sender, Errors.FA2.notOperator);
 
 
         // (* Token id check *)
-        if transfer_dst.token_id >= s.last_token_id
-        then failwith("fa2/token-undefined");
-        else skip;
+        require(transfer_dst.token_id < s.last_token_id, Errors.FA2.undefined);
 
 
         (* Get source balance *)
         const src_balance : nat = get_balance_by_token(src_account, transfer_dst.token_id);
 
         (* Balance check *)
-        if src_balance < transfer_dst.amount
-        then failwith("fa2/insufficient-balance")
-        else skip;
-
         (* Update source balance *)
-        src_account.balances[transfer_dst.token_id] :=
-          case is_nat(src_balance - transfer_dst.amount) of
-            | None -> (failwith("underflow/src_balance") : nat)
-            | Some(value) -> value
-          end;
+        src_account.balances[transfer_dst.token_id] := get_nat_or_fail(
+          src_balance - transfer_dst.amount,
+          Errors.FA2.lowBalance
+        );
 
         (* Update storage *)
         s.account_info[params.from_] := src_account;
@@ -185,9 +177,7 @@ function iterate_update_operators(var s : fa2_storage; const params : update_ope
     case params of
     | Add_operator(param) -> block {
       (* Check an owner *)
-      if Tezos.sender =/= param.owner
-      then failwith("fa2/not-owner")
-      else skip;
+      require(Tezos.sender = param.owner, Errors.FA2.notOwner);
 
       (* Create or get source account *)
       var src_account : account := get_account(param.owner, s);
@@ -200,9 +190,7 @@ function iterate_update_operators(var s : fa2_storage; const params : update_ope
     }
     | Remove_operator(param) -> block {
       (* Check an owner *)
-      if Tezos.sender =/= param.owner
-      then failwith("fa2/not-owner")
-      else skip;
+      require(Tezos.sender = param.owner, Errors.FA2.notOwner);
 
       (* Create or get source account *)
       var src_account : account := get_account(param.owner, s);
@@ -252,18 +240,13 @@ function mint_asset(
   const s               : fa2_storage)
                         : fa2_storage is
   block {
-    // if s.admin =/= Tezos.sender
-    // then failwith("fa2/not-admin");
-    // else skip;
 
     function make_mint(
       var s             : fa2_storage;
       const param       : asset_param)
                         : fa2_storage is
       block {
-        if param.token_id >= s.last_token_id
-        then failwith("FA2_TOKEN_UNDEFINED");
-        else skip;
+        require(param.token_id < s.last_token_id, Errors.FA2.undefined);
 
         (* Get receiver account *)
         var dst_account : account := get_account(param.receiver, s);
@@ -292,9 +275,7 @@ function create_token(
   var s                 : fa2_storage)
                         : fa2_storage is
   block {
-    if s.admin =/= Tezos.sender
-    then failwith("fa2/not-admin");
-    else skip;
+    require(s.admin = Tezos.sender, Errors.FA2.notAdmin);
 
     s.token_metadata[s.last_token_id] := record [
       token_id = s.last_token_id;
@@ -308,9 +289,7 @@ function update_metadata(
     var   s             : fa2_storage)
                         : fa2_storage is
   block {
-    if s.admin =/= Tezos.sender
-    then failwith("fa2/not-admin");
-    else skip;
+    require(s.admin = Tezos.sender, Errors.FA2.notAdmin);
     s.token_metadata[params.token_id] := params;
   } with s
 

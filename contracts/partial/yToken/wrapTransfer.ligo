@@ -1,28 +1,20 @@
 function getFA12Transfer(
   const tokenAddress    : address)
                         : contract(transferType) is
-  case(
-    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
-                        : option(contract(transferType))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("token/cant-get-contract-token") : contract(transferType)
-    )
-  end;
+  unwrap(
+    (Tezos.get_entrypoint_opt("%transfer", tokenAddress)
+                        : option(contract(transferType))),
+    Errors.FA12.wrongContract
+  );
 
 function getFA2Transfer(
   const tokenAddress    : address)
                         : contract(iterTransferType) is
-  case(
-    Tezos.get_entrypoint_opt("%transfer", tokenAddress)
-                        : option(contract(iterTransferType))
-  ) of
-    Some(contr) -> contr
-    | None -> (
-      failwith("token/cant-get-contract-fa2-token") : contract(iterTransferType)
-    )
-  end;
+  unwrap(
+    (Tezos.get_entrypoint_opt("%transfer", tokenAddress)
+                        : option(contract(iterTransferType))),
+    Errors.FA2.wrongContract
+  );
 
 function wrap_fa12_transfer_trx(
   const from_           : address;

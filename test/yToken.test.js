@@ -124,7 +124,7 @@ describe("yToken tests", () => {
   it("set yToken admin by not admin", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.setAdmin(carol.pkh), (err) => {
-      ok(err.message == "yToken/not-admin", "Error message mismatch");
+      strictEqual(err.message, "Y_NOT_ADMIN");
       return true;
     });
   });
@@ -137,7 +137,7 @@ describe("yToken tests", () => {
     // check that non-candidate could not trigger
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.approveAdmin(), (err) => {
-      strictEqual(err.message, "yToken/not-admin-or-candidate");
+      strictEqual(err.message, "Y_NOT_ADMIN_OR_CANDIDATE");
       return true;
     });
     // approve admin by candidate
@@ -155,7 +155,7 @@ describe("yToken tests", () => {
     // check that non-candidate could not trigger
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.approveAdmin(), (err) => {
-      strictEqual(err.message, "yToken/not-admin-or-candidate");
+      strictEqual(err.message, "Y_NOT_ADMIN_OR_CANDIDATE");
       return true;
     });
     // stop approving admin by admin
@@ -183,7 +183,7 @@ describe("yToken tests", () => {
           500000000000000000
         ),
       (err) => {
-        ok(err.message == "yToken/not-admin", "Error message mismatch");
+        strictEqual(err.message, "Y_NOT_ADMIN");
         return true;
       }
     );
@@ -231,10 +231,7 @@ describe("yToken tests", () => {
           500000000000000000
         ),
       (err) => {
-        ok(
-          err.message == "yToken/token-has-already-been-added",
-          "Error message mismatch"
-        );
+        strictEqual(err.message, "Y_DUP_ASSET");
         return true;
       }
     );
@@ -243,7 +240,7 @@ describe("yToken tests", () => {
   it("update metadata [0] by non admin", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.updateMetadata(0, tokenMetadata2), (err) => {
-      ok(err.message == "yToken/not-admin", "Error message mismatch");
+      strictEqual(err.message, "Y_NOT_ADMIN");
       return true;
     });
   });
@@ -335,7 +332,7 @@ describe("yToken tests", () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
     await rejects(yToken.setBorrowPause(2, true), (err) => {
-      ok(err.message == "yToken/not-admin", "Error message mismatch");
+      strictEqual(err.message, "Y_NOT_ADMIN");
       return true;
     });
   });
@@ -390,7 +387,7 @@ describe("yToken tests", () => {
 
   it("mint non-existent yToken by alice", async () => {
     await rejects(yToken.mint(32, 1000000), (err) => {
-      ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
+      strictEqual(err.message, "Y_TOKEN_UNDEFINED");
       return true;
     });
   });
@@ -398,7 +395,7 @@ describe("yToken tests", () => {
   it("mint zero yToken by alice", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.mint(1, 0), (err) => {
-      ok(err.message == "yToken/amount-is-zero", "Error message mismatch");
+      strictEqual(err.message, "Y_ZERO_AMOUNT");
       return true;
     });
   });
@@ -561,7 +558,7 @@ describe("yToken tests", () => {
 
   it("update Interest Rate yToken undefined", async () => {
     await rejects(yToken.updateInterest(4), (err) => {
-      ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
+      strictEqual(err.message, "Y_TOKEN_UNDEFINED");
       return true;
     });
   });
@@ -569,10 +566,7 @@ describe("yToken tests", () => {
   it("return price by not oracle", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.priceCallback(0, 2000), (err) => {
-      ok(
-        err.message == "yToken/sender-is-not-price-feed",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_NOT_PROXY");
       return true;
     });
   });
@@ -580,10 +574,7 @@ describe("yToken tests", () => {
   it("borrow when token forbidden for borrow bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.updateAndBorrow(proxy, 1, 50000), (err) => {
-      ok(
-        err.message == "yToken/forbidden-for-borrow",
-        "Error message mismatch"
-      );
+     strictEqual(err.message, "Y_BORROW_PAUSED");
       return true;
     });
   });
@@ -600,10 +591,7 @@ describe("yToken tests", () => {
   it("borrow when not enter market by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.updateAndBorrow(proxy, 1, 50000), (err) => {
-      ok(
-        err.message == "yToken/exceeds-the-permissible-debt",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_PERMITTED_DEBT_EXCEEDS");
       return true;
     });
   });
@@ -619,7 +607,7 @@ describe("yToken tests", () => {
         },
       ]),
       (err) => {
-        ok(err.message == "FA2_NOT_OPERATOR", "Error message mismatch");
+        strictEqual(err.message, "FA2_NOT_OPERATOR");
         return true;
       }
     );
@@ -636,7 +624,7 @@ describe("yToken tests", () => {
         },
       ]),
       (err) => {
-        ok(err.message == "FA2_INSUFFICIENT_BALANCE", "Error message mismatch");
+        strictEqual(err.message, "FA2_INSUFFICIENT_BALANCE");
         return true;
       }
     );
@@ -653,7 +641,7 @@ describe("yToken tests", () => {
         },
       ]),
       (err) => {
-        ok(err.message == "FA2_TOKEN_UNDEFINED", "Error message mismatch");
+        strictEqual(err.message, "FA2_TOKEN_UNDEFINED");
         return true;
       }
     );
@@ -720,7 +708,7 @@ describe("yToken tests", () => {
         },
       ]),
       (err) => {
-        ok(err.message == "FA2_NOT_OWNER", "Error message mismatch");
+        strictEqual(err.message, "FA2_NOT_OWNER");
         return true;
       }
     );
@@ -799,7 +787,7 @@ describe("yToken tests", () => {
     await yToken.enterMarket(1);
     await yToken.updateStorage();
     await rejects(yToken.enterMarket(2), (err) => {
-      ok(err.message == "yToken/max-market-limit", "Error message mismatch");
+      strictEqual(err.message, "Y_MAX_MARKET_LIMIT");
       return true;
     });
     res = await yToken.storage.storage.markets.get(bob.pkh);
@@ -831,7 +819,7 @@ describe("yToken tests", () => {
   it("enterMarket non-existent yToken by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.enterMarket(4), (err) => {
-      ok(err.message == "yToken/yToken-undefined", "Error message mismatch");
+      strictEqual(err.message, "Y_TOKEN_UNDEFINED");
       return true;
     });
   });
@@ -891,7 +879,7 @@ describe("yToken tests", () => {
   it("redeem borrowed yTokens by alice", async () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
     await rejects(yToken.updateAndRedeem(proxy, 1, 0), (err) => {
-      ok(err.message == "underflow/totalLiquidF", "Error message mismatch");
+      strictEqual(err.message, "Y_LOW_LIQUIDITY");
       return true;
     });
   });
@@ -899,7 +887,7 @@ describe("yToken tests", () => {
   it("try to mint without updateInterest yTokens by carol", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.mint(1, 10000000000), (err) => {
-      ok(err.message == "yToken/need-update", "Error message mismatch");
+      strictEqual(err.message, "Y_NEED_UPDATE");
       return true;
     });
   });
@@ -917,10 +905,7 @@ describe("yToken tests", () => {
   it("redeem more than allowed yTokens by carol", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndRedeem(proxy, 1, 19000000000), (err) => {
-      ok(
-        err.message == "yToken/not-enough-tokens-to-burn",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_TOKEN_NOT_ENOUGH_BALANCE");
       return true;
     });
   });
@@ -955,10 +940,7 @@ describe("yToken tests", () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
 
     await rejects(yToken.updateAndBorrow(proxy, 1, 20000000), (err) => {
-      ok(
-        err.message == "yToken/exceeds-the-permissible-debt",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_PERMITTED_DEBT_EXCEEDS");
       return true;
     });
   });
@@ -967,10 +949,7 @@ describe("yToken tests", () => {
     tezos = await Utils.setProvider(tezos, alice.sk);
 
     await rejects(yToken.updateAndBorrow2(proxy, 0, 20000000000), (err) => {
-      ok(
-        err.message == "yToken/exceeds-the-permissible-debt",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_PERMITTED_DEBT_EXCEEDS");
       return true;
     });
   });
@@ -982,10 +961,7 @@ describe("yToken tests", () => {
     await fa12_2.updateStorage();
 
     await rejects(yToken.updateAndRepay(proxy, 1, 20000000000), (err) => {
-      ok(
-        err.message == "yToken/cant-repay-more-than-borrowed",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_TOO_MUCH_REPAY");
       return true;
     });
   });
@@ -1044,10 +1020,7 @@ describe("yToken tests", () => {
   it("redeem yTokens by bob (exceeds-allowable-redeem)", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.updateAndRedeem(proxy, 0, 0), (err) => {
-      ok(
-        err.message == "yToken/exceeds-allowable-redeem",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_ALLOWED_REDEEM_EXCEEDS");
       return true;
     });
   });
@@ -1055,7 +1028,7 @@ describe("yToken tests", () => {
   it("try exit market yTokens by bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.updateAndExit(proxy, 0), (err) => {
-      ok(err.message == "yToken/debt-not-repaid", "Error message mismatch");
+      strictEqual(err.message, "Y_DEBT_NOT_REPAID");
       return true;
     });
   });
@@ -1095,10 +1068,7 @@ describe("yToken tests", () => {
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 250), (err) => {
-      ok(
-        err.message == "yToken/liquidation-not-achieved",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_LIQUIDATION_NOT_ACHIEVED");
       return true;
     });
   });
@@ -1108,7 +1078,7 @@ describe("yToken tests", () => {
     await rejects(
       yToken.setTokenFactors(0, 0, 0, interestContractAddress, 0, 0, 0),
       (err) => {
-        ok(err.message == "yToken/not-admin", "Error message mismatch");
+        strictEqual(err.message, "Y_NOT_ADMIN");
         return true;
       }
     );
@@ -1190,10 +1160,7 @@ describe("yToken tests", () => {
   it("liquidate not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 100), (err) => {
-      ok(
-        err.message == "yToken/liquidation-not-achieved",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_LIQUIDATION_NOT_ACHIEVED");
       return true;
     });
   });
@@ -1282,10 +1249,7 @@ describe("yToken tests", () => {
   it("liquidation not achieved", async () => {
     tezos = await Utils.setProvider(tezos, carol.sk);
     await rejects(yToken.updateAndLiq(proxy, 1, 0, peter.pkh, 15), (err) => {
-      ok(
-        err.message == "yToken/liquidation-not-achieved",
-        "Error message mismatch"
-      );
+      strictEqual(err.message, "Y_LIQUIDATION_NOT_ACHIEVED");
       return true;
     });
   });

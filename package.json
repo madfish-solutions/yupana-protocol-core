@@ -20,7 +20,8 @@
   },
   "scripts": {
     "clean": "rm -rf ./build",
-    "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c fa12 && node -r ts-node/register scripts/cli.js compile -c fa2",
+    "compile-lambda": "node -r ts-node/register scripts/cli.js compile-lambda",
+    "compile": "yarn clean && node -r ts-node/register scripts/cli.js compile -c yToken && yarn compile-lambda -t ytoken && node -r ts-node/register scripts/cli.js compile -c priceFeed && node -r ts-node/register scripts/cli.js compile -c interestRate && yarn compile-lambda -t interest && node -r ts-node/register scripts/cli.js compile -c getInterests && node -r ts-node/register scripts/cli.js compile -c fa12 && node -r ts-node/register scripts/cli.js compile -c fa2",
     "migrate": "yarn compile && node -r ts-node/register scripts/cli.js migrate",
     "migrate-gra": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network granadanet",
     "migrate-hang": "yarn compile && node -r ts-node/register scripts/cli.js migrate --network hangzhounet",
