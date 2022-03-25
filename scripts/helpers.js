@@ -6,6 +6,7 @@ const fs = require("fs");
 const { TezosToolkit } = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
 const { confirmOperation } = require("./confirmation");
+const { functions } = require("../storage/functions");
 const env = require("../env");
 
 const getLigo = (isDockerizedLigo) => {
@@ -78,6 +79,63 @@ const compile = async (contract) => {
       console.error(michelson);
     }
   });
+};
+
+function saveLambdas(lambdas, filename) {
+  const out_path = `${env.buildDir + "/lambdas"}`;
+
+  if (!fs.existsSync(out_path)) {
+    fs.mkdirSync(out_path, { recursive: true });
+  }
+  const save_path = `${out_path}/${filename}.json`;
+  fs.writeFileSync(save_path, JSON.stringify(lambdas));
+}
+
+export const compileLambdas = async (
+  type
+) => {
+  type = type.toLowerCase();
+  try {
+    const ligo = getLigo(true);
+    console.log(`Compiling lambdas of ${type} type...\n`);
+    if (type.toLowerCase() === "ytoken") {
+      console.log("Compiling Token lambdas");
+      const tokenLambdas = [];
+      for (const yTokenFunction of functions.token) {
+        const stdout = execSync(
+          `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
+          { maxBuffer: 1024 * 1000 }
+        );
+
+        const input_params = JSON.parse(stdout.toString());
+        tokenLambdas.push(input_params.args[0].args[0].args[0].args[0]);
+      }
+      saveLambdas(tokenLambdas, "tokenLambdas");
+
+      console.log("Compiling yToken `use` lambdas");
+      const yTokenLambdas = [];
+      for (yTokenFunction of functions.yToken) {
+        const stdout = execSync(
+          `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
+          { maxBuffer: 1024 * 1000 }
+        );
+
+        const input_params = JSON.parse(stdout.toString());
+        yTokenLambdas.push(input_params.args[0].args[0].args[0].args[0]);
+      }
+      saveLambdas(yTokenLambdas, "yTokenLambdas");
+    }
+    if (type.toLowerCase() === "interest") {
+      const stdout = execSync(
+        `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/interestRate.ligo 'Bytes.pack(${functions.interestLambda.name})'`,
+        { maxBuffer: 1024 * 1000 }
+      );
+      const input_params = JSON.parse(stdout.toString());
+      saveLambdas(input_params, "interestLambda");
+    }
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const migrate = async (tezos, contract, storage) => {
@@ -163,6 +221,7 @@ module.exports = {
   getMigrationsList,
   getDeployedAddress,
   compile,
+  compileLambdas,
   migrate,
   runMigrations,
   env,

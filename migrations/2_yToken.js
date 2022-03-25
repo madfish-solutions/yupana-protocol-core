@@ -9,6 +9,9 @@ const { execSync } = require("child_process");
 const { InMemorySigner } = require("@taquito/signer");
 const { storage, metadata } = require("../storage/yToken");
 const interestRateStorage = require("../storage/interestRate");
+const tokenLambdas = require("../build/lambdas/tokenLambdas.json");
+const useLambdas = require("../build/lambdas/yTokenLambdas.json");
+
 
 let contractAddress = 0;
 
@@ -30,45 +33,31 @@ module.exports = async (tezos) => {
     signer: await InMemorySigner.fromSecretKey(dev.sk),
   });
 
-  const ligo = getLigo(true);
   let params = [];
 
   console.log("Start setting Token lambdas");
-  for (const yTokenFunction of functions.token) {
-    const stdout = execSync(
-      `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetTokenAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
-      { maxBuffer: 1024 * 1000 }
-    );
-
-    const input_params = JSON.parse(stdout.toString());
-
+  for (const yTokenFunction of tokenLambdas) {
     params.push({
       kind: "transaction",
       to: contractAddress,
       amount: 0,
       parameter: {
         entrypoint: "setTokenAction",
-        value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
+        value: yTokenFunction,
       },
     });
   }
 
   console.log("Start setting yToken lambdas");
 
-  for (yTokenFunction of functions.yToken) {
-    const stdout = execSync(
-      `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/yToken.ligo 'SetUseAction(record [index = ${yTokenFunction.index}n; func = Bytes.pack(${yTokenFunction.name})] )'`,
-      { maxBuffer: 1024 * 1000 }
-    );
-    const input_params = JSON.parse(stdout.toString());
-
+  for (yTokenFunction of useLambdas) {
     params.push({
       kind: "transaction",
       to: contractAddress,
       amount: 0,
       parameter: {
         entrypoint: "setUseAction",
-        value: input_params.args[0].args[0].args[0].args[0], // TODO get rid of this mess
+        value: yTokenFunction,
       },
     });
   }
@@ -81,7 +70,7 @@ module.exports = async (tezos) => {
   console.log(`YToken contract: ${contractAddress}`);
 
   const interestAddress = getDeployedAddress("interestRate");
-  const contract = await tezos.contract.at(contractAddress);
+  // const contract = await tezos.contract.at(contractAddress);
 
   const interest2Address = await migrate(tezos, "interestRate", {
     ...interestRateStorage,
