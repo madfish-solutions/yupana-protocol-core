@@ -9,6 +9,12 @@ function checkTimestamp(
                         : unit is
   require(oracleTimestamp >= Tezos.now - limit, Errors.Proxy.timestampLimit);
 
+function checkPriceCorrelation(
+  const priceF          : nat;
+  const oldPriceF       : nat;
+  const priceCorrF      : nat)
+                        : unit is
+  require((abs(priceF - oldPriceF) * precision) / oldPriceF <= priceCorrF, Errors.Proxy.priceCorrLimit);
 
 [@inline] function mustBeOracle(
   const oracle          : address)
@@ -97,6 +103,15 @@ function receivePrice(
     checkTimestamp(param.1.0, s.timestampLimit);
     const pairName : string = param.0;
     const oraclePrice = param.1.1;
+    case s.oldPrices[pairName] of
+    | None -> skip // for the first update case
+    | Some(oldPriceF) -> checkPriceCorrelation(
+        oraclePrice * precision,
+        oldPriceF,
+        unwrap(s.priceCorrelations[pairName], Errors.Proxy.PairCheck.noCorrelation)
+      )
+    end;
+    s.oldPrices[pairName] := oraclePrice * precision;
     const decimals : nat = getDecimal(pairName, s.tokensDecimals);
     const price : nat = oraclePrice * precision / decimals;
 
@@ -149,4 +164,5 @@ function updatePair(
     s.pairName[param.tokenId] := param.pairName;
     s.pairId[param.pairName] := param.tokenId;
     s.tokensDecimals[param.pairName] := param.decimals;
+    s.priceCorrelations[param.pairName] := param.priceCorrelationF;
   } with (noOperations, s)

@@ -158,6 +158,7 @@ type pairParam          is [@layout:comb] record [
   tokenId               : tokenId;
   pairName              : string;
   decimals              : nat;
+  priceCorrelationF     : nat;
 ]
 
 type calculateCollParams is [@layout:comb] record [

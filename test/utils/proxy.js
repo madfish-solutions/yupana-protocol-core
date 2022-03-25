@@ -54,6 +54,8 @@ class Proxy {
       pairName: storage.pairName,
       pairId: storage.pairId,
       tokensDecimals: storage.tokensDecimals,
+      priceCorrelations: storage.priceCorrelations,
+      oldPrices: storage.oldPrices,
       timestampLimit: storage.timestampLimit,
     };
 
@@ -98,9 +100,9 @@ class Proxy {
     return operation;
   }
 
-  async updatePair(tokenId, pairName, tokenDecimal) {
+  async updatePair(tokenId, pairName, tokenDecimal, correlationPrice) {
     const operation = await this.contract.methods
-      .updatePair(tokenId, pairName, tokenDecimal)
+      .updatePair(tokenId, pairName, tokenDecimal, correlationPrice)
       .send();
     await confirmOperation(this.tezos, operation.hash);
     return operation;
