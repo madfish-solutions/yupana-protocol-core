@@ -1104,3 +1104,22 @@ class DexTest(TestCase):
         self.assertAlmostEqual(transfers[0]["amount"], 10_000, delta=1)
 
 
+    def test_redeem_same_borrowed_token(self):
+        chain = self.create_chain_with_ab_markets()
+
+        chain.execute(self.ct.mint(0, 100_000_000, 1), sender=bob)
+        
+        chain.execute(self.ct.mint(0, 100_000_000, 1))
+        chain.execute(self.ct.enterMarket(0))
+        
+        res = chain.execute(self.ct.borrow(0, 2_000_000, chain.now + 2))
+        
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(0, 0, 1)) # 0 is 100_000_000 in this case
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.redeem(0, 96_000_001, 1)) # 0 is 100_000_000 in this case
+        
+        chain.execute(self.ct.redeem(0, 96_000_000, 1))
+        
+
