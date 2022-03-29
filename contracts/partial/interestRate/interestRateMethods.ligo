@@ -3,13 +3,18 @@
                         : unit is
   require(Tezos.sender = s.admin, Errors.InterestRate.notAdmin)
 
-[@inline] function getUtilLambda(
-  const s               : rateStorage)
-                        : rateLambda is
-  unwrap(
-    (Bytes.unpack(s.utilLambda) : option(rateLambda)),
-    Errors.InterestRate.unpackLambdaFailed
-  )
+[@inline] function calcUtilRate(
+  const borrowsF        : nat;
+  const cashF           : nat;
+  const reservesF       : nat;
+  const precision       : nat)
+                        : nat is
+  block {
+    const denominator : nat = get_nat_or_fail(
+      cashF + borrowsF - reservesF,
+      Errors.Math.lowLiquidityUtil
+    );
+  } with precision * borrowsF / denominator
 
 [@inline] function calcBorrowRate(
   const borrowsF        : nat;
@@ -19,13 +24,12 @@
   const s               : rateStorage)
                         : nat is
   block {
-    const calcUtilRate = getUtilLambda(s);
-    const utilizationRateF : nat = calcUtilRate(record[
-      borrowsF = borrowsF;
-      cashF = cashF;
-      reservesF = reservesF;
-      precision = precision;
-    ]);
+    const utilizationRateF : nat = calcUtilRate(
+      borrowsF,
+      cashF,
+      reservesF,
+      precision
+    );
     var borrowRateF : nat := 0n;
 
     if utilizationRateF <= s.kinkF
@@ -63,13 +67,12 @@ function getUtilizationRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const calcUtilRate = getUtilLambda(s);
-    const utilizationRateF : nat = calcUtilRate(record[
-      borrowsF = param.borrowsF;
-      cashF = param.cashF;
-      reservesF = param.reservesF;
-      precision = param.precision;
-    ]);
+    const utilizationRateF : nat = calcUtilRate(
+      param.borrowsF,
+      param.cashF,
+      param.reservesF,
+      param.precision
+    );
     var operations : list(operation) := list[
       Tezos.transaction(record[
           tokenId = param.tokenId;
@@ -110,7 +113,6 @@ function getSupplyRate(
   const s               : rateStorage)
                         : rateReturn is
   block {
-    const calcUtilRate = getUtilLambda(s);
     const borrowRateF : nat = calcBorrowRate(
       param.borrowsF,
       param.cashF,
@@ -118,12 +120,12 @@ function getSupplyRate(
       param.precision,
       s
     );
-    const utilizationRateF : nat = calcUtilRate(record[
-      borrowsF = param.borrowsF;
-      cashF = param.cashF;
-      reservesF = param.reservesF;
-      precision = param.precision;
-    ]);
+    const utilizationRateF : nat = calcUtilRate(
+      param.borrowsF,
+      param.cashF,
+      param.reservesF,
+      param.precision
+    );
 
     const precisionSubReserveF : nat = get_nat_or_fail(param.precision - param.reserveFactorF, Errors.Math.lowPrecisionReserve);
 

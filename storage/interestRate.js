@@ -1,5 +1,4 @@
 const { alice } = require("../scripts/sandbox/accounts");
-const interestLambda = require("../build/lambdas/interestLambda.json");
 
 module.exports = {
   admin: alice.pkh,
@@ -9,5 +8,4 @@ module.exports = {
   jumpMultiplierF: "0",
   reserveFactorF: "0",
   lastUpdTime: "2021-08-20T09:06:50Z",
-  utilLambda: interestLambda.bytes,
 };
