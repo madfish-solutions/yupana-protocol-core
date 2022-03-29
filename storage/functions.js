@@ -134,14 +134,9 @@ let interestFunctions = [
   },
 ];
 
-let interestLambda = {
-  name: "calcUtilRate",
-};
-
 module.exports.functions = {
   token: tokenFunctions,
   yToken: yTokenFunctions,
   proxy: proxyFunctions,
   interestRate: interestFunctions,
-  interestLambda: interestLambda,
 };

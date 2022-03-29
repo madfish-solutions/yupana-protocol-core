@@ -125,14 +125,7 @@ export const compileLambdas = async (
       }
       saveLambdas(yTokenLambdas, "yTokenLambdas");
     }
-    if (type.toLowerCase() === "interest") {
-      const stdout = execSync(
-        `${ligo} compile expression pascaligo --michelson-format json --init-file $PWD/contracts/main/interestRate.ligo 'Bytes.pack(${functions.interestLambda.name})'`,
-        { maxBuffer: 1024 * 1000 }
-      );
-      const input_params = JSON.parse(stdout.toString());
-      saveLambdas(input_params, "interestLambda");
-    }
+    else throw new Error("Invalid lambda type");
   } catch (e) {
     console.error(e);
   }

@@ -1,5 +1,6 @@
 {
   "timeout": 500000,
   "extension": ["js"],
-  "spec": "test/*.test.js"
+  "spec": "test/*.test.js",
+  "slow": 4500
 }

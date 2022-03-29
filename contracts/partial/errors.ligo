@@ -71,7 +71,6 @@ module Proxy is {
 
 module InterestRate is {
   const notAdmin                 : string = "IR_NOT_ADMIN";
-  const unpackLambdaFailed       : string = "IR_CANT_UNPACK_LAMBDA";
 }
 
 module Math is {
