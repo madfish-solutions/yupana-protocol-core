@@ -6,4 +6,5 @@ type proxyStorage       is [@layout:comb] record [
   pairId                : big_map(string, tokenId);
   tokensDecimals        : big_map(string, nat);
   timestampLimit        : int;
+  metadata              : big_map(string, bytes);
 ]
