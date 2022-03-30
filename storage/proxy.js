@@ -1,5 +1,6 @@
 const { MichelsonMap } = require("@taquito/michelson-encoder");
 const { alice } = require("../scripts/sandbox/accounts");
+const metadata = require("./metadata/proxyMetadata");
 
 module.exports = {
   admin: alice.pkh,
@@ -9,4 +10,5 @@ module.exports = {
   pairId: MichelsonMap.fromLiteral({}),
   tokensDecimals: MichelsonMap.fromLiteral({}),
   timestampLimit: "300",
+  metadata: metadata,
 };

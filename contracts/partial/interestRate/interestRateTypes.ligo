@@ -6,6 +6,7 @@ type rateStorage        is [@layout:comb] record [
   jumpMultiplierF       : nat;
   reserveFactorF        : nat;
   lastUpdTime           : timestamp;
+  metadata              : big_map(string, bytes);
 ]
 
 type setCoeffParams     is [@layout:comb] record [
