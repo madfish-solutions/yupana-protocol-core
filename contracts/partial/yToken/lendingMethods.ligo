@@ -135,6 +135,8 @@ function calcOutstandingBorrowInCU(
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         var token : tokenType := getToken(tokenId, tokens);
 
+        verifyPriceUpdated(token);
+
         (* sum += oraclePrice * borrow *)
         if userBalance > 0n or userAccount.borrow > 0n
         then acc := acc + userAccount.borrow * token.lastPrice;
