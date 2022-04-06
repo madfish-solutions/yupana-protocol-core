@@ -77,7 +77,9 @@ type entryProxyAction   is
   | UpdateYToken of address
   | UpdatePair of pairParam
   | GetPrice of tokenSet
+#if OLD_STYLE_VIEW
   | ReceivePrice of oracleParam
+#endif
 
 // interestRate
 type entryRateAction   is
