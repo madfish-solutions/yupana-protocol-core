@@ -1123,3 +1123,21 @@ class DexTest(TestCase):
         chain.execute(self.ct.redeem(0, 96_000_000, 1))
         
 
+    def test_not_updated_price_when_redeem(self):
+        chain = self.create_chain_with_ab_markets()
+
+        chain.execute(self.ct.mint(0, 40_000, 1))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.borrow(1, 10_000, chain.now + 2))
+        
+        chain.advance_blocks(1)
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        
+        # not updated price of borrowed token
+        with self.assertRaises(MichelsonRuntimeError) as error:
+            chain.execute(self.ct.redeem(0, 0, 1))
+        self.assertIn("NEED_UPDATE", error.exception.args[-1])
+        
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+        chain.execute(self.ct.repay(1, 0, chain.now + 2))
+        chain.execute(self.ct.redeem(0, 0, 1))
