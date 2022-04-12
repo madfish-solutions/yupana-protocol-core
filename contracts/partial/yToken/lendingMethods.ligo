@@ -447,6 +447,7 @@ function liquidate(
           const reserveTokensF : nat = reserveSharesF * liquidityF / collateralToken.totalSupplyF;
           borrowerBalance := get_nat_or_fail(borrowerBalance - reserveSharesF, Errors.YToken.lowBorrowerBalanceR);
           collateralToken.totalReservesF := collateralToken.totalReservesF + reserveTokensF;
+          collateralToken.totalSupplyF := get_nat_or_fail(collateralToken.totalSupplyF - reserveSharesF, Errors.YToken.lowCollateralTotalSupply);
 
           s.ledger[(params.borrower, params.collateralToken)] := borrowerBalance;
           s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalance;
