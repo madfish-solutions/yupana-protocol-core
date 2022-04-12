@@ -481,9 +481,7 @@ class DexTest(TestCase):
         transfers = parse_transfers(res)
         liq_out = transfers[0]["amount"]
         liq_change = shares_to_tokens(collateral_token, get_balance_by_token_id(res, bob, 0) / PRECISION)
-        print(get_reserves(res, 0), liq_out, liq_change,  borrow_out, borrow_change, sep='\n')
         output_sum = get_reserves(res, 0) + liq_out + liq_change +  borrow_out + borrow_change
-        print(output_sum)
         self.assertLessEqual(output_sum, 100_000)
         
 
@@ -723,8 +721,6 @@ class DexTest(TestCase):
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
-        
-        print(actual_reserves_bonus)
         
         self.assertEqual(actual_reserves_bonus, expected_reserves_bonus)
         
