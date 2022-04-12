@@ -330,10 +330,49 @@ def calculate_reserves_bonus_by_liqidation(tokens, borrow_id, collateral_id, amo
     '''
     after the liquidation reserve bonus check
     '''
-    reserve_rate = tokens[collateral_id]["liquidReserveRateF"] / PRECISION
-    price_bor = tokens[borrow_id]["lastPrice"]
-    price_col = tokens[collateral_id]["lastPrice"]
-    return amount * reserve_rate * price_bor / price_col
+    collateral = tokens[collateral_id]
+    borrow = tokens[borrow_id]
+    supply = collateral["totalSupplyF"]
+    reserve_rate = collateral["liquidReserveRateF"]
+    liquidity = (collateral["totalLiquidF"] + collateral["totalBorrowsF"] - collateral["totalReservesF"])
+    price_bor = borrow["lastPrice"]
+    price_col = collateral["lastPrice"]
+    exchange_rate = liquidity * price_col * PRECISION
+    reserve_amount = amount * reserve_rate * price_bor * supply
+    shares = reserve_amount / exchange_rate
+    bonus = shares * liquidity / supply
+    print(f"bonus (tokens): {bonus}")
+    return bonus
+
+def shares_to_tokens(token, shares):
+    liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"])
+    supply = token["totalSupplyF"]
+    tokens = shares * liquidity / supply
+    print(f'Shares: {shares} -> {tokens} tokens')
+    return shares
+
+def tokens_to_shares(token, tokens):
+    liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"])
+    supply = token["totalSupplyF"]
+    shares = tokens * supply / liquidity
+    tokens = shares * liquidity / supply
+    print(f'Tokens: {tokens} -> {shares} shares')
+    return tokens
+
+def calculate_liquidator_return(tokens, insentiveF, borrow_id, collateral_id, amount):
+    '''
+    after the liquidation reserve bonus check
+    '''
+    collateral = tokens[collateral_id]
+    borrow = tokens[borrow_id]
+    supply = collateral["totalSupplyF"]
+    liquidity = (collateral["totalLiquidF"] + collateral["totalBorrowsF"] - collateral["totalReservesF"])
+    price_bor = borrow["lastPrice"]
+    price_col = collateral["lastPrice"]
+    exchange_rate = liquidity * price_col * PRECISION
+    result = amount * insentiveF * price_bor * supply / exchange_rate
+    print(f"Return: {result}")
+    return result
 
 def get_reserves(res, token_id):
     return res.storage["storage"]["tokens"][token_id]["totalReservesF"] / PRECISION

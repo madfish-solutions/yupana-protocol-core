@@ -235,14 +235,39 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 1, 100, 0)
 
         initial_reserves = get_reserves(chain, 0)
+        initial_borrower_balance = get_balance_by_token_id(chain, me, 0) / PRECISION
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(chain.storage['storage']['tokens'], 1, 0, 25)
+        try:
+            liquidator_balance = get_balance_by_token_id(chain, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            chain.storage['storage']['tokens'],
+            chain.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            25
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 25, 1, chain.now + 2), sender=bob)
 
         actual_reserves = get_reserves(res, 0)
+        liquidated_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
+        liquidator_return = get_balance_by_token_id(chain, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        print(
+            initial_borrower_balance, 
+            liquidated_borrower_balance, 
+            f"delta: {bal_delta}",
+            sep='\n'
+        )
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
 
         transfers = parse_transfers(res)
         self.assertEqual(len(transfers), 1)
@@ -254,11 +279,15 @@ class DexTest(TestCase):
         chain.execute(self.ct.repay(1, 25, chain.now + 2))
         chain.execute(self.ct.exitMarket(0))
 
-        res = chain.execute(self.ct.redeem(0, 1, 1))
+        print(get_balance_by_token_id(chain, me, 0) / PRECISION)
+        res = chain.execute(self.ct.redeem(0, 0, 1))
         transfers = parse_transfers(res)
+        print(transfers)
+        print(get_balance_by_token_id(res, me, 0) / PRECISION)
+        
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)
-        self.assertEqual(transfers[0]["amount"], 1)
+        self.assertEqual(transfers[0]["amount"], 44)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
 
     def test_mint_redeem(self):
@@ -368,15 +397,38 @@ class DexTest(TestCase):
             
             
         initial_reserves = get_reserves(res, 0)
+        
+        initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 10_000)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            10_000
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, alice, 10_000, 1, chain.now + 2), sender=bob)
+
+        liquidator_return = get_balance_by_token_id(chain, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
         
+        liquidated_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
 
         # pprint_aux(res.storage["storage"]["tokens"])
         transfers = parse_transfers(res)
@@ -387,15 +439,39 @@ class DexTest(TestCase):
 
 
         initial_reserves = get_reserves(res, 0)
+        
+        initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+       
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 15_000)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            15_000
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, alice, 15_000, 1, chain.now + 2), sender=bob)
+        
+        liquidator_return = get_balance_by_token_id(chain, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
-
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
+        
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["source"], bob)
         self.assertEqual(transfers[0]["destination"], contract_self_address)
@@ -420,14 +496,37 @@ class DexTest(TestCase):
             
             
         initial_reserves = get_reserves(res, 0)
+        initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 25_000)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            25_000
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now + 2), sender=bob)
+        
+        liquidator_return = get_balance_by_token_id(chain, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
         
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["source"], bob)
@@ -453,14 +552,36 @@ class DexTest(TestCase):
             
         
         initial_reserves = get_reserves(res, 0)
+        initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 25_000)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            25_000
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now + 2), sender=bob)
+        
+        liquidator_return = get_balance_by_token_id(chain, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
         
         chain.execute(self.ct.repay(1,0, chain.now + 2), sender=alice)
 
@@ -569,14 +690,38 @@ class DexTest(TestCase):
             chain.execute(self.ct.liquidate(1, 0, me, 11, 1, chain.now + 2), sender=bob)
             
         initial_reserves = get_reserves(chain, 0)
+        
+        initial_borrower_balance = get_balance_by_token_id(chain, me, 0) / PRECISION
+        
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(chain.storage['storage']['tokens'], 1, 0, 9)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(chain, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            chain.storage['storage']['tokens'],
+            chain.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            9
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 9, 1, chain.now + 2), sender=bob)
+        
+        liquidator_return = get_balance_by_token_id(chain, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
         
     def test_interest_rate_accrual(self):
         chain = self.create_chain_with_ab_markets()
@@ -715,10 +860,41 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.liquidate(1, 0, alice, 50_001, 1, chain.now + 2), sender=bob)
         with self.assertRaises(MichelsonRuntimeError): # minSeized check (should seize 78750)
-            res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 80_000, chain.now + 2), sender=bob)
+            chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 80_000, chain.now + 2), sender=bob)
         with self.assertRaises(MichelsonRuntimeError): # deadline check
             chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now - 1), sender=bob)
+            
+        initial_reserves = get_reserves(res, 0)
+
+        expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(chain.storage['storage']['tokens'], 1, 0, 25_000)
+            
+        initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            25_000
+        )
+        
         res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now + 2), sender=bob)
+        liquidator_return = get_balance_by_token_id(res, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
+        
+        actual_reserves = get_reserves(res, 0)
+        actual_reserves_bonus = (actual_reserves - initial_reserves)
+        self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
 
 
     def test_should_verify_token_updates(self):
@@ -751,14 +927,39 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.priceCallback(0, 62), sender=price_feed)
         
         initial_reserves = get_reserves(res, 0)
+        
+        initial_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
+        
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 25)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            25
+        )
+        
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 25, 1, chain.now + 2), sender=bob)
+        
+        liquidator_return = get_balance_by_token_id(res, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
 
 
     def test_zeroes(self):
@@ -1049,14 +1250,37 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.accrueInterest(1, 635296632), sender=interest_model)
 
         initial_reserves = get_reserves(res, 0)
+        initial_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 1)
+        
+        try:
+            liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
+        except KeyError:
+            liquidator_balance = 0
+        expected_liquidator_return = calculate_liquidator_return(
+            res.storage['storage']['tokens'],
+            res.storage['storage']['liqIncentiveF'],
+            1,
+            0,
+            1
+        )
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 1, 1, chain.now + 2), sender=bob)
+        liquidated_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
+        
+        liquidator_return = get_balance_by_token_id(res, bob, 0) / PRECISION - liquidator_balance
+        self.assertEqual(expected_liquidator_return, liquidator_return)
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
+        
+        liquidated_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
+        bal_delta = initial_borrower_balance - liquidated_borrower_balance
+        shares_removed = liquidator_return + tokens_to_shares(res.storage["storage"]["tokens"][0], actual_reserves_bonus)
+        print(f'SR: {shares_removed}, BD: {bal_delta}')
+        self.assertAlmostEqual(shares_removed, bal_delta)
 
     def test_exit_market_with_present_borrow(self):
         chain = LocalChain(storage=self.storage)
