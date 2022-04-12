@@ -332,32 +332,32 @@ def calculate_reserves_bonus_by_liqidation(tokens, borrow_id, collateral_id, amo
     '''
     collateral = tokens[collateral_id]
     borrow = tokens[borrow_id]
-    supply = collateral["totalSupplyF"]
-    reserve_rate = collateral["liquidReserveRateF"]
-    liquidity = (collateral["totalLiquidF"] + collateral["totalBorrowsF"] - collateral["totalReservesF"])
+    supply = collateral["totalSupplyF"] / PRECISION
+    reserve_rate = collateral["liquidReserveRateF"] / PRECISION
+    liquidity = (collateral["totalLiquidF"] + collateral["totalBorrowsF"] - collateral["totalReservesF"]) / PRECISION
     price_bor = borrow["lastPrice"]
     price_col = collateral["lastPrice"]
-    exchange_rate = liquidity * price_col * PRECISION
+    exchange_rate = liquidity * price_col
     reserve_amount = amount * reserve_rate * price_bor * supply
     shares = reserve_amount / exchange_rate
-    bonus = shares * liquidity / supply
-    print(f"bonus (tokens): {bonus}")
-    return bonus
+    bonus = (shares * liquidity / supply)
+    print('\n', f"bonus (tokens): {bonus}", '\n')
+    return round(bonus, 18)
 
 def shares_to_tokens(token, shares):
-    liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"])
-    supply = token["totalSupplyF"]
+    liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"]) / PRECISION
+    supply = token["totalSupplyF"] / PRECISION
     tokens = shares * liquidity / supply
-    print(f'Shares: {shares} -> {tokens} tokens')
-    return tokens
+    print('\n',f'Shares: {shares} -> {tokens} tokens','\n')
+    return round(tokens, 18)
 
 def tokens_to_shares(token, tokens):
-    liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"])
-    supply = token["totalSupplyF"]
+    liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"]) / PRECISION
+    supply = token["totalSupplyF"] / PRECISION
     shares = tokens * supply / liquidity
     tokens = shares * liquidity / supply
-    print(f'Tokens: {tokens} -> {shares} shares')
-    return shares
+    print('\n',f'Tokens: {tokens} -> {shares} shares','\n')
+    return round(shares, 18)
 
 def calculate_liquidator_return(tokens, insentiveF, borrow_id, collateral_id, amount):
     '''
@@ -365,14 +365,14 @@ def calculate_liquidator_return(tokens, insentiveF, borrow_id, collateral_id, am
     '''
     collateral = tokens[collateral_id]
     borrow = tokens[borrow_id]
-    supply = collateral["totalSupplyF"]
-    liquidity = (collateral["totalLiquidF"] + collateral["totalBorrowsF"] - collateral["totalReservesF"])
+    supply = collateral["totalSupplyF"]  / PRECISION
+    liquidity = (collateral["totalLiquidF"] + collateral["totalBorrowsF"] - collateral["totalReservesF"])  / PRECISION
     price_bor = borrow["lastPrice"]
     price_col = collateral["lastPrice"]
     exchange_rate = liquidity * price_col * PRECISION
     result = amount * insentiveF * price_bor * supply / exchange_rate
-    print(f"Return: {result}")
-    return result
+    print("\n", f"Return: {result}", "\n")
+    return round(result, 18)
 
 def get_reserves(res, token_id):
     return res.storage["storage"]["tokens"][token_id]["totalReservesF"] / PRECISION
