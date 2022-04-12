@@ -349,7 +349,7 @@ def shares_to_tokens(token, shares):
     supply = token["totalSupplyF"]
     tokens = shares * liquidity / supply
     print(f'Shares: {shares} -> {tokens} tokens')
-    return shares
+    return tokens
 
 def tokens_to_shares(token, tokens):
     liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"])
@@ -357,7 +357,7 @@ def tokens_to_shares(token, tokens):
     shares = tokens * supply / liquidity
     tokens = shares * liquidity / supply
     print(f'Tokens: {tokens} -> {shares} shares')
-    return tokens
+    return shares
 
 def calculate_liquidator_return(tokens, insentiveF, borrow_id, collateral_id, amount):
     '''
