@@ -235,20 +235,8 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 1, 100, 0)
 
         initial_reserves = get_reserves(chain, 0)
-        # initial_borrower_balance = get_balance_by_token_id(chain, me, 0) / PRECISION
-
+        
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(chain.storage['storage']['tokens'], 1, 0, 25)
-        # try:
-        #     liquidator_balance = get_balance_by_token_id(chain, bob, 0) / PRECISION
-        # except KeyError:
-        #     liquidator_balance = 0
-        # expected_liquidator_return = calculate_liquidator_return(
-        #     chain.storage['storage']['tokens'],
-        #     chain.storage['storage']['liqIncentiveF'],
-        #     1,
-        #     0,
-        #     25
-        # )
         collateral_token = chain.storage["storage"]["tokens"][0]
         res = chain.execute(self.ct.liquidate(1, 0, me, 25, 1, chain.now + 2), sender=bob)
 
