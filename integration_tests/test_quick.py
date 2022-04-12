@@ -272,7 +272,7 @@ class DexTest(TestCase):
         borrow_change = shares_to_tokens(res.storage["storage"]["tokens"][0], get_balance_by_token_id(res, me, 0) / PRECISION)
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)
-        self.assertEqual(borrow_out, 44)
+        self.assertEqual(borrow_out, 45)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
 
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
@@ -391,10 +391,10 @@ class DexTest(TestCase):
         initial_reserves = get_reserves(res, 0)
         
         initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
-        
+
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 10_000)
-        
+
         try:
             liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
         except KeyError:
@@ -415,7 +415,7 @@ class DexTest(TestCase):
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
         self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
-        
+
         liquidated_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
         bal_delta = initial_borrower_balance - liquidated_borrower_balance
         shares_removed = liquidator_return + tokens_to_shares(collateral_token, actual_reserves_bonus)
@@ -431,12 +431,12 @@ class DexTest(TestCase):
 
 
         initial_reserves = get_reserves(res, 0)
-        
+
         initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
-       
+
 
         expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 15_000)
-        
+
         try:
             liquidator_balance = get_balance_by_token_id(res, bob, 0) / PRECISION
         except KeyError:
@@ -481,9 +481,7 @@ class DexTest(TestCase):
         transfers = parse_transfers(res)
         liq_out = transfers[0]["amount"]
         liq_change = shares_to_tokens(collateral_token, get_balance_by_token_id(res, bob, 0) / PRECISION)
-        print(get_reserves(res, 0), liq_out, liq_change,  borrow_out, borrow_change, sep='\n')
         output_sum = get_reserves(res, 0) + liq_out + liq_change +  borrow_out + borrow_change
-        print(output_sum)
         self.assertLessEqual(output_sum, 100_000)
         
 
@@ -723,8 +721,6 @@ class DexTest(TestCase):
 
         actual_reserves = get_reserves(res, 0)
         actual_reserves_bonus = (actual_reserves - initial_reserves)
-        
-        print(actual_reserves_bonus)
         
         self.assertEqual(actual_reserves_bonus, expected_reserves_bonus)
         
