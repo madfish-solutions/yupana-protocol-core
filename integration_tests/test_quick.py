@@ -377,8 +377,6 @@ class DexTest(TestCase):
             
         initial_reserves = get_reserves(res, 0)
         
-        initial_borrower_balance = get_balance_by_token_id(res, alice, 0) / PRECISION
-
         collateral_token = res.storage["storage"]["tokens"][0]
         res = chain.execute(self.ct.liquidate(1, 0, alice, 10_000, 1, chain.now + 2), sender=bob)
 
@@ -614,9 +612,6 @@ class DexTest(TestCase):
             
         initial_reserves = get_reserves(chain, 0)
         
-        initial_borrower_balance = get_balance_by_token_id(chain, me, 0) / PRECISION
-        
-
         collateral_token = chain.storage["storage"]["tokens"][0]
         res = chain.execute(self.ct.liquidate(1, 0, me, 9, 1, chain.now + 2), sender=bob)
         
@@ -1122,8 +1117,6 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.accrueInterest(1, 635296632), sender=interest_model)
 
         initial_reserves = get_reserves(res, 0)
-        initial_borrower_balance = get_balance_by_token_id(res, me, 0) / PRECISION
-
         collateral_token = res.storage['storage']['tokens'][0]
         res = chain.execute(self.ct.liquidate(1, 0, me, 1, 1, chain.now + 2), sender=bob)
         
