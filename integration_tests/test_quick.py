@@ -413,7 +413,7 @@ class DexTest(TestCase):
         self.assertEqual(actual_reserves_bonus, 2500)
         shares_removed = liquidator_return + tokens_to_shares(collateral_token, actual_reserves_bonus)
         
-        self.assertEqual(shares_removed, 55000, delta=0.1)
+        self.assertEqual(shares_removed, 55000)
         
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["source"], bob)
@@ -630,7 +630,7 @@ class DexTest(TestCase):
         
         shares_removed = liquidator_return + tokens_to_shares(collateral_token, actual_reserves_bonus)
         
-        self.assertEqual(shares_removed, 9.9)
+        self.assertAlmostEqual(shares_removed, 9.9)
         
     def test_interest_rate_accrual(self):
         chain = self.create_chain_with_ab_markets()
