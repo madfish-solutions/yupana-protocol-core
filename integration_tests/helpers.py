@@ -336,7 +336,6 @@ def tokens_to_shares(token, tokens):
     liquidity = (token["totalLiquidF"] + token["totalBorrowsF"] - token["totalReservesF"]) / PRECISION
     supply = token["totalSupplyF"] / PRECISION
     shares = tokens * supply / liquidity
-    tokens = shares * liquidity / supply
     return round(shares, 18)
 
 def get_reserves(res, token_id):
