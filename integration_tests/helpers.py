@@ -7,6 +7,7 @@ from pprint import pprint
 
 PRECISION = pow(10, 18)
 SECONDS_PER_BLOCK = 30
+INITIAL_LIQUIDITY = 100_000
 
 TOKEN_ADDRESS = "KT1VHd7ysjnvxEzwtjBAmYAmasvVCfPpSkiG"
 
