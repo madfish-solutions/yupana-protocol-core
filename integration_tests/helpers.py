@@ -9,6 +9,8 @@ PRECISION = pow(10, 18)
 SECONDS_PER_BLOCK = 30
 INITIAL_LIQUIDITY = 100_000
 
+EOT = int(1e10) # end of times i.e. very big deadline
+
 TOKEN_ADDRESS = "KT1VHd7ysjnvxEzwtjBAmYAmasvVCfPpSkiG"
 
 alice = "tz1iA1iceA1iceA1iceA1iceA1ice9ydjsaW"
