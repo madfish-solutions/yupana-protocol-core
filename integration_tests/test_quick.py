@@ -649,8 +649,6 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 15)
-
-        self.check_admin_redeems_in_full(chain, 2)
         
 
     def test_whale_redeems_its_collateral(self):
