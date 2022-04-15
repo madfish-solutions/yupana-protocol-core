@@ -327,18 +327,6 @@ def none_sets_to_lists(full_storage):
 
     return full_storage
 
-def calculate_reserves_bonus_by_liqidation(tokens, borrow_id, collateral_id, amount):
-    '''
-    after the liquidation reserve bonus check
-    '''
-    reserve_rate = tokens[collateral_id]["liquidReserveRateF"] / PRECISION
-    price_bor = tokens[borrow_id]["lastPrice"]
-    price_col = tokens[collateral_id]["lastPrice"]
-    return amount * reserve_rate * price_bor / price_col
-
-def get_reserves(res, token_id):
-    return res.storage["storage"]["tokens"][token_id]["totalReservesF"] / PRECISION
-
 class LocalChain:
     def __init__(self, storage=None):
         self.storage = storage

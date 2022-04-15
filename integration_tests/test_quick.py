@@ -489,17 +489,8 @@ class DexTest(TestCase):
 
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.liquidate(1, 0, alice, 50_001, 1, chain.now + 2), sender=bob)
-            
-        
-        initial_reserves = get_reserves(res, 0)
-
-        expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 25_000)
 
         res = chain.execute(self.ct.liquidate(1, 0, alice, 25_000, 1, chain.now + 2), sender=bob)
-
-        actual_reserves = get_reserves(res, 0)
-        actual_reserves_bonus = (actual_reserves - initial_reserves)
-        self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
         
         chain.execute(self.ct.repay(1,0, chain.now + 2), sender=alice)
 
@@ -523,7 +514,6 @@ class DexTest(TestCase):
         txs = parse_transfers(res)
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0]["amount"], 13_000)
-
 
     def test_multicollateral_cant_exit(self):
         chain = LocalChain(storage=self.storage)
@@ -604,16 +594,9 @@ class DexTest(TestCase):
         # can liquidate at least 9 tokens which is 0.5 * 20 - 1
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.liquidate(1, 0, me, 11, 1, chain.now + 2), sender=bob)
-            
-        initial_reserves = get_reserves(chain, 0)
-
-        expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(chain.storage['storage']['tokens'], 1, 0, 9)
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 9, 1, chain.now + 2), sender=bob)
 
-        actual_reserves = get_reserves(res, 0)
-        actual_reserves_bonus = (actual_reserves - initial_reserves)
-        self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
         
     def test_interest_rate_accrual(self):
         chain = self.create_chain_with_ab_markets()
@@ -666,6 +649,8 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.withdrawReserve(1, 15), sender=admin)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 15)
+
+        self.check_admin_redeems_in_full(chain, 2)
         
 
     def test_whale_redeems_its_collateral(self):
@@ -715,6 +700,17 @@ class DexTest(TestCase):
 
         with self.assertRaises(MichelsonRuntimeError):
             res = chain.execute(self.ct.borrow(0, 1, chain.now + 2))
+
+        res = chain.execute(self.ct.repay(0, 0, 1))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 50)
+
+        self.check_admin_redeems_in_full(chain, 2)
+
+        res = chain.execute(self.ct.redeem(0, 100, 1))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 100)
+        
             
     def test_deadline(self):
         chain = self.create_chain_with_ab_markets()
@@ -786,30 +782,21 @@ class DexTest(TestCase):
             chain.execute(self.ct.liquidate(1, 0, me, 25, 1, chain.now + 2), sender=bob)
             
         res = chain.execute(self.ct.priceCallback(0, 62), sender=price_feed)
-        
-        initial_reserves = get_reserves(res, 0)
-
-        expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 25)
 
         res = chain.execute(self.ct.liquidate(1, 0, me, 25, 1, chain.now + 2), sender=bob)
-
-        actual_reserves = get_reserves(res, 0)
-        actual_reserves_bonus = (actual_reserves - initial_reserves)
-        self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
-
 
     def test_zeroes(self):
         chain = LocalChain(storage=self.storage)
         self.add_token(chain, token_a)
         self.add_token(chain, token_b)
 
-        with self.assertRaises(MichelsonRuntimeError) as error:
+        with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.mint(0, 0, 1))
 
         chain.execute(self.ct.mint(0, 100, 1))
         chain.execute(self.ct.enterMarket(0))
         
-        with self.assertRaises(MichelsonRuntimeError) as error:
+        with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.borrow(1, 0, chain.now + 2))
 
         res = chain.interpret(self.ct.repay(0, 0, chain.now + 2))
@@ -921,8 +908,6 @@ class DexTest(TestCase):
 
         res = chain.execute(self.ct.repay(2, 10_030, chain.now + 2))
         chain.execute(self.ct.exitMarket(0))
-
-
 
 
     def test_repay_and_delay_interest(self):
@@ -1046,7 +1031,7 @@ class DexTest(TestCase):
         # nothing left to repay and withdraw
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
-
+    
     def test_real_world_liquidation(self):
         price_a = 5244313
         price_b = 56307584485
@@ -1087,15 +1072,8 @@ class DexTest(TestCase):
         chain.execute(self.ct.updateInterest(1))
         res = chain.execute(self.ct.accrueInterest(1, 635296632), sender=interest_model)
 
-        initial_reserves = get_reserves(res, 0)
-
-        expected_reserves_bonus = calculate_reserves_bonus_by_liqidation(res.storage['storage']['tokens'], 1, 0, 1)
-
         res = chain.execute(self.ct.liquidate(1, 0, me, 1, 1, chain.now + 2), sender=bob)
 
-        actual_reserves = get_reserves(res, 0)
-        actual_reserves_bonus = (actual_reserves - initial_reserves)
-        self.assertAlmostEqual(actual_reserves_bonus, expected_reserves_bonus)
 
     def test_exit_market_with_present_borrow(self):
         chain = LocalChain(storage=self.storage)
