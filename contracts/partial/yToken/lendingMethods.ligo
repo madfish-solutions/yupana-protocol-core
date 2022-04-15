@@ -58,7 +58,7 @@ function calcMaxCollateralInCU(
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
-        if token.totalSupplyF > 0n then
+        if token.totalSupplyF > 0n then {
           const liquidityF : nat = getLiquidity(token);
 
           verifyPriceUpdated(token);
@@ -67,6 +67,7 @@ function calcMaxCollateralInCU(
           (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
             acc := acc + userBalance * token.lastPrice
               * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
+        }
         else skip;
 
       } with acc;
@@ -86,7 +87,7 @@ function calcLiquidateCollateral(
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
-        if token.totalSupplyF > 0n then
+        if token.totalSupplyF > 0n then {
           const liquidityF : nat = getLiquidity(token);
 
           verifyPriceUpdated(token);
@@ -94,6 +95,7 @@ function calcLiquidateCollateral(
 
           (* sum +=  balance * oraclePrice * exchangeRate *)
           acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
+        }
         else skip;
       } with acc * token.threshold / precision;
   } with Set.fold(oneToken, userMarkets, 0n)
