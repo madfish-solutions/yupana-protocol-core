@@ -1204,8 +1204,8 @@ class DexTest(TestCase):
                 "reserve_liquidation_rate": 0.05,
         })
 
+        # can't supply zero collateral factor token
         chain.execute(self.ct.mint(1, 100_000, 1))
-        # can't borrow with zero collateral factor
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.borrow(0, 1, 1))
 
@@ -1213,10 +1213,10 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(1, 1, 1))
 
+        # can borrow token with zero collateral factor
         chain.execute(self.ct.mint(0, 100_000, 1))
         chain.execute(self.ct.enterMarket(0))
         
-        # can borrow though
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.borrow(1, 50_001, 1))
         chain.execute(self.ct.borrow(1, 50_000, 1))
@@ -1234,9 +1234,16 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 0, 100, 0)
         self.update_price_and_interest(chain, 1, 300, 0)
 
-        chain.execute(self.ct.liquidate(1, 0, me, 30_000, 1, EOT), sender=bob)
+        res = chain.execute(self.ct.liquidate(1, 0, me, 30_000, 1, EOT), sender=bob)
+        res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 94_500)
 
-        res = chain.interpret(self.ct.repay(1, 0, EOT))
+        chain.execute(self.ct.withdrawReserve(0, 4500), sender=admin)
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.withdrawReserve(0, 1), sender=admin)
+            
+        res = chain.execute(self.ct.repay(1, 0, EOT))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 35_000)
 
@@ -1245,5 +1252,5 @@ class DexTest(TestCase):
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)
-        self.assertEqual(transfers[0]["amount"], 100)
+        self.assertEqual(transfers[0]["amount"], 1000)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
