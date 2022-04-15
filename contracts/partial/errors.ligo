@@ -52,6 +52,7 @@ module YToken is {
   const lowBorrowAmount          : string = "Y_TOKEN_LOW_BORROW_AMOUNT";
   const lowBorrowerBalanceS      : string = "Y_TOKEN_LOW_BORROWER_BALANCE_SEIZE";
   const lowBorrowerBalanceR      : string = "Y_TOKEN_LOW_BORROWER_BALANCE_RESERVES";
+  const lowCollateralTotalSupply : string = "Y_TOKEN_LOW_COLLATERAL_TOTAL_SUPPLY";
   const lowTotalBorrow           : string = "Y_TOKEN_LOW_TOTAL_BORROWED";
 }
 

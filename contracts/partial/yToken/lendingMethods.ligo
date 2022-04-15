@@ -441,12 +441,15 @@ function liquidate(
           var liquidatorBalance : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
           borrowerBalance := get_nat_or_fail(borrowerBalance - seizeTokensF, Errors.YToken.lowBorrowerBalanceS);
           liquidatorBalance := liquidatorBalance + seizeTokensF;
-
+          
           (* collect reserves incentive from liquidation *)
-          const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF
-            * borrowToken.lastPrice / ( precision * collateralToken.lastPrice) ;
-          borrowerBalance := get_nat_or_fail(borrowerBalance - reserveTokensF, Errors.YToken.lowBorrowerBalanceR);
+          const reserveAmountF : nat = liqAmountF * collateralToken.liquidReserveRateF
+            * borrowToken.lastPrice  * collateralToken.totalSupplyF;
+          const reserveSharesF : nat = reserveAmountF / exchangeRateF;
+          const reserveTokensF : nat = reserveSharesF * liquidityF / collateralToken.totalSupplyF;
+          borrowerBalance := get_nat_or_fail(borrowerBalance - reserveSharesF, Errors.YToken.lowBorrowerBalanceR);
           collateralToken.totalReservesF := collateralToken.totalReservesF + reserveTokensF;
+          collateralToken.totalSupplyF := get_nat_or_fail(collateralToken.totalSupplyF - reserveSharesF, Errors.YToken.lowCollateralTotalSupply);
 
           s.ledger[(params.borrower, params.collateralToken)] := borrowerBalance;
           s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalance;
