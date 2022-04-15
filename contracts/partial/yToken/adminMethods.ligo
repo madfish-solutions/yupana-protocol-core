@@ -46,6 +46,7 @@ function withdrawReserve(
         const amountF = params.amount * precision;
 
         token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, Errors.YToken.lowReserves);
+        token.totalLiquidF := get_nat_or_fail(token.totalLiquidF - amountF, Errors.YToken.lowLiquidity);
 
         s.tokens[params.tokenId] := token;
 
