@@ -15,7 +15,8 @@ type useAction          is
   | WithdrawReserve of yAssetParams
   | SetTokenFactors of setTokenParams
   | SetGlobalFactors of setGlobalParams
-  | SetBorrowPause of borrowPauseParams
+  | SetBorrowPause of pauseParams
+  | SetEnterMintPause of pauseParams
   | ApproveAdmin of unit
 
 type tokenAction        is

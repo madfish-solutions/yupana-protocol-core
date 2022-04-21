@@ -32,6 +32,7 @@ module YToken is {
   const zeroAmount               : string = "Y_ZERO_AMOUNT";
   const unpaidDebt               : string = "Y_DEBT_NOT_REPAID";
   const borrowPaused             : string = "Y_BORROW_PAUSED";
+  const enterMintPaused          : string = "Y_ENTER_MARKET_AND_MINT_PAUSED";
   const borrowerNotLiquidator    : string = "Y_BORROWER_CANNOT_BE_LIQUIDATOR";
   const marketId404              : string = "Y_MARKET_UNDEFINED";
   const undefined                : string = "Y_TOKEN_UNDEFINED";

@@ -44,6 +44,7 @@ function getToken(
       liquidReserveRateF      = 0n;
       lastPrice               = 0n;
       borrowPause             = False;
+      enterMintPause          = False;
       isInterestUpdating      = False;
       threshold               = 0n;
     ]

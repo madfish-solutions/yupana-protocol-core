@@ -70,6 +70,10 @@ let yTokenFunctions = [
     index: 12,
     name: "approveAdmin",
   },
+  {
+    index: 13,
+    name: "setEnterMintPause",
+  },
 ];
 
 let proxyFunctions = [

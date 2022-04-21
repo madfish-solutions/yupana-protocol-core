@@ -29,6 +29,7 @@ type tokenType          is [@layout:comb] record [
   reserveFactorF        : nat;
   lastPrice             : nat;
   borrowPause           : bool;
+  enterMintPause        : bool;
   isInterestUpdating    : bool;
   threshold             : nat;
 ]
@@ -124,7 +125,7 @@ type setGlobalParams    is [@layout:comb] record [
   maxMarkets            : nat;
 ]
 
-type borrowPauseParams  is [@layout:comb] record [
+type pauseParams  is [@layout:comb] record [
   tokenId               : nat;
   condition             : bool;
 ]
