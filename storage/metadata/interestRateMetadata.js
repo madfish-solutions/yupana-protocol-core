@@ -15,7 +15,7 @@ const metadata = MichelsonMap.fromLiteral({
           "https://github.com/madfish-solutions/yupana-protocol-core/blob/master/contracts/main/interestRate.ligo",
       },
       homepage: "https://yupana.com",
-      interfaces: ["TZIP-16"],
+      interfaces: ["TZIP-016"],
       errors: interestRateErrors,
       views: [],
     }),
