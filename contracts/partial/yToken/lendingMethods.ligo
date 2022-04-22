@@ -237,7 +237,9 @@ function redeem(
           then userBalance * liquidityF / token.totalSupplyF / precision
           else params.amount;
           require(redeemAmount >= params.minReceived, Errors.YToken.highReceived);
-          var burnTokensF : nat := redeemAmount * precision * token.totalSupplyF / liquidityF;
+          var burnTokensF : nat := if params.amount = 0n
+          then userBalance
+          else redeemAmount * precision * token.totalSupplyF / liquidityF;
 
           userBalance := get_nat_or_fail(userBalance - burnTokensF, Errors.YToken.lowBalance);
           s.ledger[(Tezos.sender, params.tokenId)] := userBalance;
@@ -448,12 +450,12 @@ function liquidate(
           var liquidatorBalance : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
           borrowerBalance := get_nat_or_fail(borrowerBalance - seizeTokensF, Errors.YToken.lowBorrowerBalanceS);
           liquidatorBalance := liquidatorBalance + seizeTokensF;
-          
+
           (* collect reserves incentive from liquidation *)
           const reserveAmountF : nat = liqAmountF * collateralToken.liquidReserveRateF
             * borrowToken.lastPrice  * collateralToken.totalSupplyF;
           const reserveSharesF : nat = reserveAmountF / exchangeRateF;
-          const reserveTokensF : nat = reserveSharesF * liquidityF / collateralToken.totalSupplyF;
+          const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF * borrowToken.lastPrice / ( precision * collateralToken.lastPrice) ;
           borrowerBalance := get_nat_or_fail(borrowerBalance - reserveSharesF, Errors.YToken.lowBorrowerBalanceR);
           collateralToken.totalReservesF := collateralToken.totalReservesF + reserveTokensF;
           collateralToken.totalSupplyF := get_nat_or_fail(collateralToken.totalSupplyF - reserveSharesF, Errors.YToken.lowCollateralTotalSupply);
