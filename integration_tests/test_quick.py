@@ -76,6 +76,7 @@ class DexTest(TestCase):
         for i in range(token_count):
             res = chain.execute(self.ct.redeem(i, 0, 1), sender=admin)
             transfers = parse_transfers(res)
+            self.assertEqual(res.storage["storage"]["ledger"][(admin, i)], 0)
             self.assertEqual(transfers[0]["amount"], INITIAL_LIQUIDITY)
 
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
@@ -158,12 +159,12 @@ class DexTest(TestCase):
         chain.execute(self.ct.exitMarket(0))
         
         res = chain.execute(self.ct.redeem(0, 100, 1))
-
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 100)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
 
     def test_enter_max_markets(self):
         limit = 3
@@ -185,6 +186,7 @@ class DexTest(TestCase):
             self.assertEqual(transfers[0]["destination"], me)
             self.assertEqual(transfers[0]["source"], contract_self_address)
             self.assertEqual(transfers[0]["amount"], 100)
+            self.assertEqual(res.storage["storage"]["ledger"][(me, i)], 0)
 
     def test_cant_redeem_too_much_when_on_market(self):
         chain = self.create_chain_with_ab_markets()
@@ -265,15 +267,18 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 4_500)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
 
         # verify bob's 250 bonus
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 5_250)
+        self.assertEqual(res.storage["storage"]["ledger"][(bob, 0)], 0)
 
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=alice)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 42_069)
+        self.assertEqual(res.storage["storage"]["ledger"][(alice, 0)], 0)
 
         self.check_admin_redeems_in_full(chain, 2)
 
@@ -296,6 +301,7 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 1)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
         
         # partially redeem token_b
         res = chain.execute(self.ct.redeem(1, 50_000, 1))
@@ -316,6 +322,7 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 50_000)
         self.assertEqual(transfers[0]["token_address"], token_b_address)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 1)], 0)
         
         # cant redeem anymore
         with self.assertRaises(MichelsonRuntimeError):
@@ -424,10 +431,12 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=alice)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 8_333)
+        self.assertEqual(res.storage["storage"]["ledger"][(alice, 0)], 0)
 
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 87500)
+        self.assertEqual(res.storage["storage"]["ledger"][(bob, 0)], 0)
 
         self.check_admin_redeems_in_full(chain, 2)
         
@@ -500,6 +509,7 @@ class DexTest(TestCase):
         txs = parse_transfers(res)
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0]["amount"], 100_000)
+        self.assertEqual(res.storage["storage"]["ledger"][(admin, 1)], 0)
 
         # another person just does usual stuff after another one is liquidated
         chain.execute(self.ct.mint(0, 70_000, 1), sender=carol)
@@ -642,6 +652,7 @@ class DexTest(TestCase):
             chain.execute(self.ct.redeem(1, 100_016, 1), sender=alice)
 
         chain.execute(self.ct.redeem(1, 100_015, 1), sender=alice)
+        self.assertEqual(chain.storage["storage"]["ledger"][(alice, 1)], 0)
 
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 16), sender=admin)
@@ -708,6 +719,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 100, 1))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 100)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
         
             
     def test_deadline(self):
@@ -811,6 +823,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 100)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
 
         res = chain.execute(self.ct.redeem(0, 0, 0))
         transfers = parse_transfers(res)
@@ -848,6 +861,7 @@ class DexTest(TestCase):
         chain.execute(self.ct.repay(1, 50, 1))
         chain.execute(self.ct.exitMarket(0))
         res = chain.execute(self.ct.redeem(0, 100, 1))
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
 
         # do the same as above after ten blocks after supply was drained
         # check that everything stays the same
@@ -870,6 +884,7 @@ class DexTest(TestCase):
             chain.execute(self.ct.borrow(1, 101, chain.now + 2))
 
         chain.execute(self.ct.redeem(0, 100, 1))
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
 
     def test_two_borrows_interest_rate(self):
         chain = LocalChain(storage=self.storage)
@@ -1117,6 +1132,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=carol)
         transfers = parse_transfers(res)
         self.assertAlmostEqual(transfers[0]["amount"], 10_000, delta=1)
+        self.assertEqual(res.storage["storage"]["ledger"][(carol, 0)], 0)
 
 
     def test_redeem_same_borrowed_token(self):
@@ -1156,6 +1172,7 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
         chain.execute(self.ct.repay(1, 0, chain.now + 2))
         chain.execute(self.ct.redeem(0, 0, 1))
+        self.assertEqual(chain.storage["storage"]["ledger"][(me, 0)], 0)
 
     def test_change_collateral_factor(self):
         chain = self.create_chain_with_ab_markets()
@@ -1210,6 +1227,7 @@ class DexTest(TestCase):
             chain.execute(self.ct.borrow(0, 1, 1))
 
         chain.execute(self.ct.redeem(1, 100_000, 1))
+        self.assertEqual(chain.storage["storage"]["ledger"][(me, 1)], 0)
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(1, 1, 1))
 
@@ -1238,6 +1256,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 94_500)
+        self.assertEqual(res.storage["storage"]["ledger"][(bob, 0)], 0)
 
         chain.execute(self.ct.withdrawReserve(0, 4500), sender=admin)
         with self.assertRaises(MichelsonRuntimeError):
@@ -1254,3 +1273,4 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 1000)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(res.storage["storage"]["ledger"][(me, 0)], 0)
