@@ -76,6 +76,7 @@ class DexTest(TestCase):
         for i in range(token_count):
             res = chain.execute(self.ct.redeem(i, 0, 1), sender=admin)
             transfers = parse_transfers(res)
+            self.assertEqual(get_balance_by_token_id(res, admin, i), 0)
             self.assertEqual(transfers[0]["amount"], INITIAL_LIQUIDITY)
 
     def create_chain_with_ab_markets(self, config_a = None, config_b = None):
@@ -158,12 +159,12 @@ class DexTest(TestCase):
         chain.execute(self.ct.exitMarket(0))
         
         res = chain.execute(self.ct.redeem(0, 100, 1))
-
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"], me)
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 100)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
 
     def test_enter_max_markets(self):
         limit = 3
@@ -185,15 +186,16 @@ class DexTest(TestCase):
             self.assertEqual(transfers[0]["destination"], me)
             self.assertEqual(transfers[0]["source"], contract_self_address)
             self.assertEqual(transfers[0]["amount"], 100)
+            self.assertEqual(get_balance_by_token_id(res, me, i), 0)
 
     def test_cant_redeem_too_much_when_on_market(self):
         chain = self.create_chain_with_ab_markets()
 
         chain.execute(self.ct.mint(0, 100, 1), sender=alice)
         chain.execute(self.ct.enterMarket(0), sender=alice)
-        
-        chain.execute(self.ct.borrow(1, 25, chain.now +2), sender=alice)
-        
+
+        chain.execute(self.ct.borrow(1, 25, chain.now + 2), sender=alice)
+
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(0, 51, 1), sender=alice)
 
@@ -265,15 +267,18 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 4_500)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
 
         # verify bob's 250 bonus
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 5_250)
+        self.assertEqual(get_balance_by_token_id(res, bob, 0), 0)
 
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=alice)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 42_069)
+        self.assertEqual(get_balance_by_token_id(res, alice, 0), 0)
 
         self.check_admin_redeems_in_full(chain, 2)
 
@@ -282,6 +287,8 @@ class DexTest(TestCase):
 
         res = chain.execute(self.ct.mint(0, 1, 1))
         res = chain.execute(self.ct.mint(1, 100_000, 1))
+        self.assertEqual(get_totalLiquidF(res, 0), (INITIAL_LIQUIDITY + 1) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res, 1), (INITIAL_LIQUIDITY + 100_000) * PRECISION)
 
         # can't redeem more
         with self.assertRaises(MichelsonRuntimeError):
@@ -296,7 +303,8 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 1)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
-        
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
+
         # partially redeem token_b
         res = chain.execute(self.ct.redeem(1, 50_000, 1))
         transfers = parse_transfers(res)
@@ -316,11 +324,17 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 50_000)
         self.assertEqual(transfers[0]["token_address"], token_b_address)
-        
+        self.assertEqual(get_balance_by_token_id(res, me, 1), 0)
+
         # cant redeem anymore
         with self.assertRaises(MichelsonRuntimeError):
             res = chain.execute(self.ct.redeem(1, 1, 1))
 
+        self.assertEqual(get_totalLiquidF(res, 0), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res, 1), (INITIAL_LIQUIDITY) * PRECISION)
+
+        self.assertEqual(get_totalSupplyF(res, 0), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalSupplyF(res, 1), (INITIAL_LIQUIDITY) * PRECISION)
 
     def test_borrow_too_much(self):
         chain = LocalChain(storage=self.storage)
@@ -424,10 +438,12 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=alice)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 8_333)
+        self.assertEqual(get_balance_by_token_id(res, alice, 0), 0)
 
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 87500)
+        self.assertEqual(get_balance_by_token_id(res, bob, 0), 0)
 
         self.check_admin_redeems_in_full(chain, 2)
         
@@ -500,6 +516,7 @@ class DexTest(TestCase):
         txs = parse_transfers(res)
         self.assertEqual(len(txs), 1)
         self.assertEqual(txs[0]["amount"], 100_000)
+        self.assertEqual(get_balance_by_token_id(res, admin, 1), 0)
 
         # another person just does usual stuff after another one is liquidated
         chain.execute(self.ct.mint(0, 70_000, 1), sender=carol)
@@ -642,6 +659,7 @@ class DexTest(TestCase):
             chain.execute(self.ct.redeem(1, 100_016, 1), sender=alice)
 
         chain.execute(self.ct.redeem(1, 100_015, 1), sender=alice)
+        self.assertEqual(get_balance_by_token_id(chain, alice, 1), 0)
 
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 16), sender=admin)
@@ -708,8 +726,8 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 100, 1))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 100)
-        
-            
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
+
     def test_deadline(self):
         chain = self.create_chain_with_ab_markets()
         
@@ -811,6 +829,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 100)
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
 
         res = chain.execute(self.ct.redeem(0, 0, 0))
         transfers = parse_transfers(res)
@@ -848,6 +867,7 @@ class DexTest(TestCase):
         chain.execute(self.ct.repay(1, 50, 1))
         chain.execute(self.ct.exitMarket(0))
         res = chain.execute(self.ct.redeem(0, 100, 1))
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
 
         # do the same as above after ten blocks after supply was drained
         # check that everything stays the same
@@ -870,6 +890,7 @@ class DexTest(TestCase):
             chain.execute(self.ct.borrow(1, 101, chain.now + 2))
 
         chain.execute(self.ct.redeem(0, 100, 1))
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
 
     def test_two_borrows_interest_rate(self):
         chain = LocalChain(storage=self.storage)
@@ -1117,6 +1138,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=carol)
         transfers = parse_transfers(res)
         self.assertAlmostEqual(transfers[0]["amount"], 10_000, delta=1)
+        self.assertEqual(get_balance_by_token_id(res, carol, 0), 0)
 
 
     def test_redeem_same_borrowed_token(self):
@@ -1156,6 +1178,7 @@ class DexTest(TestCase):
         self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
         chain.execute(self.ct.repay(1, 0, chain.now + 2))
         chain.execute(self.ct.redeem(0, 0, 1))
+        self.assertEqual(get_balance_by_token_id(chain, me, 0), 0)
 
     def test_change_collateral_factor(self):
         chain = self.create_chain_with_ab_markets()
@@ -1210,6 +1233,7 @@ class DexTest(TestCase):
             chain.execute(self.ct.borrow(0, 1, 1))
 
         chain.execute(self.ct.redeem(1, 100_000, 1))
+        self.assertEqual(get_balance_by_token_id(chain, me, 1), 0)
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(1, 1, 1))
 
@@ -1238,6 +1262,7 @@ class DexTest(TestCase):
         res = chain.execute(self.ct.redeem(0, 0, 1), sender=bob)
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 94_500)
+        self.assertEqual(get_balance_by_token_id(res, bob, 0), 0)
 
         chain.execute(self.ct.withdrawReserve(0, 4500), sender=admin)
         with self.assertRaises(MichelsonRuntimeError):
@@ -1254,7 +1279,8 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 1000)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
-
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
+        
     def test_pause_mint_and_enter(self):
         chain = self.create_chain_with_ab_markets()
         
@@ -1274,6 +1300,7 @@ class DexTest(TestCase):
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 100_000)
         chain.execute(self.ct.exitMarket(0))
+        self.assertEqual(get_balance_by_token_id(res, me, 0), 0)
 
         chain.execute(self.ct.setEnterMintPause(1, False), sender=admin)
         chain.execute(self.ct.mint(1, 1000, 1))
@@ -1282,3 +1309,426 @@ class DexTest(TestCase):
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["amount"], 1000)
         chain.execute(self.ct.exitMarket(1))
+        self.assertEqual(get_balance_by_token_id(res, me, 1), 0)
+    
+    def test_marco_accrueInterest(self):
+        chain = LocalChain(storage=self.storage)
+
+        # add_token and admin mints 100_000 tokens
+        self.add_token(chain, token_a)
+
+        # add_token and admin mints 100_000 tokens
+        self.add_token(chain, token_b)
+
+        # Alice mints 100_000 A tokens
+        res=chain.execute(self.ct.mint(0, 100_000, 1), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY + 100_000) * PRECISION)
+
+        res=chain.execute(self.ct.enterMarket(0), sender=alice)
+
+        res=chain.execute(self.ct.borrow(1, 10_000, chain.now + 2), sender=alice)
+
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY - 10_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (10_000) * PRECISION)
+        self.assertEqual(get_totalReservesF(res,1), (0) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), (100_000) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), (10_000) * PRECISION)
+    
+        chain.advance_blocks(1)
+
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        res=chain.execute(self.ct.repay(1, 13_000, chain.now + 2), sender=alice)
+
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY + 3_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res,1), (1_500) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), (100_000) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), (0) * PRECISION)
+        
+        res = chain.execute(self.ct.withdrawReserve(1, 1_500), sender=admin)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 1_500)
+
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY + 1_500) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res,1), (0) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), (100_000) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), (0) * PRECISION)
+
+        # Alice redeems all A tokens 
+        res = chain.execute(self.ct.redeem(0, 100_000, 0), sender=alice)
+
+        # Admin redeems all A tokens 
+        res = chain.execute(self.ct.redeem(0, 100_000, 0), sender=admin)
+        self.assertEqual(get_totalSupplyF(res,0), (0) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,0), (0) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,0), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res,0), (0) * PRECISION)
+
+        # Admin redeems all B tokens
+        res = chain.execute(self.ct.redeem(1, 0, 0), sender=admin)
+        self.assertEqual(get_totalSupplyF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res, 1), (0) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,admin,1), (0) * PRECISION)
+      
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"], admin)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 101_500)
+        self.assertEqual(transfers[0]["token_address"], token_b_address)
+    
+    def test_marco_liquidate(self):
+        chain = LocalChain(storage=self.storage)
+
+        # add_token and admin mints 100_000 tokens
+        self.add_token(chain, token_a)
+
+        # add_token and admin mints 100_000 tokens
+        self.add_token(chain, token_b)
+
+        # Alice is minting 100_000 A tokens
+        aliceLiqTokA = 100_000 * PRECISION
+        
+        aliceLiqShaA = aliceLiqTokA # Attention: This is actually a wrong does only work for this specific case.
+
+        res=chain.execute(self.ct.mint(0, aliceLiqTokA//PRECISION, 1), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqShaA )
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqTokA)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), aliceLiqShaA)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],contract_self_address)
+        self.assertEqual(transfers[0]["source"], alice)
+        self.assertEqual(transfers[0]["amount"], 100_000)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+        
+        # Alice enters market A
+        chain.execute(self.ct.enterMarket(0), sender=alice)
+
+        # Alice borrows 10_000 B tokens
+        res=chain.execute(self.ct.borrow(1, 10_000, chain.now + 2), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY - 10_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), 10_000 * PRECISION)
+        self.assertEqual(get_totalReservesF(res, 1), (0) * PRECISION)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],alice)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 10_000)
+        self.assertEqual(transfers[0]["token_address"], token_b_address)
+        self.assertEqual(get_borrowBalance(res,alice,1), 10_000 * PRECISION)
+
+        # price goes down
+        res=chain.execute(self.ct.priceCallback(1, 1000), sender=price_feed)
+
+        # Alice gets liquidated by Bob
+        res = chain.execute(self.ct.liquidate(1, 0, alice, 1000, 1, chain.now + 2), sender=bob)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],contract_self_address)
+        self.assertEqual(transfers[0]["source"], bob)
+        self.assertEqual(transfers[0]["amount"], 1_000)
+        self.assertEqual(transfers[0]["token_address"], token_b_address)
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY - 10_000 + 1_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (10_000 - 1_000) * PRECISION)
+        self.assertEqual(get_totalReservesF(res, 1), (0) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), (10_000 - 1_000) * PRECISION)
+        
+        divisor = (get_totalLiquidF(res,0) + get_totalBorrowsF(res,0) - get_totalReservesF(res, 0)) * PRECISION * get_lastPrice(res,0)
+        seizedCollateralSharesForBorrower = int(1_000 *PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,1) * get_totalSupplyF(res,0) // divisor)
+        seizedCollateralTokensForBorrower = int(seizedCollateralSharesForBorrower * (get_totalLiquidF(res,0) + get_totalBorrowsF(res,0) - get_totalReservesF(res, 0)) // get_totalSupplyF(res,0))
+        seizedCollateralSharesForReserves = int(1_000 * PRECISION * get_liquidReserveRateF(res, 0) * get_lastPrice(res,1) * get_totalSupplyF(res,0) // divisor)
+        seizedCollateralTokensForReserves = int(seizedCollateralSharesForReserves * (get_totalLiquidF(res,0) + get_totalBorrowsF(res,0) - get_totalReservesF(res, 0)) // get_totalSupplyF(res,0))
+        self.assertEqual(get_balance_by_token_id(res,alice,0),aliceLiqShaA - seizedCollateralSharesForBorrower - seizedCollateralSharesForReserves)    
+        self.assertEqual(get_balance_by_token_id(res,bob,0), seizedCollateralSharesForBorrower)    
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqShaA - seizedCollateralSharesForReserves)
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqTokA)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), seizedCollateralTokensForReserves)
+        aliceLiqShaANew = aliceLiqShaA - seizedCollateralSharesForReserves - seizedCollateralSharesForBorrower
+        self.assertEqual(get_balance_by_token_id(res,alice,0), aliceLiqShaANew)
+
+        # Admin withdraws reserves for token A
+        res = chain.execute(self.ct.withdrawReserve(0, seizedCollateralTokensForReserves//PRECISION), sender=admin)
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqShaANew + seizedCollateralSharesForBorrower)
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqTokA - seizedCollateralTokensForReserves)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+
+        # Alice repays all B tokens
+        res=chain.execute(self.ct.repay(1, 9_000, chain.now + 2), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), 0)
+        self.assertEqual(get_totalReservesF(res, 1), (0) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],contract_self_address)
+        self.assertEqual(transfers[0]["source"], alice)
+        self.assertEqual(transfers[0]["amount"], 9_000)
+        self.assertEqual(transfers[0]["token_address"], token_b_address)
+    
+        # Alice redeems all A tokens
+        userBalance = get_balance_by_token_id(res,alice,0)
+        burnTokensFOpt = userBalance
+        liquidityF = get_totalLiquidF(res,0) + get_totalBorrowsF(res,0) - get_totalReservesF(res, 0) 
+        redeemAmount = int(userBalance * liquidityF // get_totalSupplyF(res,0) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
+        burnTokensF = int(redeemAmount * PRECISION * get_totalSupplyF(res,0) // liquidityF)
+        res = chain.execute(self.ct.redeem(0, 0, 0), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY * PRECISION) + seizedCollateralSharesForBorrower)
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqTokA - redeemAmount * PRECISION - seizedCollateralTokensForReserves)
+        self.assertEqual(redeemAmount * PRECISION, aliceLiqTokA -seizedCollateralTokensForReserves - seizedCollateralTokensForBorrower )
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],alice)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], redeemAmount)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+
+        # Bob redeems all A tokens
+        res = chain.execute(self.ct.redeem(0, 0, 0), sender=bob)
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY * PRECISION))
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqTokA - redeemAmount * PRECISION - seizedCollateralTokensForReserves - seizedCollateralSharesForBorrower)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],bob)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], seizedCollateralSharesForBorrower//PRECISION)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), 0)    
+
+        # Admin redeems all A tokens
+        res = chain.execute(self.ct.redeem(0, 0, 0), sender=admin)
+        self.assertEqual(get_totalSupplyF(res,0), 0)
+        self.assertEqual(get_totalLiquidF(res,0), 0)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],admin)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 100_000) # Ok. No gains for users, when somebody gets liquidates. Only Liquidator and protocol reserves get rewards
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+           
+        # Admin redeems all B tokens
+        res = chain.execute(self.ct.redeem(1, 0, 0), sender=admin)
+        self.assertEqual(get_totalSupplyF(res,1), 0)
+        self.assertEqual(get_totalLiquidF(res,1), 0)
+        self.assertEqual(get_totalBorrowsF(res,1), 0)
+        self.assertEqual(get_totalReservesF(res, 1), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],admin)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], INITIAL_LIQUIDITY)
+        self.assertEqual(transfers[0]["token_address"], token_b_address)
+           
+    def test_marco_liquidate_accrueInterest(self):
+        chain = LocalChain(storage=self.storage)
+
+        # add_token and admin mints 100_000 tokens
+        self.add_token(chain, token_a)
+
+        # add_token and admin mints 100_000 tokens
+        self.add_token(chain, token_b)
+
+        # Alice is minting 100_000 A tokens
+        aliceLiqTokA = 100_000 * PRECISION
+        
+        aliceLiqShaA = aliceLiqTokA # Attention: This is actually a wrong does only work for this specific case.
+
+        res=chain.execute(self.ct.mint(0, aliceLiqTokA//PRECISION, 1), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqShaA )
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY * PRECISION) + aliceLiqTokA)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), aliceLiqShaA)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],contract_self_address)
+        self.assertEqual(transfers[0]["source"], alice)
+        self.assertEqual(transfers[0]["amount"], 100_000)
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+        
+        # Alice enters market A
+        chain.execute(self.ct.enterMarket(0), sender=alice)
+
+        # Alice borrows 10_000 B tokens
+        res=chain.execute(self.ct.borrow(1, 10_000, chain.now + 2), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY - 10_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), 10_000 * PRECISION)
+        self.assertEqual(get_totalReservesF(res, 1), (0) * PRECISION)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],alice)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 10_000)
+        self.assertEqual(transfers[0]["token_address"], token_b_address)
+        self.assertEqual(get_borrowBalance(res,alice,1), 10_000 * PRECISION)
+    
+        chain.advance_blocks(1)
+
+        # No interest on A tokens, since nobody borrowed A tokens.
+        self.update_price_and_interest(chain, 0, 100, one_percent_per_second)
+        # 3_000 B interests on B tokens, since Alice borrowed 10_000 B tokens (30%).
+        # 1_500 B tokens as reward for the protocol reserves
+        # 1_500 B tokens as reward for B token minters.
+        self.update_price_and_interest(chain, 1, 100, one_percent_per_second)
+
+        # Alice repays all borrowed tokens
+        res=chain.execute(self.ct.repay(1, 13_000, chain.now + 2), sender=alice)
+
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY) * PRECISION)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY + 3_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res,1), (1_500) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), (100_000) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), (0) * PRECISION)
+
+        # Bob mints 100_000 B tokens
+        bobBShares = int(100_000 * PRECISION * get_totalSupplyF(res,1) // (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res,1)))
+        res=chain.execute(self.ct.mint(1, 100_000, 1), sender=bob)
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY * PRECISION + bobBShares))
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY + 100_000 + 3_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res,1), (1_500) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,alice,0), (100_000) * PRECISION)
+        self.assertEqual(get_borrowBalance(res,alice,1), (0) * PRECISION)
+        self.assertEqual(get_balance_by_token_id(res,bob,1), bobBShares)
+        
+        # Bob enters market B
+        res=chain.execute(self.ct.enterMarket(1), sender=bob)
+
+        # Bob borrows 10_000 A tokens
+        res=chain.execute(self.ct.borrow(0, 10_000, chain.now + 2), sender=bob)
+        self.assertEqual(get_totalSupplyF(res,0), ((INITIAL_LIQUIDITY + 100_000)* PRECISION ))
+        self.assertEqual(get_totalLiquidF(res,0), ((INITIAL_LIQUIDITY + 100_000 - 10_000)* PRECISION ))
+        self.assertEqual(get_totalBorrowsF(res,0), ((10_000)* PRECISION ))
+        
+        # price goes down
+        res=chain.execute(self.ct.priceCallback(0, 1000), sender=price_feed)
+        
+        # Alice liquidates Bob by 1000 A tokens
+        res = chain.execute(self.ct.liquidate(0, 1, bob, 1000, 1, chain.now + 2), sender=alice)
+        divisor = (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) * PRECISION * get_lastPrice(res,1)
+        divisorOpt = PRECISION * get_lastPrice(res,1)
+        seizedCollateralSharesForBorrower = int(1_000 * PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,0) * get_totalSupplyF(res,1) // divisor)
+        seizedCollateralTokensForBorrower = int(seizedCollateralSharesForBorrower * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
+        seizedCollateralTokensForBorrowerOpt = int(1_000 * PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,0) // divisorOpt)
+
+        seizedCollateralSharesForReserves = int(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) * get_totalSupplyF(res,1) // divisor)
+        seizedCollateralTokensForReserves = int(seizedCollateralSharesForReserves * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
+        seizedCollateralTokensForReservesOpt = int(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) // divisorOpt)
+        self.assertEqual(get_balance_by_token_id(res,bob,1), (bobBShares - seizedCollateralSharesForBorrower - seizedCollateralSharesForReserves))    
+        self.assertEqual(get_balance_by_token_id(res,alice,1), seizedCollateralSharesForBorrower)    
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY * PRECISION + bobBShares - seizedCollateralSharesForReserves))
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY + 100_000 + 3_000) * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
+        self.assertEqual(get_totalReservesF(res, 1), (1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
+
+        # price restored
+        res=chain.execute(self.ct.priceCallback(0, 100), sender=price_feed)
+
+        # Bob repays all A tokens
+        res=chain.execute(self.ct.repay(0, 9_000, chain.now + 2), sender=bob)
+        self.assertEqual(get_borrowBalance(res,bob,0), 0)
+
+        # All parties redeem/withdraw their stuff
+        # Alice redeems all A tokens
+        res = chain.execute(self.ct.redeem(0, 0, 0), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,0), ((INITIAL_LIQUIDITY)* PRECISION ))
+        self.assertEqual(get_totalLiquidF(res,0), (INITIAL_LIQUIDITY)* PRECISION )
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],alice)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 100_000) # 100_000, since there were no general rewards distributed for token A.
+        self.assertEqual(transfers[0]["token_address"], token_a_address)
+
+        # Admin redeems all A tokens
+        res = chain.execute(self.ct.redeem(0, 0, 0), sender=admin)  
+        self.assertEqual(get_totalSupplyF(res,0), 0)
+        self.assertEqual(get_totalLiquidF(res,0), 0)
+        self.assertEqual(get_totalBorrowsF(res,0), 0)
+        self.assertEqual(get_totalReservesF(res, 0), 0)
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],admin)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(transfers[0]["amount"], 100_000) # 100_000, since there were no general rewards distributed for token A.
+        self.assertEqual(transfers[0]["token_address"], token_a_address)    
+        
+        # Bob redeems all B tokens
+        userBalance = get_balance_by_token_id(res,bob,1)
+        burnTokensFOpt = userBalance
+        liquidityF = get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1) 
+        redeemAmountBob = int(userBalance * liquidityF // get_totalSupplyF(res,1) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
+        burnTokensF = int(redeemAmountBob * PRECISION * get_totalSupplyF(res,1) // liquidityF)
+        res = chain.execute(self.ct.redeem(1, 0, 0), sender=bob)
+        self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY * PRECISION) + seizedCollateralSharesForBorrower) # +1, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +1 with optimized calculations)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), 0)
+        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],bob)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(redeemAmountBob * PRECISION, 100_000 * PRECISION - seizedCollateralTokensForBorrowerOpt - seizedCollateralTokensForReservesOpt)  # -2, due to rounding in division. Ok, since rounded down for Bob. (NOTE: removed -2 with optimized calculations)
+        self.assertEqual(transfers[0]["amount"], redeemAmountBob) 
+        self.assertEqual(transfers[0]["token_address"], token_b_address) 
+
+        # Admin redeems all B tokens
+        userBalance = get_balance_by_token_id(res,admin,1)
+        burnTokensFOpt = userBalance
+        liquidityF = get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1) 
+        redeemAmountAdmin = int(userBalance * liquidityF // get_totalSupplyF(res,1) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
+        burnTokensF = int(redeemAmountAdmin * PRECISION * get_totalSupplyF(res,1) // liquidityF)
+        res = chain.execute(self.ct.redeem(1, 0, 0), sender=admin)
+        self.assertEqual(get_totalSupplyF(res,1), seizedCollateralSharesForBorrower) # +2, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +2 with optimized calculations)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION - redeemAmountAdmin * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), 0)
+        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],admin)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(redeemAmountAdmin * PRECISION, 100_000 * PRECISION + 1_500 * PRECISION)  # Ok. Admin gets the 1500 B tokens from the interests, since he was the only B tokens minter, when interest where accumulated
+        self.assertEqual(transfers[0]["amount"], redeemAmountAdmin) 
+        self.assertEqual(transfers[0]["token_address"], token_b_address) 
+
+        # Alice redeems all B tokens
+        userBalance = get_balance_by_token_id(res,alice,1)
+        burnTokensFOpt = userBalance
+        liquidityF = get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1) 
+        redeemAmountAlice = int(userBalance * liquidityF // get_totalSupplyF(res,1) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
+        burnTokensF = int(redeemAmountAlice * PRECISION * get_totalSupplyF(res,1) // liquidityF)
+        res = chain.execute(self.ct.redeem(1, 0, 0), sender=alice)
+        self.assertEqual(get_totalSupplyF(res,1), seizedCollateralSharesForBorrower - burnTokensF) # +2, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +2 with optimized calculations)
+        self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION - redeemAmountAdmin * PRECISION - redeemAmountAlice * PRECISION)
+        self.assertEqual(get_totalBorrowsF(res,1), 0)
+        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["destination"],alice)
+        self.assertEqual(transfers[0]["source"], contract_self_address)
+        self.assertEqual(redeemAmountAlice * PRECISION, seizedCollateralTokensForBorrowerOpt)  # Due to inaccurancy. Ok, since it is not beneficial for Alice (NOTE: removed  -((1 * PRECISION) - 1) with optimized calculations)
+        self.assertEqual(transfers[0]["amount"], redeemAmountAlice) 
+        self.assertEqual(transfers[0]["token_address"], token_b_address) 
+
+        res = chain.execute(self.ct.withdrawReserve(1, int((1_500 * PRECISION + seizedCollateralTokensForReservesOpt) // PRECISION)), sender=admin)
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
+            
+        print("final balances:")
+        print(get_totalSupplyF(res,0))
+        print(get_totalLiquidF(res,0))
+        print(get_totalBorrowsF(res,0))
+        print(get_totalReservesF(res,0))
+        print(get_totalSupplyF(res,1))
+        print(get_totalLiquidF(res,1))
+        print(get_totalBorrowsF(res,1))
+        print(get_totalReservesF(res,1))

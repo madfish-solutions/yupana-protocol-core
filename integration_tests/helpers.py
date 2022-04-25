@@ -39,8 +39,36 @@ def get_balance(res, address):
 def get_balance_by_token_id(res, address, token_id): # yToken storage variant
     return res.storage["storage"]["ledger"][(address, token_id)]
 
+def get_borrowBalance(res, address, token_id): # yToken storage variant
+    account = res.storage["storage"]["accounts"][(address, token_id)]
+    return account["borrow"]
+
 def get_frozen_balance(res, address):
     return res.storage["ledger"][address]["frozenBalance"] 
+def get_admin(res):
+    return res.storage["storage"]["admin"]
+
+def get_totalSupplyF(res, token):
+    return res.storage["storage"]["tokens"][token]["totalSupplyF"]
+
+def get_totalBorrowsF(res, token):
+    return res.storage["storage"]["tokens"][token]["totalBorrowsF"]
+
+def get_totalLiquidF(res, token):
+    return res.storage["storage"]["tokens"][token]["totalLiquidF"]
+
+def get_totalReservesF(res, token):
+    return res.storage["storage"]["tokens"][token]["totalReservesF"]
+
+def get_lastPrice(res, token):
+    return res.storage["storage"]["tokens"][token]["lastPrice"]
+
+def get_liqIncentiveF(res):
+    return res.storage["storage"]["liqIncentiveF"]
+
+def get_liquidReserveRateF(res, token):
+    return res.storage["storage"]["tokens"][token]["liquidReserveRateF"]
+
 
 def parse_mints(res):
     mints = []
