@@ -67,6 +67,7 @@ function callToken(
         | SetGlobalFactors(_setGlobalParams) -> 10n
         | SetBorrowPause(_tokenId) -> 11n
         | ApproveAdmin(_) -> 12n
+        | SetEnterMintPause(_) -> 13n
       end;
 
     const lambda_bytes : bytes = unwrap(s.useLambdas[idx], Errors.YToken.lambdaNotSet);

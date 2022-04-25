@@ -198,6 +198,7 @@ function mint(
 
           var mintTokensF : nat := params.amount * precision;
           var token : tokenType := getToken(params.tokenId, s.tokens);
+          require(token.enterMintPause = False, Errors.YToken.enterMintPaused);
 
           if token.totalSupplyF =/= 0n
           then {
@@ -478,6 +479,8 @@ function enterMarket(
     case p of
       EnterMarket(tokenId) -> {
         require(tokenId < s.lastTokenId, Errors.YToken.undefined);
+        var token : tokenType := getToken(tokenId, s.tokens);
+        require(token.enterMintPause = False, Errors.YToken.enterMintPaused);
 
         var userMarkets : set(tokenId) := getTokenIds(Tezos.sender, s.markets);
 

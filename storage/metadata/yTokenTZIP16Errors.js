@@ -114,6 +114,13 @@ const yTokenErrors = [
     languages: ["en"],
   },
   {
+    error: { string: "Y_ENTER_MARKET_AND_MINT_PAUSED" },
+    expansion: {
+      string: "Market token is paused for minting and providing as collateral. (Market frozen)",
+    },
+    languages: ["en"],
+  },
+  {
     error: { string: "Y_BORROWER_CANNOT_BE_LIQUIDATOR" },
     expansion: {
       string: "Borrowers can't liquidate themselves.",

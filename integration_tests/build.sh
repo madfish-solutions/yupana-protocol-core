@@ -21,6 +21,8 @@ for i in 0,mint \
         9,setTokenFactors \
         10,setGlobalFactors \
         11,setBorrowPause \
+        12,approveAdmin \
+        13,setEnterMintPause \
          ; do 
 
     IDX=${i%,*};

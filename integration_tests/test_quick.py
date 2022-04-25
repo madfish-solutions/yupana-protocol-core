@@ -1254,3 +1254,31 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["source"], contract_self_address)
         self.assertEqual(transfers[0]["amount"], 1000)
         self.assertEqual(transfers[0]["token_address"], token_a_address)
+
+    def test_pause_mint_and_enter(self):
+        chain = self.create_chain_with_ab_markets()
+        
+        chain.execute(self.ct.mint(0, 100_000, 1))
+        chain.execute(self.ct.enterMarket(0))
+        
+        chain.execute(self.ct.setEnterMintPause(1, True), sender=admin)
+        chain.execute(self.ct.setEnterMintPause(1, True), sender=admin)
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.mint(1, 1000, 1))
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.enterMarket(1))
+
+        res = chain.execute(self.ct.redeem(0, 0, 1))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 100_000)
+        chain.execute(self.ct.exitMarket(0))
+
+        chain.execute(self.ct.setEnterMintPause(1, False), sender=admin)
+        chain.execute(self.ct.mint(1, 1000, 1))
+        chain.execute(self.ct.enterMarket(1))
+        res = chain.execute(self.ct.redeem(1, 0, 1))
+        transfers = parse_transfers(res)
+        self.assertEqual(transfers[0]["amount"], 1000)
+        chain.execute(self.ct.exitMarket(1))
