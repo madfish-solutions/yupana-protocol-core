@@ -158,11 +158,27 @@ function setBorrowPause(
                         : return is
   block {
     case p of
-      SetBorrowPause(borrowPauseParams) -> {
+      SetBorrowPause(pauseParams) -> {
         mustBeAdmin(s);
-        var token : tokenType := getToken(borrowPauseParams.tokenId, s.tokens);
-        token.borrowPause := borrowPauseParams.condition;
-        s.tokens[borrowPauseParams.tokenId] := token;
+        var token : tokenType := getToken(pauseParams.tokenId, s.tokens);
+        token.borrowPause := pauseParams.condition;
+        s.tokens[pauseParams.tokenId] := token;
+      }
+    | _                 -> skip
+    end
+  } with (noOperations, s)
+
+function setEnterMintPause(
+  const p               : useAction;
+  var s                 : yStorage)
+                        : return is
+  block {
+    case p of
+      SetEnterMintPause(pauseParams) -> {
+        mustBeAdmin(s);
+        var token : tokenType := getToken(pauseParams.tokenId, s.tokens);
+        token.enterMintPause := pauseParams.condition;
+        s.tokens[pauseParams.tokenId] := token;
       }
     | _                 -> skip
     end

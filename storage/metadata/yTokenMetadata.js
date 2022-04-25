@@ -15,7 +15,7 @@ const metadata = MichelsonMap.fromLiteral({
           "https://github.com/madfish-solutions/yupana-protocol-core/blob/master/contracts/main/yToken.ligo",
       },
       homepage: "https://yupana.com",
-      interfaces: ["TZIP-12 git 1728fcfe", "TZIP-16"],
+      interfaces: ["TZIP-012 git 1728fcfe", "TZIP-016"],
       errors: yTokenErrors,
       views: [],
     }),
