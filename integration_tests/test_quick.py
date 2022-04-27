@@ -1623,7 +1623,7 @@ class DexTest(TestCase):
         seizedCollateralTokensForBorrower = int(seizedCollateralSharesForBorrower * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
         seizedCollateralTokensForBorrowerOpt = int(1_000 * PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,0) // divisorOpt)
 
-        seizedCollateralSharesForReserves = int(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) * get_totalSupplyF(res,1) // divisor)
+        seizedCollateralSharesForReserves = ceil(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) * get_totalSupplyF(res,1), divisor)
         seizedCollateralTokensForReserves = int(seizedCollateralSharesForReserves * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
         seizedCollateralTokensForReservesOpt = int(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) // divisorOpt)
         self.assertEqual(get_balance_by_token_id(res,bob,1), (bobBShares - seizedCollateralSharesForBorrower - seizedCollateralSharesForReserves))    
