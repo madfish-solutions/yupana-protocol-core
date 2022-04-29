@@ -421,3 +421,5 @@ class LocalChain:
     def advance_blocks(self, count=1):
         self.now += count * SECONDS_PER_BLOCK
 
+def ceil(a, b):
+    return -1 * a // b * -1
