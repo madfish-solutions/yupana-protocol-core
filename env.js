@@ -36,6 +36,12 @@ module.exports = {
       network_id: "*",
       secretKey: dev.sk,
     },
+    ithaca: {
+      rpc: "https://ithacanet.ecadinfra.com/",
+      port: 443,
+      network_id: "*",
+      secretKey: dev.sk,
+    },
     mainnet: {
       host: "https://mainnet.smartpy.io",
       port: 443,

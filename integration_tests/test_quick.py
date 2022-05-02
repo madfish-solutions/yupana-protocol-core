@@ -1620,17 +1620,18 @@ class DexTest(TestCase):
         divisor = (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) * PRECISION * get_lastPrice(res,1)
         divisorOpt = PRECISION * get_lastPrice(res,1)
         seizedCollateralSharesForBorrower = int(1_000 * PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,0) * get_totalSupplyF(res,1) // divisor)
-        seizedCollateralTokensForBorrower = int(seizedCollateralSharesForBorrower * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
-        seizedCollateralTokensForBorrowerOpt = int(1_000 * PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,0) // divisorOpt) + 1 * PRECISION
+        #seizedCollateralTokensForBorrower = int(seizedCollateralSharesForBorrower * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
+        seizedCollateralTokensForBorrowerOpt = int(1_000 * PRECISION * get_liqIncentiveF(res) * get_lastPrice(res,0) // divisorOpt)
+
         seizedCollateralSharesForReserves = ceil(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) * get_totalSupplyF(res,1), divisor)
-        seizedCollateralTokensForReserves = int(seizedCollateralSharesForReserves * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
+        #seizedCollateralTokensForReserves = int(seizedCollateralSharesForReserves * (get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1)) // get_totalSupplyF(res,1))
         seizedCollateralTokensForReservesOpt = int(1_000 * PRECISION * get_liquidReserveRateF(res, 1) * get_lastPrice(res,0) // divisorOpt)
         self.assertEqual(get_balance_by_token_id(res,bob,1), (bobBShares - seizedCollateralSharesForBorrower - seizedCollateralSharesForReserves))    
         self.assertEqual(get_balance_by_token_id(res,alice,1), seizedCollateralSharesForBorrower)    
         self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY * PRECISION + bobBShares - seizedCollateralSharesForReserves))
         self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY + 100_000 + 3_000) * PRECISION)
         self.assertEqual(get_totalBorrowsF(res,1), (0) * PRECISION)
-        self.assertEqual(get_totalReservesF(res, 1), (1_500 * PRECISION + seizedCollateralTokensForReserves))
+        self.assertEqual(get_totalReservesF(res, 1), (1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
 
         # price restored
         res=chain.execute(self.ct.priceCallback(0, 100), sender=price_feed)
@@ -1664,21 +1665,29 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["amount"], 100_000) # 100_000, since there were no general rewards distributed for token A.
         self.assertEqual(transfers[0]["token_address"], token_a_address)    
         
+        temp_tokens_bob1 = int((bobBShares - seizedCollateralSharesForBorrower - seizedCollateralSharesForReserves) * (get_totalLiquidF(res,1) + (get_totalBorrowsF(res,1) - get_totalReservesF(res, 1))) // get_totalSupplyF(res,1)//PRECISION)
+        temp_tokens_bob2 = int((bobBShares - seizedCollateralSharesForBorrower - seizedCollateralSharesForReserves + 1)  * (get_totalLiquidF(res,1) + (get_totalBorrowsF(res,1) - get_totalReservesF(res, 1))) // get_totalSupplyF(res,1)//PRECISION)
         # Bob redeems all B tokens
         userBalance = get_balance_by_token_id(res,bob,1)
         burnTokensFOpt = userBalance
         liquidityF = get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1) 
         redeemAmountBob = int(userBalance * liquidityF // get_totalSupplyF(res,1) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
-        burnTokensF = ceil(redeemAmountBob * PRECISION * get_totalSupplyF(res,1), liquidityF)
+        #burnTokensF = ceil(redeemAmountBob * PRECISION * get_totalSupplyF(res,1), liquidityF)
+        burnTokensF = userBalance
         res = chain.execute(self.ct.redeem(1, 0, 0), sender=bob)
         self.assertEqual(get_totalSupplyF(res,1), (INITIAL_LIQUIDITY * PRECISION) + seizedCollateralSharesForBorrower) # +1, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +1 with optimized calculations)
         self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION)
         self.assertEqual(get_totalBorrowsF(res,1), 0)
-        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReserves))
+        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"],bob)
         self.assertEqual(transfers[0]["source"], contract_self_address)
-        self.assertEqual(redeemAmountBob * PRECISION, 100_000 * PRECISION - seizedCollateralTokensForBorrowerOpt - seizedCollateralTokensForReserves)  # -2, due to rounding in division. Ok, since rounded down for Bob. (NOTE: removed -1 with optimized calculations)
+        
+        # Note: Bob receives 1 token (1e18) less. 
+        self.assertEqual(redeemAmountBob * PRECISION, 100_000 * PRECISION - seizedCollateralTokensForBorrowerOpt - seizedCollateralTokensForReservesOpt - 1 * PRECISION)  # -2, due to rounding in division. Ok, since rounded down for Bob. (NOTE: removed -1 with optimized calculations)
+        # Note: Bob's 1 token difference can be calculated:
+        self.assertEqual(temp_tokens_bob1, temp_tokens_bob2 - 1)
+        
         self.assertEqual(transfers[0]["amount"], redeemAmountBob) 
         self.assertEqual(transfers[0]["token_address"], token_b_address) 
 
@@ -1692,7 +1701,7 @@ class DexTest(TestCase):
         self.assertEqual(get_totalSupplyF(res,1), seizedCollateralSharesForBorrower) # +2, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +2 with optimized calculations)
         self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION - redeemAmountAdmin * PRECISION)
         self.assertEqual(get_totalBorrowsF(res,1), 0)
-        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReserves))
+        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"],admin)
         self.assertEqual(transfers[0]["source"], contract_self_address)
@@ -1700,6 +1709,8 @@ class DexTest(TestCase):
         self.assertEqual(transfers[0]["amount"], redeemAmountAdmin) 
         self.assertEqual(transfers[0]["token_address"], token_b_address) 
 
+        temp_tokens_alice1 = int((seizedCollateralSharesForBorrower) * (get_totalLiquidF(res,1) + (get_totalBorrowsF(res,1) - get_totalReservesF(res, 1))) // get_totalSupplyF(res,1)//PRECISION)
+        temp_tokens_alice2 = int((seizedCollateralSharesForBorrower -1)  * (get_totalLiquidF(res,1) + (get_totalBorrowsF(res,1) - get_totalReservesF(res, 1))) // get_totalSupplyF(res,1)//PRECISION)
         # Alice redeems all B tokens
         userBalance = get_balance_by_token_id(res,alice,1)
         burnTokensFOpt = userBalance
@@ -1710,15 +1721,20 @@ class DexTest(TestCase):
         self.assertEqual(get_totalSupplyF(res,1), seizedCollateralSharesForBorrower - burnTokensF) # +2, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +2 with optimized calculations)
         self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION - redeemAmountAdmin * PRECISION - redeemAmountAlice * PRECISION)
         self.assertEqual(get_totalBorrowsF(res,1), 0)
-        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReserves))
+        self.assertEqual(get_totalReservesF(res, 1),(1_500 * PRECISION + seizedCollateralTokensForReservesOpt))
         transfers = parse_transfers(res)
         self.assertEqual(transfers[0]["destination"],alice)
         self.assertEqual(transfers[0]["source"], contract_self_address)
-        self.assertEqual(redeemAmountAlice * PRECISION, seizedCollateralTokensForBorrowerOpt)  # Due to inaccurancy. Ok, since it is not beneficial for Alice (NOTE: removed  -((1 * PRECISION) - 1) with optimized calculations)
+        
+        # Note: Alice receives 1 token (1e18) more. 
+        self.assertEqual(redeemAmountAlice * PRECISION, seizedCollateralTokensForBorrowerOpt + 1 * PRECISION)  # Due to inaccurancy. Ok, since it is not beneficial for Alice (NOTE: removed  -((1 * PRECISION) - 1) with optimized calculations)
+        # Note: Alice's 1 token difference can be calculated:
+        self.assertEqual(temp_tokens_alice1, temp_tokens_alice2 + 1)
+
         self.assertEqual(transfers[0]["amount"], redeemAmountAlice) 
         self.assertEqual(transfers[0]["token_address"], token_b_address) 
 
-        res = chain.execute(self.ct.withdrawReserve(1, int((1_500 * PRECISION + seizedCollateralTokensForReserves) // PRECISION)), sender=admin)
+        res = chain.execute(self.ct.withdrawReserve(1, int((1_500 * PRECISION + seizedCollateralTokensForReservesOpt) // PRECISION)), sender=admin)
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
             
