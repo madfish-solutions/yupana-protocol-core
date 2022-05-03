@@ -1696,7 +1696,8 @@ class DexTest(TestCase):
         burnTokensFOpt = userBalance
         liquidityF = get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1) 
         redeemAmountAdmin = int(userBalance * liquidityF // get_totalSupplyF(res,1) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
-        burnTokensF = ceil(redeemAmountAdmin * PRECISION * get_totalSupplyF(res,1), liquidityF)
+        #burnTokensF = ceil(redeemAmountAdmin * PRECISION * get_totalSupplyF(res,1), liquidityF)
+        burnTokensF = userBalance
         res = chain.execute(self.ct.redeem(1, 0, 0), sender=admin)
         self.assertEqual(get_totalSupplyF(res,1), seizedCollateralSharesForBorrower) # +2, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +2 with optimized calculations)
         self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION - redeemAmountAdmin * PRECISION)
@@ -1716,7 +1717,8 @@ class DexTest(TestCase):
         burnTokensFOpt = userBalance
         liquidityF = get_totalLiquidF(res,1) + get_totalBorrowsF(res,1) - get_totalReservesF(res, 1) 
         redeemAmountAlice = int(userBalance * liquidityF // get_totalSupplyF(res,1) // PRECISION ) # NOTE: Loss of acurancy, since redeemAmount has no precision in.
-        burnTokensF = ceil(redeemAmountAlice * PRECISION * get_totalSupplyF(res,1), liquidityF)
+        #burnTokensF = ceil(redeemAmountAlice * PRECISION * get_totalSupplyF(res,1), liquidityF)
+        burnTokensF = userBalance
         res = chain.execute(self.ct.redeem(1, 0, 0), sender=alice)
         self.assertEqual(get_totalSupplyF(res,1), seizedCollateralSharesForBorrower - burnTokensF) # +2, due to rounding in division. Ok, since beneficial for protocol (NOTE: removed +2 with optimized calculations)
         self.assertEqual(get_totalLiquidF(res,1), (INITIAL_LIQUIDITY * PRECISION) + 103_000 * PRECISION - redeemAmountBob * PRECISION - redeemAmountAdmin * PRECISION - redeemAmountAlice * PRECISION)
