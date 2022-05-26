@@ -574,7 +574,7 @@ describe("yToken tests", () => {
   it("borrow when token forbidden for borrow bob", async () => {
     tezos = await Utils.setProvider(tezos, bob.sk);
     await rejects(yToken.updateAndBorrow(proxy, 1, 50000), (err) => {
-     strictEqual(err.message, "Y_BORROW_PAUSED");
+      strictEqual(err.message, "Y_BORROW_PAUSED");
       return true;
     });
   });

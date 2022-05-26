@@ -298,7 +298,7 @@ class YToken {
       .borrow(
         token_id,
         amount,
-        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200).toString()
       )
       .send();
     await confirmOperation(this.tezos, operation.hash);
@@ -313,7 +313,7 @@ class YToken {
       .repay(
         token_id,
         amount,
-        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200).toString()
       )
       .send();
     await confirmOperation(this.tezos, operation.hash);
@@ -337,7 +337,7 @@ class YToken {
         borrower,
         amount,
         minSeized,
-        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+        new BigNumber(deadline).dividedToIntegerBy(1000).plus(200).toString()
       )
       .send();
     await confirmOperation(this.tezos, operation.hash);
@@ -554,7 +554,9 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...proxy.contract.methods.getPrice([0]).toTransferParams(),
+        ...proxy.contract.methods
+          .getPrice([0].map((x) => x.toString()))
+          .toTransferParams(),
       },
       {
         kind: "transaction",
@@ -562,7 +564,9 @@ class YToken {
       },
       {
         kind: "transaction",
-        ...proxy.contract.methods.getPrice([borrowToken]).toTransferParams(),
+        ...proxy.contract.methods
+          .getPrice([borrowToken].map((x) => x.toString()))
+          .toTransferParams(),
       },
       {
         kind: "transaction",
@@ -570,7 +574,7 @@ class YToken {
           .borrow(
             borrowToken,
             amount,
-            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200).toString(),
           )
           .toTransferParams(),
       },
@@ -610,7 +614,10 @@ class YToken {
           .borrow(
             borrowToken,
             amount,
-            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+            new BigNumber(deadline)
+              .dividedToIntegerBy(1000)
+              .plus(200)
+              .toString()
           )
           .toTransferParams(),
       },
@@ -641,7 +648,10 @@ class YToken {
           .repay(
             repayToken,
             amount,
-            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+            new BigNumber(deadline)
+              .dividedToIntegerBy(1000)
+              .plus(200)
+              .toString()
           )
           .toTransferParams(),
       },
@@ -774,7 +784,10 @@ class YToken {
             borrower,
             amount,
             minReceive,
-            new BigNumber(deadline).dividedToIntegerBy(1000).plus(200)
+            new BigNumber(deadline)
+              .dividedToIntegerBy(1000)
+              .plus(200)
+              .toString()
           )
           .toTransferParams(),
       },
