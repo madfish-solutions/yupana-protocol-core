@@ -1,5 +1,17 @@
+type balanceOfParams  is [@layout:comb] record [
+  requests              : list(balance_of_request);
+  precision             : bool;
+]
+
+type convertParams    is [@layout:comb] record [
+  toShares              : bool;
+  tokenId               : nat;
+  amount                : nat;
+  precision             : bool;
+]
+
 [@view] function balanceOf(
-  const p               : list(balance_of_request);
+  const p               : balanceOfParams;
   const s               : fullStorage)
                         : list(balance_of_response) is
   block {
@@ -8,50 +20,41 @@
       const request     : balance_of_request)
                         : list(balance_of_response) is
       block {
-        require(request.token_id < s.storage.lastTokenId, Errors.FA2.undefined)
+        require(request.token_id < s.storage.lastTokenId, Errors.FA2.undefined);
+        var balance := getBalanceByToken(
+            request.owner,
+            request.token_id,
+            s.storage.ledger
+          );
+        if p.precision
+        then balance := balance / precision
+        else skip;
       } with record [
             request = request;
-            balance = getBalanceByToken(
-                request.owner,
-                request.token_id,
-                s.storage.ledger
-              ) / precision;
+            balance = balance;
           ] # l;
    } with List.fold(lookUpBalance, p, (nil: list(balance_of_response)))
 
 function convert(
-  const params          : yAssetParams;
-  const lastTokenId     : nat;
-  const tokens          : big_map(tokenId, tokenType);
-  const toShares        : bool)
+  const params          : convertParams;
+  const s               : fullStorage)
                         : nat is
   block {
-    require(params.tokenId < lastTokenId, Errors.YToken.undefined);
-    const token : tokenType = getToken(params.tokenId, tokens);
+    require(params.tokenId < s.storage.lastTokenId, Errors.YToken.undefined);
+    const token : tokenType = getToken(params.tokenId, s.storage.tokens);
     const liquidityF : nat = getLiquidity(token);
-    const result = if toShares
-          then params.amount * token.totalSupplyF / liquidityF
-          else params.amount * liquidityF / token.totalSupplyF
+    var result := params.amount;
+    if params.toShares
+      then {
+        if params.precision
+        then result := result * precision
+        else skip;
+        result := result * token.totalSupplyF / liquidityF;
+      }
+      else {
+        result := result * liquidityF / token.totalSupplyF;
+        if params.precision
+        then result := result / precision
+        else skip;
+      }
   } with result
-
-[@view] function shareToToken(
-  const params          : yAssetParams;
-  const s               : fullStorage)
-                        : nat is
-  convert(
-    params,
-    s.storage.lastTokenId,
-    s.storage.tokens,
-    False
-  )
-
-[@view] function tokenToShare(
-  const params          : yAssetParams;
-  const s               : fullStorage)
-                        : nat is
-  convert(
-    params,
-    s.storage.lastTokenId,
-    s.storage.tokens,
-    True
-  )
