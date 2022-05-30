@@ -32,7 +32,7 @@ type convertParams    is [@layout:comb] record [
                       then userBalance / precision
                       else userBalance;
           ] # l;
-   } with List.fold(lookUpBalance, p, (nil: list(balance_of_response)))
+   } with List.fold(lookUpBalance, p.requests, (nil: list(balance_of_response)))
 
 function convert(
   const params          : convertParams;
