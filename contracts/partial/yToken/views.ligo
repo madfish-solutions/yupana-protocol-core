@@ -1,4 +1,4 @@
-[@view] function balance_of(
+[@view] function balanceOf(
   const p               : list(balance_of_request);
   const s               : fullStorage)
                         : list(balance_of_response) is
@@ -34,7 +34,7 @@ function convert(
           else params.amount * liquidityF / token.totalSupplyF
   } with result
 
-[@view] function share_to_token(
+[@view] function shareToToken(
   const params          : yAssetParams;
   const s               : fullStorage)
                         : nat is
@@ -45,7 +45,7 @@ function convert(
     False
   )
 
-[@view] function token_to_share(
+[@view] function tokenToShare(
   const params          : yAssetParams;
   const s               : fullStorage)
                         : nat is
