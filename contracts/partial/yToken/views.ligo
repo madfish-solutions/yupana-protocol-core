@@ -21,17 +21,16 @@ type convertParams    is [@layout:comb] record [
                         : list(balance_of_response) is
       block {
         require(request.token_id < s.storage.lastTokenId, Errors.FA2.undefined);
-        var balance := getBalanceByToken(
+        var userBalance := getBalanceByToken(
             request.owner,
             request.token_id,
             s.storage.ledger
           );
-        if p.precision
-        then balance := balance / precision
-        else skip;
       } with record [
             request = request;
-            balance = balance;
+            balance = if p.precision
+                      then userBalance / precision
+                      else userBalance;
           ] # l;
    } with List.fold(lookUpBalance, p, (nil: list(balance_of_response)))
 
