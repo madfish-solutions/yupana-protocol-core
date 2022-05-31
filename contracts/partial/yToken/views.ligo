@@ -16,12 +16,11 @@ type convertParams    is [@layout:comb] record [
                         : list(balance_of_response) is
   block {
     function lookUpBalance(
-      const l           : list(balance_of_response);
       const request     : balance_of_request)
-                        : list(balance_of_response) is
+                        : balance_of_response is
       block {
         require(request.token_id < s.storage.lastTokenId, Errors.FA2.undefined);
-        var userBalance := getBalanceByToken(
+        const userBalance = getBalanceByToken(
             request.owner,
             request.token_id,
             s.storage.ledger
@@ -31,8 +30,8 @@ type convertParams    is [@layout:comb] record [
             balance = if p.precision
                       then userBalance / precision
                       else userBalance;
-          ] # l;
-   } with List.fold(lookUpBalance, p.requests, (nil: list(balance_of_response)))
+          ];
+   } with List.map(lookUpBalance, p.requests)
 
 function convert(
   const params          : convertParams;
