@@ -48,10 +48,16 @@ function convert(
         if params.precision
         then result := result * precision
         else skip;
-        result := result * token.totalSupplyF / liquidityF;
+
+        result := if liquidityF = 0n
+          then 0n
+          else result * token.totalSupplyF / liquidityF;
       }
       else {
-        result := result * liquidityF / token.totalSupplyF;
+        result := if token.totalSupplyF = 0n
+          then 0n
+          else result * liquidityF / token.totalSupplyF;
+
         if params.precision
         then result := result / precision
         else skip;
