@@ -33,7 +33,7 @@ type convertParams    is [@layout:comb] record [
           ];
    } with List.map(lookUpBalance, p.requests)
 
-function convert(
+[@view] function convert(
   const params          : convertParams;
   const s               : fullStorage)
                         : nat is
