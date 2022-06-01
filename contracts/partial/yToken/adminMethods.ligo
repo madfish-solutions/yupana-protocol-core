@@ -84,7 +84,7 @@ function addMarket(
     token.collateralFactorF := params.collateralFactorF;
     token.reserveFactorF := params.reserveFactorF;
     token.maxBorrowRate := params.maxBorrowRate;
-    token.threshold := params.threshold;
+    token.thresholdF := params.thresholdF;
     token.liquidReserveRateF := params.liquidReserveRateF;
 
     s.storage.assets[params.asset] := lastTokenId;
@@ -127,7 +127,7 @@ function setTokenFactors(
         token.reserveFactorF := params.reserveFactorF;
         token.interestRateModel := params.interestRateModel;
         token.maxBorrowRate := params.maxBorrowRate;
-        token.threshold := params.threshold;
+        token.thresholdF := params.thresholdF;
         token.liquidReserveRateF := params.liquidReserveRateF;
         s.tokens[params.tokenId] := token;
       }

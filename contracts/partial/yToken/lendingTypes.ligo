@@ -9,8 +9,8 @@ type allowanceAmount    is [@layout:comb] record [
 
 type account            is [@layout:comb] record [
   allowances            : set(address);
-  borrow                : nat;
-  lastBorrowIndex       : nat;
+  borrowF               : nat;
+  lastBorrowIndexF      : nat;
 ]
 
 type tokenType          is [@layout:comb] record [
@@ -22,16 +22,16 @@ type tokenType          is [@layout:comb] record [
   totalLiquidF          : nat;
   totalSupplyF          : nat;
   totalReservesF        : nat;
-  borrowIndex           : nat;
+  borrowIndexF          : nat;
   maxBorrowRate         : nat;
   collateralFactorF     : nat;
   liquidReserveRateF    : nat;
   reserveFactorF        : nat;
-  lastPrice             : nat;
+  lastPriceFF           : nat;
   borrowPause           : bool;
   enterMintPause        : bool;
   isInterestUpdating    : bool;
-  threshold             : nat;
+  thresholdF            : nat;
 ]
 
 type yStorage           is [@layout:comb] record [
@@ -114,7 +114,7 @@ type setTokenParams     is [@layout:comb] record [
   reserveFactorF        : nat;
   interestRateModel     : address;
   maxBorrowRate         : nat;
-  threshold             : nat;
+  thresholdF            : nat;
   liquidReserveRateF    : nat;
 ]
 
@@ -149,7 +149,7 @@ type newMarketParams    is [@layout:comb] record [
   reserveFactorF        : nat;
   maxBorrowRate         : nat;
   token_metadata        : newMetadataParams;
-  threshold             : nat;
+  thresholdF            : nat;
   liquidReserveRateF    : nat;
 ]
 

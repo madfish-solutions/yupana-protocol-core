@@ -52,11 +52,11 @@ function calcMaxCollateralInCU(
                         : nat is
   block {
     function oneToken(
-      var acc           : nat;
+      var accFF         : nat;
       const tokenId     : tokenId)
                         : nat is
       block {
-        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        const userBalanceF : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
         if token.totalSupplyF > 0n then {
           const liquidityF : nat = getLiquidity(token);
@@ -65,12 +65,12 @@ function calcMaxCollateralInCU(
           verifyInterestUpdated(token);
 
           (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
-            acc := acc + userBalance * token.lastPrice
-              * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
+            accFF := accFF + userBalanceF * token.lastPriceFF
+              * token.collateralFactorF * liquidityF / token.totalSupplyF / (precision * precision);
         }
         else skip;
 
-      } with acc;
+      } with accFF;
   } with Set.fold(oneToken, userMarkets, 0n)
 
 function calcLiquidateCollateral(
@@ -81,11 +81,11 @@ function calcLiquidateCollateral(
                         : nat is
   block {
     function oneToken(
-      var acc           : nat;
+      var accFF         : nat;
       const tokenId     : tokenId)
                         : nat is
       block {
-        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        const userBalanceF : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
         if token.totalSupplyF > 0n then {
           const liquidityF : nat = getLiquidity(token);
@@ -94,10 +94,10 @@ function calcLiquidateCollateral(
           verifyInterestUpdated(token);
 
           (* sum +=  balance * oraclePrice * exchangeRate *)
-          acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
+          accFF := accFF + userBalanceF * token.lastPriceFF * liquidityF / token.totalSupplyF / precision;
         }
         else skip;
-      } with acc * token.threshold / precision;
+      } with accFF * token.thresholdF / precision;
   } with Set.fold(oneToken, userMarkets, 0n)
 
 function applyInterestToBorrows(
@@ -117,11 +117,11 @@ function applyInterestToBorrows(
 
         verifyInterestUpdated(token);
 
-        if userAccount.lastBorrowIndex =/= 0n
-          then userAccount.borrow := userAccount.borrow * token.borrowIndex / userAccount.lastBorrowIndex;
+        if userAccount.lastBorrowIndexF =/= 0n
+          then userAccount.borrowF := userAccount.borrowF * token.borrowIndexF / userAccount.lastBorrowIndexF;
         else
           skip;
-        userAccount.lastBorrowIndex := token.borrowIndex;
+        userAccount.lastBorrowIndexF := token.borrowIndexF;
       } with Map.update((user, tokenId), Some(userAccount), userAccMap);
   } with Set.fold(oneToken, borrowedTokens, accountsMap)
 
@@ -134,21 +134,21 @@ function calcOutstandingBorrowInCU(
                         : nat is
   block {
     function oneToken(
-      var acc           : nat;
+      var accFF          : nat;
       var tokenId       : tokenId)
                         : nat is
       block {
         const userAccount : account = getAccount(user, tokenId, accounts);
-        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        const userBalanceF : nat = getBalanceByToken(user, tokenId, ledger);
         var token : tokenType := getToken(tokenId, tokens);
 
         verifyPriceUpdated(token);
 
         (* sum += oraclePrice * borrow *)
-        if userBalance > 0n or userAccount.borrow > 0n
-        then acc := acc + userAccount.borrow * token.lastPrice;
+        if userBalanceF > 0n or userAccount.borrowF > 0n
+        then accFF := accFF + userAccount.borrowF * token.lastPriceFF / precision;
         else skip;
-      } with acc;
+      } with accFF;
   } with Set.fold(oneToken, userBorrow, 0n)
 
 function updateInterest(
@@ -197,6 +197,7 @@ function mint(
           require(params.tokenId < s.lastTokenId, Errors.YToken.undefined);
 
           var mintTokensF : nat := params.amount * precision;
+          require(mintTokensF / precision >= params.minReceived, Errors.YToken.highReceived);
           var token : tokenType := getToken(params.tokenId, s.tokens);
           require(token.enterMintPause = False, Errors.YToken.enterMintPaused);
 
@@ -207,11 +208,10 @@ function mint(
             mintTokensF := mintTokensF * token.totalSupplyF / liquidityF;
           } else skip;
 
-          require(mintTokensF / precision >= params.minReceived, Errors.YToken.highReceived);
 
-          var userBalance : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
-          userBalance := userBalance + mintTokensF;
-          s.ledger[(Tezos.sender, params.tokenId)] := userBalance;
+          var userBalanceF : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
+          userBalanceF := userBalanceF + mintTokensF;
+          s.ledger[(Tezos.sender, params.tokenId)] := userBalanceF;
           token.totalSupplyF := token.totalSupplyF + mintTokensF;
           token.totalLiquidF := token.totalLiquidF + params.amount * precision;
           s.tokens[params.tokenId] := token;
@@ -232,18 +232,18 @@ function redeem(
           require(params.tokenId < s.lastTokenId, Errors.YToken.undefined);
 
           var token : tokenType := getToken(params.tokenId, s.tokens);
-          var userBalance : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
+          var userBalanceF : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
           const liquidityF : nat = getLiquidity(token);
           const redeemAmount : nat = if params.amount = 0n
-          then userBalance * liquidityF / token.totalSupplyF / precision
-          else params.amount;
+            then userBalanceF * liquidityF / token.totalSupplyF / precision
+            else params.amount;
           require(redeemAmount >= params.minReceived, Errors.YToken.highReceived);
           var burnTokensF : nat := if params.amount = 0n
-          then userBalance
-          else ceil_div(redeemAmount * precision * token.totalSupplyF, liquidityF);
+            then userBalanceF
+            else ceil_div(redeemAmount * precision * token.totalSupplyF, liquidityF);
 
-          userBalance := get_nat_or_fail(userBalance - burnTokensF, Errors.YToken.lowBalance);
-          s.ledger[(Tezos.sender, params.tokenId)] := userBalance;
+          userBalanceF := get_nat_or_fail(userBalanceF - burnTokensF, Errors.YToken.lowBalance);
+          s.ledger[(Tezos.sender, params.tokenId)] := userBalanceF;
           
           token.totalSupplyF := get_nat_or_fail(token.totalSupplyF - burnTokensF, Errors.YToken.lowSupply);
           token.totalLiquidF := get_nat_or_fail(token.totalLiquidF - redeemAmount * precision, Errors.YToken.lowLiquidity);
@@ -304,7 +304,7 @@ function borrow(
           var userAccount : account := getAccount(Tezos.sender, params.tokenId, s.accounts);
           const borrowsF : nat = params.amount * precision;
 
-          userAccount.borrow := userAccount.borrow + borrowsF;
+          userAccount.borrowF := userAccount.borrowF + borrowsF;
           s.accounts[(Tezos.sender, params.tokenId)] := userAccount;
           s.borrows[Tezos.sender] := borrowTokens;
 
@@ -352,12 +352,12 @@ function repay(
           var repayAmountF : nat := params.amount * precision;
 
           if repayAmountF = 0n
-          then repayAmountF := userAccount.borrow;
+          then repayAmountF := userAccount.borrowF;
           else skip;
 
-          userAccount.borrow := get_nat_or_fail(userAccount.borrow - repayAmountF, Errors.YToken.repayOverflow);
+          userAccount.borrowF := get_nat_or_fail(userAccount.borrowF - repayAmountF, Errors.YToken.repayOverflow);
 
-          if userAccount.borrow = 0n
+          if userAccount.borrowF = 0n
           then borrowTokens := Set.remove(params.tokenId, borrowTokens);
           else skip;
 
@@ -414,13 +414,13 @@ function liquidate(
 
           var liqAmountF : nat := params.amount * precision;
           (* liquidate amount can't be more than allowed close factor *)
-          const maxClose : nat = borrowerAccount.borrow * s.closeFactorF / precision;
+          const maxCloseF : nat = borrowerAccount.borrowF * s.closeFactorF / precision;
 
-          require(maxClose >= liqAmountF, Errors.YToken.repayOverflow);
+          require(maxCloseF >= liqAmountF, Errors.YToken.repayOverflow);
 
-          borrowerAccount.borrow := get_nat_or_fail(borrowerAccount.borrow - liqAmountF, Errors.YToken.lowBorrowAmount);
+          borrowerAccount.borrowF := get_nat_or_fail(borrowerAccount.borrowF - liqAmountF, Errors.YToken.lowBorrowAmount);
 
-          if borrowerAccount.borrow = 0n
+          if borrowerAccount.borrowF = 0n
           then userBorrowedTokens := Set.remove(params.borrowToken, userBorrowedTokens);
           else skip;
 
@@ -436,33 +436,33 @@ function liquidate(
             * priceBorrowed / priceCollateral
             seizeTokens = seizeAmount / exchangeRate
           *)
-          const seizeAmount : nat = liqAmountF * s.liqIncentiveF
-            * borrowToken.lastPrice * collateralToken.totalSupplyF;
+          const seizeAmountFFFFF : nat = liqAmountF * s.liqIncentiveF
+            * borrowToken.lastPriceFF * collateralToken.totalSupplyF;
           const liquidityF : nat = getLiquidity(collateralToken);
-          const exchangeRateF : nat = liquidityF * precision * collateralToken.lastPrice;
-          const seizeTokensF : nat = seizeAmount / exchangeRateF;
+          const exchangeRateFFFF : nat = liquidityF * precision * collateralToken.lastPriceFF;
+          const seizeTokensF : nat = seizeAmountFFFFF / exchangeRateFFFF;
           require(seizeTokensF / precision >= params.minSeized, Errors.YToken.highSeize);
           var liquidatorAccount : account := getAccount(
             Tezos.sender,
             params.collateralToken,
             s.accounts
           );
-          var borrowerBalance : nat := getBalanceByToken(params.borrower, params.collateralToken, s.ledger);
-          var liquidatorBalance : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
-          borrowerBalance := get_nat_or_fail(borrowerBalance - seizeTokensF, Errors.YToken.lowBorrowerBalanceS);
-          liquidatorBalance := liquidatorBalance + seizeTokensF;
+          var borrowerBalanceF : nat := getBalanceByToken(params.borrower, params.collateralToken, s.ledger);
+          var liquidatorBalanceF : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
+          borrowerBalanceF := get_nat_or_fail(borrowerBalanceF - seizeTokensF, Errors.YToken.lowBorrowerBalanceS);
+          liquidatorBalanceF := liquidatorBalanceF + seizeTokensF;
 
           (* collect reserves incentive from liquidation *)
-          const reserveAmountF : nat = liqAmountF * collateralToken.liquidReserveRateF
-            * borrowToken.lastPrice  * collateralToken.totalSupplyF;
-          const reserveSharesF : nat = ceil_div(reserveAmountF, exchangeRateF);
-          const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF * borrowToken.lastPrice / ( precision * collateralToken.lastPrice) ;
-          borrowerBalance := get_nat_or_fail(borrowerBalance - reserveSharesF, Errors.YToken.lowBorrowerBalanceR);
+          const reserveAmountFFFFFF : nat = liqAmountF * collateralToken.liquidReserveRateF
+            * borrowToken.lastPriceFF * collateralToken.totalSupplyF;
+          const reserveSharesF : nat = ceil_div(reserveAmountFFFFFF, (exchangeRateFFFF));
+          const reserveTokensF : nat = liqAmountF * collateralToken.liquidReserveRateF * borrowToken.lastPriceFF / ( precision * collateralToken.lastPriceFF) ;
+          borrowerBalanceF := get_nat_or_fail(borrowerBalanceF - reserveSharesF, Errors.YToken.lowBorrowerBalanceR);
           collateralToken.totalReservesF := collateralToken.totalReservesF + reserveTokensF;
           collateralToken.totalSupplyF := get_nat_or_fail(collateralToken.totalSupplyF - reserveSharesF, Errors.YToken.lowCollateralTotalSupply);
 
-          s.ledger[(params.borrower, params.collateralToken)] := borrowerBalance;
-          s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalance;
+          s.ledger[(params.borrower, params.collateralToken)] := borrowerBalanceF;
+          s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalanceF;
           s.accounts[(params.borrower, params.borrowToken)] := borrowerAccount;
           s.accounts[(Tezos.sender, params.collateralToken)] := liquidatorAccount;
           s.tokens[params.collateralToken] := collateralToken;
@@ -540,7 +540,7 @@ function priceCallback(
       params.tokenId,
       s.storage.tokens
     );
-    token.lastPrice := params.amount;
+    token.lastPriceFF := params.amount;
     token.priceUpdateTime := Tezos.now;
     s.storage.tokens[params.tokenId] := token;
   } with (noOperations, s)
@@ -571,7 +571,7 @@ function accrueInterest(
     token.totalReservesF := interestAccumulatedF * token.reserveFactorF /
       precision + token.totalReservesF;
     // one mult operation with F require precision division
-    token.borrowIndex := simpleInterestFactorF * token.borrowIndex / precision + token.borrowIndex;
+    token.borrowIndexF := simpleInterestFactorF * token.borrowIndexF / precision + token.borrowIndexF;
     token.interestUpdateTime := Tezos.now;
 
     s.storage.tokens[params.tokenId] := token;

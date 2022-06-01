@@ -456,7 +456,7 @@ describe("yToken tests", () => {
 
     let yTokenRes = await yToken.storage.storage.ledger.get([carol.pkh, 1]);
     let ytokens = await yToken.storage.storage.tokens.get("1");
-    console.log(ytokens.lastPrice.toString());
+    console.log(ytokens.lastPriceFF.toString());
 
     strictEqual(
       await yTokenRes.toPrecision(40).split(".")[0],
@@ -850,7 +850,7 @@ describe("yToken tests", () => {
 
     res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
     strictEqual(
-      res.borrow.toPrecision(40).split(".")[0],
+      res.borrowF.toPrecision(40).split(".")[0],
       "50000000000000000000000"
     );
   });
@@ -864,7 +864,7 @@ describe("yToken tests", () => {
     await proxy.updateStorage();
 
     let res = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
-    console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(res.borrowF.toPrecision(40).split(".")[0]); // not static result
   });
 
   it("redeem 0 by carol", async () => {
@@ -918,7 +918,7 @@ describe("yToken tests", () => {
     res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
 
     strictEqual(
-      res.borrow.toPrecision(40).split(".")[0],
+      res.borrowF.toPrecision(40).split(".")[0],
       "500000000000000000000"
     );
   });
@@ -931,7 +931,7 @@ describe("yToken tests", () => {
     res = await yToken.storage.storage.accounts.get([dev2.pkh, 3]);
 
     strictEqual(
-      res.borrow.toPrecision(40).split(".")[0],
+      res.borrowF.toPrecision(40).split(".")[0],
       "1000000000000000000000"
     );
   });
@@ -973,7 +973,7 @@ describe("yToken tests", () => {
     await yToken.updateStorage();
 
     let yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
-    console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(yTokenRes.borrowF.toPrecision(40).split(".")[0]); // not static result
   });
 
   it("repay yTokens by dev2", async () => {
@@ -983,7 +983,7 @@ describe("yToken tests", () => {
     await yToken.updateStorage();
 
     let yTokenRes = await yToken.storage.storage.accounts.get([dev2.pkh, 3]);
-    strictEqual(yTokenRes.borrow.toPrecision(40).split(".")[0], "0");
+    strictEqual(yTokenRes.borrowF.toPrecision(40).split(".")[0], "0");
   });
 
   it("exit market yTokens by dev2", async () => {
@@ -1043,13 +1043,13 @@ describe("yToken tests", () => {
     console.log(await res.balance.toString()); // not static result
 
     let yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
-    console.log(yTokenRes.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(yTokenRes.borrowF.toPrecision(40).split(".")[0]); // not static result
 
     await yToken.updateAndRepay(proxy, 1, 0);
     await yToken.updateStorage();
 
     yTokenRes = await yToken.storage.storage.accounts.get([bob.pkh, 1]);
-    strictEqual(yTokenRes.borrow.toString(), "0");
+    strictEqual(yTokenRes.borrowF.toString(), "0");
   });
 
   it("exit market yTokens by bob", async () => {
@@ -1124,7 +1124,7 @@ describe("yToken tests", () => {
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
     res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
-    console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(res.borrowF.toPrecision(40).split(".")[0]); // not static result
   });
 
   it("setTokenFactors [0] (return collateralFactor and threshhold) by admin", async () => {
@@ -1217,7 +1217,7 @@ describe("yToken tests", () => {
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
     res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
-    console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(res.borrowF.toPrecision(40).split(".")[0]); // not static result
   });
 
   it("liquidate by carol 3 (collateral price fell)", async () => {
@@ -1230,7 +1230,7 @@ describe("yToken tests", () => {
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
     res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
-    console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(res.borrowF.toPrecision(40).split(".")[0]); // not static result
   });
 
   it("liquidate by carol 4 (collateral price fell)", async () => {
@@ -1243,7 +1243,7 @@ describe("yToken tests", () => {
     console.log(yTokenRes.toPrecision(40).split(".")[0]); // not static result
 
     res = await yToken.storage.storage.accounts.get([peter.pkh, 1]);
-    console.log(res.borrow.toPrecision(40).split(".")[0]); // not static result
+    console.log(res.borrowF.toPrecision(40).split(".")[0]); // not static result
   });
 
   it("liquidation not achieved", async () => {
