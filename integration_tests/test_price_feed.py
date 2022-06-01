@@ -49,7 +49,7 @@ class PriceFeedTest(TestCase):
         usd_precision = 1e6
         protocol_precision = 1e36
 
-        self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_252)
+        self.assertEqual(int(price * one_btc / (usd_precision * protocol_precision)), 45_252)
 
     def test_price_feed_receive_outdated(self):
         chain = LocalChain(storage=self.storage)
