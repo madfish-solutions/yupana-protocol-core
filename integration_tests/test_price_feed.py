@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from helpers import *
 import copy
+from decimal import Decimal
 
 from pprint import pprint
 
@@ -44,11 +45,10 @@ class PriceFeedTest(TestCase):
         
         op = res.operations[0]["parameters"]
         price = op["value"]["args"][1]["int"]
-        price = int(price)
-        one_btc = 1e8
-        usd_precision = 1e6
-        protocol_precision = 1e36
-
+        price = Decimal(price)
+        one_btc = Decimal(10) ** 8
+        usd_precision =  Decimal(10) ** 6
+        protocol_precision = Decimal(10) ** 36
         self.assertEqual(int(price * one_btc / (usd_precision * protocol_precision)), 45_252)
 
     def test_price_feed_receive_outdated(self):
@@ -60,12 +60,12 @@ class PriceFeedTest(TestCase):
         
         op = res.operations[0]["parameters"]
         price = op["value"]["args"][1]["int"]
-        price = int(price)
-        one_btc = 1e8
-        usd_precision = 1e6
-        protocol_precision = 1e36
+        price = Decimal(price)
+        one_btc = Decimal(10) ** 8
+        usd_precision =  Decimal(10) ** 6
+        protocol_precision = Decimal(10) ** 36
 
-        self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_252)
+        self.assertEqual(int(price * one_btc / (usd_precision * protocol_precision)), 45_252)
 
         chain.advance_blocks(300)
         # timestamp should be in allowed limit
@@ -75,18 +75,6 @@ class PriceFeedTest(TestCase):
         res = chain.execute(self.ct.receivePrice("BTC-USD", 299 * SECONDS_PER_BLOCK, 45_500_000_000), sender=oracle)
         op = res.operations[0]["parameters"]
         price = op["value"]["args"][1]["int"]
-        price = int(price)
+        price = Decimal(price)
 
         self.assertEqual(int(price * one_btc / (usd_precision * protocol_precision)), 45_500)
-
-
-        
-
-
-        
-
-
-
-
-        
-    
