@@ -47,7 +47,7 @@ class PriceFeedTest(TestCase):
         price = int(price)
         one_btc = 1e8
         usd_precision = 1e6
-        protocol_precision = 1e18
+        protocol_precision = 1e36
 
         self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_252)
 
@@ -63,7 +63,7 @@ class PriceFeedTest(TestCase):
         price = int(price)
         one_btc = 1e8
         usd_precision = 1e6
-        protocol_precision = 1e18
+        protocol_precision = 1e36
 
         self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_252)
 
@@ -77,8 +77,7 @@ class PriceFeedTest(TestCase):
         price = op["value"]["args"][1]["int"]
         price = int(price)
 
-        self.assertEqual(int(price / protocol_precision * one_btc / usd_precision), 45_500)
-    
+        self.assertEqual(int(price * one_btc / (usd_precision * protocol_precision)), 45_500)
 
 
         
