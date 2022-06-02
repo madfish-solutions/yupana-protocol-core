@@ -7,8 +7,8 @@ function getAccount(
   case accounts[(user, tokenId)] of
     None -> record [
       allowances        = (set [] : set(address));
-      borrow            = 0n;
-      lastBorrowIndex   = 0n;
+      borrowF           = 0n;
+      lastBorrowIndexF  = 0n;
     ]
   | Some(v) -> v
   end
@@ -37,16 +37,16 @@ function getToken(
       totalLiquidF            = 0n;
       totalSupplyF            = 0n;
       totalReservesF          = 0n;
-      borrowIndex             = precision;
+      borrowIndexF            = precision;
       maxBorrowRate           = 0n;
       collateralFactorF       = 0n;
       reserveFactorF          = 0n;
       liquidReserveRateF      = 0n;
-      lastPrice               = 0n;
+      lastPriceFF             = 0n;
       borrowPause             = False;
       enterMintPause          = False;
       isInterestUpdating      = False;
-      threshold               = 0n;
+      thresholdF              = 0n;
     ]
   | Some(v) -> v
   end
@@ -115,20 +115,20 @@ function iterateTransfer(
         require(transferDst.token_id < s.lastTokenId, Errors.FA2.undefined);
 
         (* Get source info *)
-        var srcBalance : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
+        var srcBalanceF : nat := getBalanceByToken(params.from_, transferDst.token_id, s.ledger);
         const transferAmountF : nat = transferDst.amount * precision;
 
         (* Update source balance *)
-        srcBalance := get_nat_or_fail(srcBalance - transferAmountF, Errors.FA2.lowBalance);
+        srcBalanceF := get_nat_or_fail(srcBalanceF - transferAmountF, Errors.FA2.lowBalance);
 
-        s.ledger[(params.from_, transferDst.token_id)] := srcBalance;
+        s.ledger[(params.from_, transferDst.token_id)] := srcBalanceF;
 
         (* Get receiver balance *)
-        var dstBalance : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s.ledger);
+        var dstBalanceF : nat := getBalanceByToken(transferDst.to_, transferDst.token_id, s.ledger);
 
         (* Update destination balance *)
-        dstBalance := dstBalance + transferAmountF;
-        s.ledger[(transferDst.to_, transferDst.token_id)] := dstBalance;
+        dstBalanceF := dstBalanceF + transferAmountF;
+        s.ledger[(transferDst.to_, transferDst.token_id)] := dstBalanceF;
     } with s
 } with List.fold(makeTransfer, params.txs, s)
 
@@ -184,12 +184,12 @@ function getBalance(
             block {
               require(request.token_id < s.lastTokenId, Errors.FA2.undefined);
               (* Retrieve the asked account from the storage *)
-              const userBalance : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
+              const userBalanceF : nat = getBalanceByToken(request.owner, request.token_id, s.ledger);
 
               (* Form the response *)
               const response : balance_of_response = record [
                   request = request;
-                  balance = userBalance / precision;
+                  balance = userBalanceF / precision;
                 ];
             } with response # l;
 

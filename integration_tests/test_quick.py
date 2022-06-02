@@ -59,7 +59,7 @@ class DexTest(TestCase):
                 reserveFactorF = int(config["reserve_factor"]  * PRECISION),
                 maxBorrowRate = 1_000_000*PRECISION,
                 token_metadata = {"": ""},
-                threshold = int(config["threshold"] * PRECISION),
+                thresholdF = int(config["threshold"] * PRECISION),
                 liquidReserveRateF = int(config["reserve_liquidation_rate"] * PRECISION)
             ), sender=admin)
 
@@ -1196,7 +1196,7 @@ class DexTest(TestCase):
             reserveFactorF=int(0.5 * 1e18),
             interestRateModel=interest_model,
             maxBorrowRate=1_000_000*PRECISION,
-            threshold=int(0.8 * 1e18),
+            thresholdF=int(0.8 * 1e18),
             liquidReserveRateF=int(0.05 * 1e18)
         ), sender=admin)
 

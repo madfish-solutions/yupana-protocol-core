@@ -98,7 +98,7 @@ function receivePrice(
     const pairName : string = param.0;
     const oraclePrice = param.1.1;
     const decimals : nat = getDecimal(pairName, s.tokensDecimals);
-    const price : nat = oraclePrice * precision / decimals;
+    const price : nat = oraclePrice * precision * precision / decimals;
 
     const tokenId : nat = checkPairId(pairName, s.pairId);
     var operations : list(operation) := list[

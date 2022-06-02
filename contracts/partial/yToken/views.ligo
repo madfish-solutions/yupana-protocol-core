@@ -20,7 +20,7 @@ type convertParams    is [@layout:comb] record [
                         : balance_of_response is
       block {
         require(request.token_id < s.storage.lastTokenId, Errors.FA2.undefined);
-        const userBalance = getBalanceByToken(
+        const userBalanceF = getBalanceByToken(
             request.owner,
             request.token_id,
             s.storage.ledger
@@ -28,8 +28,8 @@ type convertParams    is [@layout:comb] record [
       } with record [
             request = request;
             balance = if p.precision
-                      then userBalance / precision
-                      else userBalance;
+                      then userBalanceF / precision
+                      else userBalanceF;
           ];
    } with List.map(lookUpBalance, p.requests)
 

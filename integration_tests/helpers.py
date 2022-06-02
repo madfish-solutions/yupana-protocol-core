@@ -41,7 +41,7 @@ def get_balance_by_token_id(res, address, token_id): # yToken storage variant
 
 def get_borrowBalance(res, address, token_id): # yToken storage variant
     account = res.storage["storage"]["accounts"][(address, token_id)]
-    return account["borrow"]
+    return account["borrowF"]
 
 def get_frozen_balance(res, address):
     return res.storage["ledger"][address]["frozenBalance"] 
@@ -61,7 +61,7 @@ def get_totalReservesF(res, token):
     return res.storage["storage"]["tokens"][token]["totalReservesF"]
 
 def get_lastPrice(res, token):
-    return res.storage["storage"]["tokens"][token]["lastPrice"]
+    return res.storage["storage"]["tokens"][token]["lastPriceFF"]
 
 def get_liqIncentiveF(res):
     return res.storage["storage"]["liqIncentiveF"]
