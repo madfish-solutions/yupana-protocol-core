@@ -52,7 +52,7 @@ function calcMaxCollateralInCU(
                         : nat is
   block {
     function oneToken(
-      var accFF         : nat;
+      var accCU         : nat;
       const tokenId     : tokenId)
                         : nat is
       block {
@@ -65,15 +65,15 @@ function calcMaxCollateralInCU(
           verifyInterestUpdated(token);
 
           (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
-            accFF := accFF + userBalanceF * token.lastPriceFF
-              * token.collateralFactorF * liquidityF / token.totalSupplyF / (precision * precision);
+            accCU := accCU + userBalanceF * token.lastPriceFF
+              * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
         }
         else skip;
 
-      } with accFF;
+      } with accCU;
   } with Set.fold(oneToken, userMarkets, 0n)
 
-function calcLiquidateCollateral(
+function calcLiquidateCollateralInCU(
   const userMarkets     : set(tokenId);
   const user            : address;
   const ledger          : big_map((address * tokenId), nat);
@@ -94,10 +94,10 @@ function calcLiquidateCollateral(
           verifyInterestUpdated(token);
 
           (* sum +=  balance * oraclePrice * exchangeRate *)
-          accFF := accFF + userBalanceF * token.lastPriceFF * liquidityF / token.totalSupplyF / precision;
+          accCU := accCU + userBalanceF * token.lastPriceFF * liquidityF / token.totalSupplyF;
         }
         else skip;
-      } with accFF * token.thresholdF / precision;
+      } with accCU * token.thresholdF / precision;
   } with Set.fold(oneToken, userMarkets, 0n)
 
 function applyInterestToBorrows(
@@ -134,7 +134,7 @@ function calcOutstandingBorrowInCU(
                         : nat is
   block {
     function oneToken(
-      var accFF          : nat;
+      var accCU         : nat;
       var tokenId       : tokenId)
                         : nat is
       block {
@@ -146,9 +146,9 @@ function calcOutstandingBorrowInCU(
 
         (* sum += oraclePrice * borrow *)
         if userBalanceF > 0n or userAccount.borrowF > 0n
-        then accFF := accFF + userAccount.borrowF * token.lastPriceFF / precision;
+        then accCU := accCU + userAccount.borrowF * token.lastPriceFF;
         else skip;
-      } with accFF;
+      } with accCU;
   } with Set.fold(oneToken, userBorrow, 0n)
 
 function updateInterest(
@@ -396,7 +396,7 @@ function liquidate(
 
           require(Tezos.sender =/= params.borrower, Errors.YToken.borrowerNotLiquidator);
 
-          const liquidateCollateral : nat = calcLiquidateCollateral(
+          const liquidateCollateralInCU : nat = calcLiquidateCollateralInCU(
             userCollateralTokens,
             params.borrower,
             s.ledger,
@@ -410,7 +410,7 @@ function liquidate(
             s.tokens
           );
 
-          require(liquidateCollateral < outstandingBorrowInCU, Errors.YToken.cantLiquidate);
+          require(liquidateCollateralInCU < outstandingBorrowInCU, Errors.YToken.cantLiquidate);
 
           var liqAmountF : nat := params.amount * precision;
           (* liquidate amount can't be more than allowed close factor *)
