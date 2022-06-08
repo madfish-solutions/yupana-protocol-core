@@ -6,7 +6,7 @@ const metadata = MichelsonMap.fromLiteral({
   yupana: Buffer.from(
     JSON.stringify({
       name: "Yupana",
-      version: "v1.0.0",
+      version: "v0.3.3",
       description: "Yupana protocol.",
       authors: ["Madfish.Solutions <https://www.madfish.solutions>"],
       source: {

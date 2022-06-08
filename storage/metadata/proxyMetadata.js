@@ -7,7 +7,7 @@ const metadata = MichelsonMap.fromLiteral({
   "yupana-proxy": Buffer.from(
     JSON.stringify({
       name: "Yupana oracle proxy",
-      version: "v1.0.0",
+      version: "v0.3.3",
       description: "Proxy of Harbinger oracle for Yupana protocol contract.",
       authors: ["Madfish.Solutions <https://www.madfish.solutions>"],
       source: {
