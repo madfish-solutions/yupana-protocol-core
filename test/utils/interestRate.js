@@ -52,7 +52,6 @@ class InterestRate {
       multiplierF: storage.multiplierF,
       jumpMultiplierF: storage.jumpMultiplierF,
       reserveFactorF: storage.reserveFactorF,
-      lastUpdTime: storage.lastUpdTime,
     };
 
     for (const key in maps) {

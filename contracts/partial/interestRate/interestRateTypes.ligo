@@ -5,7 +5,6 @@ type rateStorage        is [@layout:comb] record [
   multiplierF           : nat;
   jumpMultiplierF       : nat;
   reserveFactorF        : nat;
-  lastUpdTime           : timestamp;
   metadata              : big_map(string, bytes);
 ]
 
