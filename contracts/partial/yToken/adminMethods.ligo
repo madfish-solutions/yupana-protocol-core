@@ -43,7 +43,7 @@ function withdrawReserve(
       WithdrawReserve(params) -> {
         mustBeAdmin(s);
         var token : tokenType := getToken(params.tokenId, s.tokens);
-        verifyInterestUpdated(token)
+        verifyInterestUpdated(token);
         const amountF = params.amount * precision;
 
         token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, Errors.YToken.lowReserves);
@@ -120,7 +120,7 @@ function setTokenFactors(
       SetTokenFactors(params) -> {
         mustBeAdmin(s);
         var token : tokenType := getToken(params.tokenId, s.tokens);
-        verifyInterestUpdated(token)
+        verifyInterestUpdated(token);
 
         token.collateralFactorF := params.collateralFactorF;
         token.reserveFactorF := params.reserveFactorF;
