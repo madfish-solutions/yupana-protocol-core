@@ -1,6 +1,9 @@
 #import  "../partial/errors.ligo" "Errors"
 #include "../partial/mainTypes.ligo"
 #include "../partial/commonHelpers.ligo"
+#include "../partial/yToken/helpers.ligo"
+#include "../partial/yToken/fa2Methods.ligo"
+#include "../partial/yToken/adminMethods.ligo"
 #include "../partial/yToken/lendingMethods.ligo"
 #include "../partial/yToken/views.ligo"
 
