@@ -43,6 +43,7 @@ function withdrawReserve(
       WithdrawReserve(params) -> {
         mustBeAdmin(s);
         var token : tokenType := getToken(params.tokenId, s.tokens);
+        verifyInterestUpdated(token);
         const amountF = params.amount * precision;
 
         token.totalReservesF := get_nat_or_fail(token.totalReservesF - amountF, Errors.YToken.lowReserves);
@@ -119,9 +120,7 @@ function setTokenFactors(
       SetTokenFactors(params) -> {
         mustBeAdmin(s);
         var token : tokenType := getToken(params.tokenId, s.tokens);
-
-        // TODO change to verifyInterestUpdated
-        require(token.interestUpdateTime >= Tezos.now, Errors.YToken.needUpdate);
+        verifyInterestUpdated(token);
 
         token.collateralFactorF := params.collateralFactorF;
         token.reserveFactorF := params.reserveFactorF;

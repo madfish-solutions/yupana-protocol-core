@@ -1,56 +1,3 @@
-(* Helper function to get account *)
-function getAccount(
-  const user            : address;
-  const tokenId         : tokenId;
-  const accounts     : big_map((address * tokenId), account))
-                        : account is
-  case accounts[(user, tokenId)] of
-    None -> record [
-      allowances        = (set [] : set(address));
-      borrow            = 0n;
-      lastBorrowIndex   = 0n;
-    ]
-  | Some(v) -> v
-  end
-
-function getTokenIds(
-  const user            : address;
-  const addressMap      : big_map(address, set(tokenId)))
-                        : set(tokenId) is
-  case addressMap[user] of
-    None -> (set [] : set(tokenId))
-  | Some(v) -> v
-  end
-
-(* Helper function to get token info *)
-function getToken(
-  const token_id        : tokenId;
-  const tokens          : big_map(tokenId, tokenType))
-                        : tokenType is
-  case tokens[token_id] of
-    None -> record [
-      mainToken               = FA12(zeroAddress);
-      interestRateModel       = zeroAddress;
-      priceUpdateTime         = zeroTimestamp;
-      interestUpdateTime      = zeroTimestamp;
-      totalBorrowsF           = 0n;
-      totalLiquidF            = 0n;
-      totalSupplyF            = 0n;
-      totalReservesF          = 0n;
-      borrowIndex             = precision;
-      maxBorrowRate           = 0n;
-      collateralFactorF       = 0n;
-      reserveFactorF          = 0n;
-      liquidReserveRateF      = 0n;
-      lastPrice               = 0n;
-      borrowPause             = False;
-      enterMintPause          = False;
-      isInterestUpdating      = False;
-      threshold               = 0n;
-    ]
-  | Some(v) -> v
-  end
-
 function get_total_supply(
   const p               : tokenAction;
   const s               : yStorage)
@@ -68,30 +15,6 @@ function get_total_supply(
       end
   } with (operations, s)
 
-(* Helper function to get acount balance by token *)
-function getBalanceByToken(
-  const user            : address;
-  const token_id        : nat;
-  const ledger          : big_map((address * tokenId), nat))
-                        : nat is
-  case ledger[(user, token_id)] of
-    None -> 0n
-  | Some(v) -> v
-  end
-
-(* Validates the operators for the given transfer batch
- * and the operator storage.
- *)
-[@inline] function isApprovedOperator(
-  const transferParam   : transferParam;
-  const token_id        : nat;
-  const s               : yStorage)
-                        : bool is
-  block {
-    const operator : address = Tezos.sender;
-    const owner : address = transferParam.from_;
-    const user : account = getAccount(owner, token_id, s.accounts);
-  } with owner = operator or Set.mem(operator, user.allowances)
 
 (* Perform transfers *)
 function iterateTransfer(

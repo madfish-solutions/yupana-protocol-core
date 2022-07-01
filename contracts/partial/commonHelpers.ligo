@@ -50,3 +50,14 @@ function get_nat_or_fail(
   const exp             : timestamp)
                         : unit is
   require(exp >= Tezos.now, Errors.YToken.deadlineReached);
+
+[@inline] function ceil_div(
+  const numerator       : nat;
+  const denominator     : nat)
+                        : nat is
+  case ediv(numerator, denominator) of
+    Some(result) -> if result.1 > 0n
+      then result.0 + 1n
+      else result.0
+  | None -> failwith(Errors.Math.ceilDivision)
+  end;
