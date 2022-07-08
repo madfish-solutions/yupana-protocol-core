@@ -7,6 +7,5 @@ module.exports = {
   baseRateF: "0",
   multiplierF: "0",
   jumpMultiplierF: "0",
-  reserveFactorF: "0",
   metadata: metadata
 };

@@ -51,7 +51,6 @@ class InterestRate {
       baseRateF: storage.baseRateF,
       multiplierF: storage.multiplierF,
       jumpMultiplierF: storage.jumpMultiplierF,
-      reserveFactorF: storage.reserveFactorF,
     };
 
     for (const key in maps) {
