@@ -80,7 +80,6 @@ type collUnitsReturn  is [@layout:comb] record [
     ];
   } with result
 
-
  const initAcc : collUnitsReturn = record [
   collaterralUnits = 0n;
   interestUpdateTimes = (map[]: map(nat, timestamp));
