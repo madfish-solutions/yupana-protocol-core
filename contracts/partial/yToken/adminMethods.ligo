@@ -74,7 +74,7 @@ function addMarket(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    var token : tokenType := getToken(s.storage.lastTokenId, s.storage.tokens);
+    var token : tokenType := getTokenOrDefault(s.storage.lastTokenId, s.storage.tokens);
     const lastTokenId : nat = s.storage.lastTokenId;
 
     checkDuplicateAsset(s.storage.assets, params.asset);
