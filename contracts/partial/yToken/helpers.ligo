@@ -1,3 +1,25 @@
+const defaultTokenInfo: tokenType = record [
+  mainToken               = FA12(zeroAddress);
+  interestRateModel       = zeroAddress;
+  priceUpdateTime         = zeroTimestamp;
+  interestUpdateTime      = zeroTimestamp;
+  totalBorrowsF           = 0n;
+  totalLiquidF            = 0n;
+  totalSupplyF            = 0n;
+  totalReservesF          = 0n;
+  borrowIndex             = precision;
+  maxBorrowRate           = 0n;
+  collateralFactorF       = 0n;
+  reserveFactorF          = 0n;
+  liquidReserveRateF      = 0n;
+  lastPrice               = 0n;
+  borrowPause             = False;
+  enterMintPause          = False;
+  isInterestUpdating      = False;
+  threshold               = 0n;
+];
+
+
 [@inline] function ensureNotZero(
   const amt             : nat)
                         : unit is
@@ -34,37 +56,6 @@
     None -> (set [] : set(tokenId))
   | Some(v) -> v
   end
-
-const defaultTTInfo: tokenType = record [
-  mainToken               = FA12(zeroAddress);
-  interestRateModel       = zeroAddress;
-  priceUpdateTime         = zeroTimestamp;
-  interestUpdateTime      = zeroTimestamp;
-  totalBorrowsF           = 0n;
-  totalLiquidF            = 0n;
-  totalSupplyF            = 0n;
-  totalReservesF          = 0n;
-  borrowIndex             = precision;
-  maxBorrowRate           = 0n;
-  collateralFactorF       = 0n;
-  reserveFactorF          = 0n;
-  liquidReserveRateF      = 0n;
-  lastPrice               = 0n;
-  borrowPause             = False;
-  enterMintPause          = False;
-  isInterestUpdating      = False;
-  threshold               = 0n;
-];
-
-(* Helper function to get token info *)
-[@inline] function getTokenOrDefault(
-  const token_id        : tokenId;
-  const tokens          : big_map(tokenId, tokenType))
-                        : tokenType is
-  unwrap_or(
-    tokens[token_id],
-    defaultTTInfo
-  )
 
 (* Helper function to get token info *)
 [@inline] function getToken(

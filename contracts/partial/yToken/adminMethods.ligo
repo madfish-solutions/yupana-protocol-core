@@ -74,26 +74,27 @@ function addMarket(
                         : fullReturn is
   block {
     mustBeAdmin(s.storage);
-    var token : tokenType := getTokenOrDefault(s.storage.lastTokenId, s.storage.tokens);
-    const lastTokenId : nat = s.storage.lastTokenId;
-
     checkDuplicateAsset(s.storage.assets, params.asset);
-
-    (* TODO: fail if token exist - not fixed yet *)
-    token.interestRateModel := params.interestRateModel;
-    token.mainToken := params.asset;
-    token.collateralFactorF := params.collateralFactorF;
-    token.reserveFactorF := params.reserveFactorF;
-    token.maxBorrowRate := params.maxBorrowRate;
-    token.threshold := params.threshold;
-    token.liquidReserveRateF := params.liquidReserveRateF;
-
+    
+    const lastTokenId : nat = s.storage.lastTokenId;
+    
     s.storage.assets[params.asset] := lastTokenId;
+    
     s.token_metadata[lastTokenId] := record [
       token_id = lastTokenId;
       token_info = params.token_metadata;
     ];
-    s.storage.tokens[lastTokenId] := token;
+    
+    s.storage.tokens[lastTokenId] := defaultTokenInfo with record [
+      mainToken = params.asset;
+      interestRateModel = params.interestRateModel;
+      collateralFactorF = params.collateralFactorF;
+      reserveFactorF = params.reserveFactorF;
+      maxBorrowRate = params.maxBorrowRate;
+      threshold = params.threshold;
+      liquidReserveRateF = params.liquidReserveRateF
+    ];
+    
     s.storage.lastTokenId := lastTokenId + 1n;
   } with (noOperations, s)
 
