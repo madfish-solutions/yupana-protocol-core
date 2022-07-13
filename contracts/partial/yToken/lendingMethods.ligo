@@ -289,11 +289,6 @@ function liquidate(
           const exchangeRateF : nat = liquidityF * precision * collateralToken.lastPrice;
           const seizeTokensF : nat = seizeAmount / exchangeRateF;
           require(seizeTokensF / precision >= params.minSeized, Errors.YToken.highSeize);
-          var liquidatorAccount : account := getAccount(
-            Tezos.sender,
-            params.collateralToken,
-            s.accounts
-          );
           var borrowerBalance : nat := getBalanceByToken(params.borrower, params.collateralToken, s.ledger);
           var liquidatorBalance : nat := getBalanceByToken(Tezos.sender, params.collateralToken, s.ledger);
           borrowerBalance := get_nat_or_fail(borrowerBalance - seizeTokensF, Errors.YToken.lowBorrowerBalanceS);
@@ -311,7 +306,6 @@ function liquidate(
           s.ledger[(params.borrower, params.collateralToken)] := borrowerBalance;
           s.ledger[(Tezos.sender, params.collateralToken)] := liquidatorBalance;
           s.accounts[(params.borrower, params.borrowToken)] := borrowerAccount;
-          s.accounts[(Tezos.sender, params.collateralToken)] := liquidatorAccount;
           s.tokens[params.collateralToken] := collateralToken;
           s.tokens[params.borrowToken] := borrowToken;
           s.borrows[params.borrower] := userBorrowedTokens;
