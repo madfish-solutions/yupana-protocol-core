@@ -80,77 +80,67 @@ type collUnitsReturn  is [@layout:comb] record [
     ];
   } with result
 
+
+ const initAcc : collUnitsReturn = record [
+  collaterralUnits = 0n;
+  interestUpdateTimes = (map[]: map(nat, timestamp));
+  priceUpdateTimes = (map[]: map(nat, timestamp))
+];
+
 [@view] function maxBorrowInCU(
   const user            : address;
   const s               : fullStorage)
                         : collUnitsReturn is
   block {
-    const yStore = s.storage;
-    const tokenIds = getTokenIds(user, yStore.markets);
-    const value = calcMaxCollateralInCU(
-      tokenIds,
-      user,
-      yStore.ledger,
-      yStore.tokens
-    );
-    function getTimestamps(
-      var acc         : map(nat, timestamp) * map(nat, timestamp);
-      const i         : nat)
-                      : map(nat, timestamp) * map(nat, timestamp) is
-    block{
-      const token = getToken(i, yStore.tokens);
-      acc.0[i] := token.interestUpdateTime;
-      acc.1[i] := token.priceUpdateTime;
-    } with acc;
-    const (interestUpdateTimes, priceUpdateTimes) = Set.fold(
-      getTimestamps,
-      tokenIds,
-      (
-        (map[]: map(nat, timestamp)),
-        (map[]: map(nat, timestamp))
-      )
-    );
-    const result : collUnitsReturn = record [
-      collaterralUnits = value;
-      interestUpdateTimes = interestUpdateTimes;
-      priceUpdateTimes = priceUpdateTimes
-    ];
-  } with result
+    const accounts = s.storage.accounts;
+    const ledger = s.storage.ledger;
+    const tokens = s.storage.tokens;
+    const markets = s.storage.markets;
+    function oneToken(
+      var acc           : collUnitsReturn;
+      const tokenId     : tokenId)
+                        : collUnitsReturn is
+      block {
+        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        const token : tokenType = getToken(tokenId, tokens);
+
+        acc.interestUpdateTimes[tokenId] := token.interestUpdateTime;
+        acc.priceUpdateTimes[tokenId] := token.priceUpdateTime;
+
+        if token.totalSupplyF > 0n then {
+          const liquidityF : nat = getLiquidity(token);
+
+          (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
+            acc.collaterralUnits := acc.collaterralUnits + userBalance * token.lastPrice
+              * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
+        }
+        else skip;
+
+      } with acc;
+  } with Set.fold(oneToken, getTokenIds(user, markets), initAcc)
 
 [@view] function outstandingBorrowInCU(
   const user            : address;
   const s               : fullStorage)
                         : collUnitsReturn is
   block {
-    const yStore = s.storage;
-    const tokenIds = getTokenIds(user, yStore.borrows);
-    const value = calcOutstandingBorrowInCU(
-      tokenIds,
-      user,
-      yStore.accounts,
-      yStore.ledger,
-      yStore.tokens
-    );
-    function getTimestamps(
-      var acc         : map(nat, timestamp) * map(nat, timestamp);
-      const i         : nat)
-                      : map(nat, timestamp) * map(nat, timestamp) is
-    block{
-      const token = getToken(i, yStore.tokens);
-      acc.0[i] := token.interestUpdateTime;
-      acc.1[i] := token.priceUpdateTime;
-    } with acc;
-    const (interestUpdateTimes, priceUpdateTimes) = Set.fold(
-      getTimestamps,
-      tokenIds,
-      (
-        (map[]: map(nat, timestamp)),
-        (map[]: map(nat, timestamp))
-      )
-    );
-    const result : collUnitsReturn = record [
-      collaterralUnits = value;
-      interestUpdateTimes = interestUpdateTimes;
-      priceUpdateTimes = priceUpdateTimes
-    ];
-  } with result
+    const accounts = s.storage.accounts;
+    const ledger = s.storage.ledger;
+    const tokens = s.storage.tokens;
+    const borrows = s.storage.borrows;
+    function oneToken(
+      var acc           : collUnitsReturn;
+      var tokenId       : tokenId)
+                        : collUnitsReturn is
+      block {
+        const userAccount : account = getAccount(user, tokenId, accounts);
+        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
+        var token : tokenType := getToken(tokenId, tokens);
+        acc.interestUpdateTimes[tokenId] := token.interestUpdateTime;
+        acc.priceUpdateTimes[tokenId] := token.priceUpdateTime;
+        (* sum += oraclePrice * borrow *)
+        if userBalance > 0n or userAccount.borrow > 0n
+        then acc.collaterralUnits := acc.collaterralUnits + userAccount.borrow * token.lastPrice
+        else skip;
+      } with acc;
+  } with Set.fold(oneToken, getTokenIds(user, borrows), initAcc)
