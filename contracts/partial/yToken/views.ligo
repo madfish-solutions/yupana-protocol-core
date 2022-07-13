@@ -10,6 +10,18 @@ type convertParams    is [@layout:comb] record [
   precision             : bool;
 ]
 
+type convertReturn    is [@layout:comb] record [
+  amount                : nat;
+  interestUpdateTime    : timestamp;
+  priceUpdateTime       : timestamp;
+]
+
+type collUnitsReturn  is [@layout:comb] record [
+  collaterralUnits      : nat;
+  interestUpdateTimes    : map(nat, timestamp);
+  priceUpdateTimes       : map(nat, timestamp);
+]
+
 [@view] function balanceOf(
   const p               : balanceOfParams;
   const s               : fullStorage)
@@ -36,29 +48,109 @@ type convertParams    is [@layout:comb] record [
 [@view] function convert(
   const params          : convertParams;
   const s               : fullStorage)
-                        : nat is
+                        : convertReturn is
   block {
     require(params.tokenId < s.storage.lastTokenId, Errors.YToken.undefined);
     const token : tokenType = getToken(params.tokenId, s.storage.tokens);
     const liquidityF : nat = getLiquidity(token);
-    var result := params.amount;
+    var value := params.amount;
     if params.toShares
       then {
         if params.precision
-        then result := result * precision
+        then value := value * precision
         else skip;
 
-        result := if liquidityF > 0n
-          then result * token.totalSupplyF / liquidityF
+        value := if liquidityF > 0n
+          then value * token.totalSupplyF / liquidityF
           else 0n;
       }
       else {
-        result := if token.totalSupplyF > 0n
-          then result * liquidityF / token.totalSupplyF
+        value := if token.totalSupplyF > 0n
+          then value * liquidityF / token.totalSupplyF
           else 0n;
 
         if params.precision
-        then result := result / precision
+        then value := value / precision
         else skip;
-      }
+      };
+    const result : convertReturn = record [
+      amount = value;
+      interestUpdateTime = token.interestUpdateTime;
+      priceUpdateTime = token.priceUpdateTime
+    ];
+  } with result
+
+[@view] function maxBorrowInCU(
+  const user            : address;
+  const s               : fullStorage)
+                        : collUnitsReturn is
+  block {
+    const yStore = s.storage;
+    const tokenIds = getTokenIds(user, yStore.markets);
+    const value = calcMaxCollateralInCU(
+      tokenIds,
+      user,
+      yStore.ledger,
+      yStore.tokens
+    );
+    function getTimestamps(
+      var acc         : map(nat, timestamp) * map(nat, timestamp);
+      const i         : nat)
+                      : map(nat, timestamp) * map(nat, timestamp) is
+    block{
+      const token = getToken(i, yStore.tokens);
+      acc.0[i] := token.interestUpdateTime;
+      acc.1[i] := token.priceUpdateTime;
+    } with acc;
+    const (interestUpdateTimes, priceUpdateTimes) = Set.fold(
+      getTimestamps,
+      tokenIds,
+      (
+        (map[]: map(nat, timestamp)),
+        (map[]: map(nat, timestamp))
+      )
+    );
+    const result : collUnitsReturn = record [
+      collaterralUnits = value;
+      interestUpdateTimes = interestUpdateTimes;
+      priceUpdateTimes = priceUpdateTimes
+    ];
+  } with result
+
+[@view] function outstandingBorrowInCU(
+  const user            : address;
+  const s               : fullStorage)
+                        : collUnitsReturn is
+  block {
+    const yStore = s.storage;
+    const tokenIds = getTokenIds(user, yStore.borrows);
+    const value = calcOutstandingBorrowInCU(
+      tokenIds,
+      user,
+      yStore.accounts,
+      yStore.ledger,
+      yStore.tokens
+    );
+    function getTimestamps(
+      var acc         : map(nat, timestamp) * map(nat, timestamp);
+      const i         : nat)
+                      : map(nat, timestamp) * map(nat, timestamp) is
+    block{
+      const token = getToken(i, yStore.tokens);
+      acc.0[i] := token.interestUpdateTime;
+      acc.1[i] := token.priceUpdateTime;
+    } with acc;
+    const (interestUpdateTimes, priceUpdateTimes) = Set.fold(
+      getTimestamps,
+      tokenIds,
+      (
+        (map[]: map(nat, timestamp)),
+        (map[]: map(nat, timestamp))
+      )
+    );
+    const result : collUnitsReturn = record [
+      collaterralUnits = value;
+      interestUpdateTimes = interestUpdateTimes;
+      priceUpdateTimes = priceUpdateTimes
+    ];
   } with result
