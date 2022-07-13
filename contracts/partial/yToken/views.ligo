@@ -10,6 +10,12 @@ type convertParams    is [@layout:comb] record [
   precision             : bool;
 ]
 
+type convertReturn    is [@layout:comb] record [
+  amount                : nat;
+  interestUpdateTime    : timestamp;
+  priceUpdateTime       : timestamp;
+]
+
 [@view] function balanceOf(
   const p               : balanceOfParams;
   const s               : fullStorage)
@@ -36,29 +42,35 @@ type convertParams    is [@layout:comb] record [
 [@view] function convert(
   const params          : convertParams;
   const s               : fullStorage)
-                        : nat is
+                        : convertReturn is
   block {
     require(params.tokenId < s.storage.lastTokenId, Errors.YToken.undefined);
     const token : tokenType = getToken(params.tokenId, s.storage.tokens);
     const liquidityF : nat = getLiquidity(token);
-    var result := params.amount;
+    var value := params.amount;
     if params.toShares
       then {
         if params.precision
-        then result := result * precision
+        then value := value * precision
         else skip;
 
-        result := if liquidityF > 0n
-          then result * token.totalSupplyF / liquidityF
+        value := if liquidityF > 0n
+          then value * token.totalSupplyF / liquidityF
           else 0n;
       }
       else {
-        result := if token.totalSupplyF > 0n
-          then result * liquidityF / token.totalSupplyF
+        value := if token.totalSupplyF > 0n
+          then value * liquidityF / token.totalSupplyF
           else 0n;
 
         if params.precision
-        then result := result / precision
+        then value := value / precision
         else skip;
-      }
+      };
+    const result : convertReturn = record [
+      amount = value;
+      interestUpdateTime = token.interestUpdateTime;
+      priceUpdateTime = token.priceUpdateTime
+    ];
   } with result
+
