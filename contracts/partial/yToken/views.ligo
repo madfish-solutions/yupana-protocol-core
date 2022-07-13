@@ -91,7 +91,6 @@ type collUnitsReturn  is [@layout:comb] record [
   const s               : fullStorage)
                         : collUnitsReturn is
   block {
-    const accounts = s.storage.accounts;
     const ledger = s.storage.ledger;
     const tokens = s.storage.tokens;
     const markets = s.storage.markets;
@@ -102,19 +101,15 @@ type collUnitsReturn  is [@layout:comb] record [
       block {
         const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         const token : tokenType = getToken(tokenId, tokens);
-
         acc.interestUpdateTimes[tokenId] := token.interestUpdateTime;
         acc.priceUpdateTimes[tokenId] := token.priceUpdateTime;
-
         if token.totalSupplyF > 0n then {
           const liquidityF : nat = getLiquidity(token);
-
           (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
-            acc.collaterralUnits := acc.collaterralUnits + userBalance * token.lastPrice
-              * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
+          acc.collaterralUnits := acc.collaterralUnits +
+              userBalance * token.lastPrice * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
         }
         else skip;
-
       } with acc;
   } with Set.fold(oneToken, getTokenIds(user, markets), initAcc)
 
