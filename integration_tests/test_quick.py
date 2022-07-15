@@ -1762,11 +1762,12 @@ class DexTest(TestCase):
             
         chain.execute(self.ct.borrow(2, 50_000, chain.now + 2))
 
-        # withdraw non-collateral supply which is basically unused
-        chain.execute(self.ct.redeem(1, 0, 1))
         # can't withdraw collateral
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.redeem(0, 0, 1))
+
+        # can withdraw non-collateral supply which is basically unused
+        chain.execute(self.ct.redeem(1, 0, 1))
 
         chain.execute(self.ct.priceCallback(0, 0), sender=price_feed)
 
