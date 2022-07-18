@@ -127,13 +127,14 @@ type collUnitsReturn  is [@layout:comb] record [
       var tokenId       : tokenId)
                         : collUnitsReturn is
       block {
+        var token : tokenType := getToken(tokenId, tokens);
+        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
         var userAccount : account := getAccount(user, tokenId, accounts);
         if userAccount.lastBorrowIndex =/= 0n
           then userAccount.borrow := userAccount.borrow * token.borrowIndex / userAccount.lastBorrowIndex
           else skip;
         userAccount.lastBorrowIndex := token.borrowIndex;
-        const userBalance : nat = getBalanceByToken(user, tokenId, ledger);
-        var token : tokenType := getToken(tokenId, tokens);
+
         acc.interestUpdateTimes[tokenId] := token.interestUpdateTime;
         acc.priceUpdateTimes[tokenId] := token.priceUpdateTime;
         (* sum += oraclePrice * borrow *)
