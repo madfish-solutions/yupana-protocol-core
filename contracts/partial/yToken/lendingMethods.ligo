@@ -102,23 +102,25 @@ function redeem(
             s.accounts,
             s.tokens
           );
+          if getTokenIds(Tezos.sender, s.markets) contains params.tokenId
+          then {
+            const maxBorrowInCU : nat = calcMaxCollateralInCU(
+              getTokenIds(Tezos.sender, s.markets),
+              Tezos.sender,
+              s.ledger,
+              s.tokens
+            );
+            const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
+              getTokenIds(Tezos.sender, s.borrows),
+              Tezos.sender,
+              s.accounts,
+              s.ledger,
+              s.tokens
+            );
 
-          const maxBorrowInCU : nat = calcMaxCollateralInCU(
-            getTokenIds(Tezos.sender, s.markets),
-            Tezos.sender,
-            s.ledger,
-            s.tokens
-          );
-          const outstandingBorrowInCU : nat = calcOutstandingBorrowInCU(
-            getTokenIds(Tezos.sender, s.borrows),
-            Tezos.sender,
-            s.accounts,
-            s.ledger,
-            s.tokens
-          );
-
-          require(outstandingBorrowInCU <= maxBorrowInCU, Errors.YToken.redeemExceeds);
-
+            require(outstandingBorrowInCU <= maxBorrowInCU, Errors.YToken.redeemExceeds);
+          }
+          else skip;
           operations := transfer_token(Tezos.self_address, Tezos.sender, redeemAmount, token.mainToken);
         }
       | _               -> skip
