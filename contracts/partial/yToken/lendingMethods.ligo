@@ -79,6 +79,7 @@ function redeem(
           require(params.tokenId < s.lastTokenId, Errors.YToken.undefined);
 
           var token : tokenType := getToken(params.tokenId, s.tokens);
+          verifyInterestUpdated(token);
           var userBalance : nat := getBalanceByToken(Tezos.sender, params.tokenId, s.ledger);
           const liquidityF : nat = getLiquidity(token);
           const redeemAmount : nat = if params.amount = 0n
