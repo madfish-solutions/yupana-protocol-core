@@ -6,13 +6,13 @@ const metadata = MichelsonMap.fromLiteral({
   "interest-rate": Buffer.from(
     JSON.stringify({
       name: "Yupana interest rate model helper contract",
-      version: "v0.3.5",
+      version: "v0.4.0",
       description: "Interest rate model for Yupana protocol contract.",
       authors: ["Madfish.Solutions <https://www.madfish.solutions>"],
       source: {
         tools: ["Ligo", "Flextesa"],
         location:
-          "https://github.com/madfish-solutions/yupana-protocol-core/blob/v0.3.5/contracts/main/interestRate.ligo",
+          "https://github.com/madfish-solutions/yupana-protocol-core/blob/v0.4.0/contracts/main/interestRate.ligo",
       },
       homepage: "https://yupana.com",
       interfaces: ["TZIP-016"],

@@ -6,13 +6,13 @@ const metadata = MichelsonMap.fromLiteral({
   yupana: Buffer.from(
     JSON.stringify({
       name: "Yupana Finance Lending Protocol",
-      version: "v0.3.5",
+      version: "v0.4.0",
       description: "Yupana.Finance is an open-source, decentralized, and non-custodial lending protocol on Tezos built to securely lend and borrow digital assets via smart contracts.",
       authors: ["Madfish.Solutions <https://www.madfish.solutions>"],
       source: {
         tools: ["Ligo", "Flextesa"],
         location:
-          "https://github.com/madfish-solutions/yupana-protocol-core/blob/v0.3.5/contracts/main/yToken.ligo",
+          "https://github.com/madfish-solutions/yupana-protocol-core/blob/v0.4.0/contracts/main/yToken.ligo",
       },
       homepage: "https://yupana.finance",
       interfaces: ["TZIP-012 git 1728fcfe", "TZIP-016"],
