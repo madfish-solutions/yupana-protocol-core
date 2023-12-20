@@ -127,8 +127,7 @@ function calcMaxCollateralInCU(
           verifyInterestUpdated(token);
 
           (* sum += collateralFactorF * exchangeRate * oraclePrice * balance *)
-            acc := acc + userBalance * token.lastPrice
-              * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
+            acc := acc + userBalance * token.lastPrice * token.collateralFactorF * liquidityF / token.totalSupplyF / precision;
         }
         else skip;
 
@@ -156,10 +155,10 @@ function calcLiquidateCollateral(
           verifyInterestUpdated(token);
 
           (* sum +=  balance * oraclePrice * exchangeRate *)
-          acc := acc + userBalance * token.lastPrice * liquidityF / token.totalSupplyF;
+          acc := acc + userBalance * token.lastPrice * token.threshold * liquidityF / token.totalSupplyF / precision;
         }
         else skip;
-      } with acc * token.threshold / precision;
+      } with acc;
   } with Set.fold(oneToken, userMarkets, 0n)
 
 function applyInterestToBorrows(
