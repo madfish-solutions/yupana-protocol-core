@@ -1051,6 +1051,33 @@ class DexTest(TestCase):
         with self.assertRaises(MichelsonRuntimeError):
             chain.execute(self.ct.withdrawReserve(1, 1), sender=admin)
     
+    def test_multicollateral_liquidate(self):
+        chain = LocalChain(storage=self.storage)
+        config = {
+            "collateral_factor": 0.5,
+            "reserve_factor": 0.5,
+            "price": 100,
+            "liquidity": INITIAL_LIQUIDITY,
+            "threshold": 0.5,
+            "reserve_liquidation_rate": 0.05,
+        }
+        self.add_token(chain, token_a, config)
+        self.add_token(chain, token_b, config)
+        self.add_token(chain, token_c, config)
+
+        chain.execute(self.ct.mint(0, 100_000, 1))
+        chain.execute(self.ct.mint(1, 100_000, 1))
+        chain.execute(self.ct.enterMarket(0))
+        chain.execute(self.ct.enterMarket(1))
+        
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.borrow(2, 100_001, chain.now + 2))
+        
+        chain.execute(self.ct.borrow(2, 100_000, chain.now + 2))
+
+        with self.assertRaises(MichelsonRuntimeError):
+            chain.execute(self.ct.liquidate(2, 0, me, 1, 1, chain.now + 2), sender=bob)
+
     def test_real_world_liquidation(self):
         price_a = 5244313
         price_b = 56307584485
